@@ -46,3 +46,9 @@ docs: 프로젝트 README 최초 작성
 feat: 사용자 루틴 등록 API 추가
 fix: 루틴 삭제 시 NullPointerException 해결
 ```
+### Git Flow 개요
+- `main`: 배포된 코드 (태그 관리)
+- `develop`: 협업 기준 브랜치
+- `feature/*`, `fix/*`, `refactor/*`: 작업별 브랜치
+- `release/*`: 배포 전 안정화
+- `hotfix/*`: 배포 후 긴급 수정
