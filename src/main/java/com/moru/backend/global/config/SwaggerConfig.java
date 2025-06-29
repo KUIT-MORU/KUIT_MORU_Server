@@ -1,4 +1,4 @@
-package com.moru.backend.config;
+package com.moru.backend.global.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
