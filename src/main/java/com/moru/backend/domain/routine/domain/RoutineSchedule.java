@@ -25,7 +25,11 @@ public class RoutineSchedule {
     private Routine routine;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
+    @Column(
+            nullable = false,
+            length = 10,
+            columnDefinition = "ENUM('MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN')"
+    )
     private DayOfWeek dayOfWeek;
 
     @Column(nullable = false)
