@@ -36,5 +36,4 @@ public class UserFavoriteTag {
     @CreatedDate
     @Column(nullable = false)
     private LocalDateTime createdAt;
-
 }
