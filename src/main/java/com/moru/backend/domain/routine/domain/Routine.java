@@ -28,6 +28,9 @@ public class Routine {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(nullable = false) // 사용자 생성 여부 표시 
+    private boolean isUserVisible = true;
+
     @Column(length = 10, nullable = false)
     private String title;
 
