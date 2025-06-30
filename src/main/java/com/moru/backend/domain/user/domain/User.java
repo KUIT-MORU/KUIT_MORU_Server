@@ -2,6 +2,7 @@ package com.moru.backend.domain.user.domain;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
@@ -16,9 +17,9 @@ import java.util.UUID;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class User {
     @Id
-    @GeneratedValue
     private UUID id;
 
     @Column(nullable = false, unique = true, length = 100)
