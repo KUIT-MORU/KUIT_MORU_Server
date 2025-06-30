@@ -27,7 +27,7 @@ public class User {
     @Column(nullable = false, columnDefinition = "ENUM('MALE','FEMALE')")
     private Gender gender;
 
-    @Column(name = "birth_year", nullable = false)
+    @Column(name = "birth_year", columnDefinition = "int unsigned", nullable = false)
     private Integer birthYear;
 
     @Column(columnDefinition = "TEXT")
@@ -44,6 +44,6 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "tinyint default 1", nullable = false)
     private Boolean status = true;
 }
