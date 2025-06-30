@@ -1,4 +1,4 @@
-package com.moru.backend.domain.routine.domain.dto.request;
+package com.moru.backend.domain.routine.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

@@ -1,4 +1,4 @@
-package com.moru.backend.domain.routine.domain.dto.request;
+package com.moru.backend.domain.routine.dto.request;
 
 import java.util.List;
 import java.util.UUID;
