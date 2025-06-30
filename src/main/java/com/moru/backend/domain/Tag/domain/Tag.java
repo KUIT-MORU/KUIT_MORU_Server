@@ -21,10 +21,12 @@ public class Tag {
     @GeneratedValue
     private UUID id;
 
-    @Column(nullable = false, length = 5)
+    @Column(nullable = false, length = 10)
     private String name;
 
     @CreatedDate
-    @Column(nullable = false)
+    @Column(columnDefinition = "datetime default CURRENT_TIMESTAMP",
+            nullable = false,
+            updatable = false)
     private LocalDateTime createdAt;
 }
