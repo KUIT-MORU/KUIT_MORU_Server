@@ -28,9 +28,6 @@ public class Routine {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false) // 사용자 생성 여부 표시 
-    private boolean isUserVisible = true;
-
     @Column(length = 10, nullable = false)
     private String title;
 
@@ -38,7 +35,7 @@ public class Routine {
     private boolean isSimple;
 
     @Column(columnDefinition = "tinyint(1)", nullable = false)
-    private boolean isPublic;
+    private boolean isPublic; // 사용자 생성 여부 표시 
 
     @Column(columnDefinition = "int unsigned default 0", nullable = false)
     private Integer likeCount;
