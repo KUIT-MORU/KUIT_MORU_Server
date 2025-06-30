@@ -1,25 +1,24 @@
-package com.moru.backend.domain.user;
+package com.moru.backend.domain.user.domain;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "user")
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue
+    private UUID id;
 
     @Column(nullable = false, length = 50)
     private String nickname;
@@ -28,7 +27,7 @@ public class User {
     @Column(nullable = false, columnDefinition = "ENUM('MALE','FEMALE')")
     private Gender gender;
 
-    @Column(name = "birth_year", nullable = false)
+    @Column(name = "birth_year", columnDefinition = "int unsigned", nullable = false)
     private Integer birthYear;
 
     @Column(columnDefinition = "TEXT")
@@ -45,6 +44,6 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "tinyint default 1", nullable = false)
     private Boolean status = true;
 }

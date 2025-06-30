@@ -1,0 +1,39 @@
+package com.moru.backend.domain.routine.domain;
+
+import com.moru.backend.domain.meta.domain.App;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Entity
+@Table(
+        name = "routine_app",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"routine_id", "app_id"})
+)
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class RoutineApp {
+    @Id
+    @GeneratedValue
+    private UUID id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "routine_id", nullable = false)
+    private Routine routine;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "app_id", nullable = false)
+    private App app;
+
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+}
