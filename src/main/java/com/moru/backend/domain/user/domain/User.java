@@ -27,8 +27,8 @@ public class User {
     @Column(nullable = false, columnDefinition = "ENUM('MALE','FEMALE')")
     private Gender gender;
 
-    @Column(name = "birth_year", columnDefinition = "int unsigned", nullable = false)
-    private Integer birthYear;
+    @Column(name = "birthday", nullable = false)
+    private LocalDateTime birthday;
 
     @Column(columnDefinition = "TEXT")
     private String bio;
