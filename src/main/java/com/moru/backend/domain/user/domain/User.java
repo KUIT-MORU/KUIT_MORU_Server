@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -28,7 +29,7 @@ public class User {
     private Gender gender;
 
     @Column(name = "birthday", nullable = false)
-    private LocalDateTime birthday;
+    private LocalDate birthday;
 
     @Column(columnDefinition = "TEXT")
     private String bio;
