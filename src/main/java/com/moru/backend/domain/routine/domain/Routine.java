@@ -31,20 +31,20 @@ public class Routine {
     @Column(length = 10, nullable = false)
     private String title;
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "tinyint(1)", nullable = false)
     private boolean isSimple;
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "tinyint(1)", nullable = false)
     private boolean isPublic;
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "int unsigned default 0", nullable = false)
     private Integer likeCount;
 
     @Column(nullable = false)
     private LocalTime requiredTime;
 
     @Lob
-    @Column(nullable = false)
+    @Column(columnDefinition = "text", nullable = false)
     private String content;
 
     @CreatedDate
