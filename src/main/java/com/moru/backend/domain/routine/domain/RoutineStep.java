@@ -24,14 +24,14 @@ public class RoutineStep {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "rotine_id", nullable = false)
+    @JoinColumn(name = "routine_id", nullable = false)
     private Routine routine;
 
     @Column(nullable = false)
     private String name;
 
     @Column(nullable = false)
-    private Integer order;
+    private Integer stepOrder;
 
     @Column
     private LocalTime estimatedTime;
