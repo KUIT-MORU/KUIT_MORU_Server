@@ -37,6 +37,15 @@ public class RoutineService {
     private final AppRepository appRepository;
 
     public Object createRoutine(RoutineCreateRequest request, User user) {
+        // requiredTime 계산 (스텝들의 estimatedTime 합산)
+        LocalTime totalTime = request.getSteps().stream()
+            .map(step -> step.getEstimatedTime() != null ? LocalTime.parse(step.getEstimatedTime()) : LocalTime.of(0, 0))
+            .reduce(LocalTime.of(0, 0), (time1, time2) -> 
+                time1.plusHours(time2.getHour())
+                    .plusMinutes(time2.getMinute())
+                    .plusSeconds(time2.getSecond())
+            );
+        
         // 루틴 엔티티 생성 및 저장 
         Routine routine = Routine.builder()
             .id(UUID.randomUUID())
@@ -46,8 +55,10 @@ public class RoutineService {
             .isUserVisible(request.getIsUserVisible())
             .likeCount(0)
             .content(Optional.ofNullable(request.getDescription()).orElse("")) // nullable 가능 
+            .requiredTime(totalTime)
             .status(true)
             .build();
+            
         Routine savedRoutine = routineRepository.save(routine);
 
         // 태그 저장 (최대 3개)

@@ -30,7 +30,8 @@ public class SecurityConfig {
                             "/swagger-resources/**",
                             "/swagger-ui.html",
                             "/webjars/**",
-                            "/api-docs"
+                            "/api-docs",
+                            "/routines" // 추가: 루틴 생성용 POST 허용 ; 테스트 중에만 필요. 
                     ).permitAll()
                     .anyRequest().authenticated() // 그 외에는 인증 필요
             );
