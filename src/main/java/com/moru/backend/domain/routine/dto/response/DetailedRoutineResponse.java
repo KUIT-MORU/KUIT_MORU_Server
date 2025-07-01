@@ -49,6 +49,9 @@ public class DetailedRoutineResponse {
     @Schema(description = "수정일시", example = "2024-01-01T09:00:00")
     private LocalDateTime updatedAt;
     
+    @Schema(description = "필요 시간", example = "00:50:00")
+    private String requiredTime;
+    
     public static DetailedRoutineResponse of(Routine routine, List<RoutineTag> tags, List<RoutineStep> steps,
             List<RoutineApp> apps) {
         return DetailedRoutineResponse.builder()
@@ -68,6 +71,7 @@ public class DetailedRoutineResponse {
                         .collect(Collectors.toList()))
                 .createdAt(routine.getCreatedAt())
                 .updatedAt(routine.getUpdatedAt())
+                .requiredTime(routine.getRequiredTime() != null ? routine.getRequiredTime().toString() : null)
                 .build();
     }
 } 
