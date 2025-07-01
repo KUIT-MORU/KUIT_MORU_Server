@@ -40,7 +40,7 @@ public class RoutineService {
             .user(user)
             .title(request.getTitle())
             .isSimple(request.getIsSimple())
-            .isPublic(request.getIsPublic())
+            .isUserVisible(request.getIsUserVisible())
             .likeCount(0)
             .content(Optional.ofNullable(request.getDescription()).orElse("")) // nullable 가능 
             .status(true)

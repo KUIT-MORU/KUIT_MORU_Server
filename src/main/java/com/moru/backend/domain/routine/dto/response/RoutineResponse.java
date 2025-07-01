@@ -21,7 +21,7 @@ public class RoutineResponse {
     private String title;
     private String imageUrl;
     private List<String> tags; // todo : Tags list로 변경 
-    private Boolean isPublic;
+    private Boolean isUserVisible;
     private String description; // nullable 가능 
     private List<RoutineStepResponse> steps;
     private List<String> apps; // todo : App list로 변경 
@@ -37,7 +37,7 @@ public class RoutineResponse {
                 .tags(tags.stream()
                         .map(rt -> rt.getTag().getName())
                         .collect(Collectors.toList()))
-                .isPublic(routine.isPublic()) // ← 실제는 isUserVisible 필드에 해당
+                .isUserVisible(routine.isUserVisible()) // ← 실제는 isUserVisible 필드에 해당
                 .description(routine.getContent()) // DB에선 content, API에선 description
                 .steps(steps.stream()
                         .map(RoutineStepResponse::from)

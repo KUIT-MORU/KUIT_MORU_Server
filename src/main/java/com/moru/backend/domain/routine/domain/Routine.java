@@ -35,7 +35,7 @@ public class Routine {
     private boolean isSimple;
 
     @Column(columnDefinition = "tinyint(1)", nullable = false)
-    private boolean isPublic; // 사용자 생성 여부 표시 
+    private boolean isUserVisible; // 사용자 생성 여부 표시 
 
     @Column(columnDefinition = "int unsigned default 0", nullable = false)
     private Integer likeCount;
