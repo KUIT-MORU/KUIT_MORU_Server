@@ -94,7 +94,7 @@ public class RoutineService {
 
         // isSimple에 따라 다른 응답 반환
         if (request.getIsSimple()) {
-            return SimpleRoutineResponse.of(savedRoutine, routineTags);
+            return SimpleRoutineResponse.of(savedRoutine, routineTags, routineSteps);
         } else {
             return DetailedRoutineResponse.of(savedRoutine, routineTags, routineSteps, routineApps);
         }

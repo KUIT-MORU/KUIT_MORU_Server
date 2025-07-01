@@ -5,6 +5,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.moru.backend.domain.routine.domain.Routine;
+import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.RoutineTag;
 
 import java.time.LocalDateTime;
@@ -35,13 +36,16 @@ public class SimpleRoutineResponse {
     @Schema(description = "루틴 설명", example = "매일 아침 건강한 하루를 시작하는 루틴입니다.")
     private String description;
     
+    @Schema(description = "루틴 스텝 목록 (소요시간 제외)", example = "[\"물 마시기\", \"아침 운동\", \"아침 먹기\"]")
+    private List<SimpleRoutineStepResponse> steps;
+    
     @Schema(description = "생성일시", example = "2024-01-01T09:00:00")
     private LocalDateTime createdAt;
     
     @Schema(description = "수정일시", example = "2024-01-01T09:00:00")
     private LocalDateTime updatedAt;
     
-    public static SimpleRoutineResponse of(Routine routine, List<RoutineTag> tags) {
+    public static SimpleRoutineResponse of(Routine routine, List<RoutineTag> tags, List<RoutineStep> steps) {
         return SimpleRoutineResponse.builder()
                 .id(routine.getId())
                 .title(routine.getTitle())
@@ -51,6 +55,9 @@ public class SimpleRoutineResponse {
                         .collect(Collectors.toList()))
                 .isUserVisible(routine.isUserVisible())
                 .description(routine.getContent())
+                .steps(steps.stream()
+                        .map(SimpleRoutineStepResponse::from)
+                        .collect(Collectors.toList()))
                 .createdAt(routine.getCreatedAt())
                 .updatedAt(routine.getUpdatedAt())
                 .build();

@@ -38,7 +38,7 @@ public class DetailedRoutineResponse {
     private String description;
     
     @Schema(description = "루틴 스텝 목록", example = "[\"물 마시기\", \"아침 운동\", \"아침 먹기\"]")
-    private List<RoutineStepResponse> steps;
+    private List<DetailedRoutineStepResponse> steps;
     
     @Schema(description = "연동된 앱 목록", example = "[\"앱1\", \"앱2\"]")
     private List<String> apps;
@@ -61,7 +61,7 @@ public class DetailedRoutineResponse {
                 .isUserVisible(routine.isUserVisible())
                 .description(routine.getContent())
                 .steps(steps.stream()
-                        .map(RoutineStepResponse::from)
+                        .map(DetailedRoutineStepResponse::from)
                         .collect(Collectors.toList()))
                 .apps(apps.stream()
                         .map(ra -> ra.getApp().getName())
