@@ -9,6 +9,8 @@ import com.moru.backend.domain.routine.domain.RoutineApp;
 import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.RoutineTag;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.time.LocalDateTime;
 
 import lombok.Builder;
@@ -16,16 +18,36 @@ import lombok.Getter;
 
 @Getter
 @Builder
+@Schema(description = "루틴 응답")
 public class RoutineResponse {
+    @Schema(description = "루틴 ID", example = "550e8400-e29b-41d4-a716-446655440000")
     private UUID id;
+
+    @Schema(description = "루틴 제목", example = "아침 루틴")
     private String title;
+
+    @Schema(description = "루틴 이미지 URL", example = "https://example.com/image.jpg")
     private String imageUrl;
+
+    @Schema(description = "루틴 태그 목록", example = "[\"운동\", \"건강\", \"생산성\"]")
     private List<String> tags; // todo : Tags list로 변경 
+
+    @Schema(description = "루틴 표시시 사용자 표시 여부", example = "true")
     private Boolean isUserVisible;
+
+    @Schema(description = "루틴 설명", example = "매일 아침 건강한 하루를 시작하는 루틴입니다.")
     private String description; // nullable 가능 
+
+    @Schema(description = "루틴 스텝 목록", example = "[\"물 마시기\", \"아침 운독\", \"아침 먹기\"]")
     private List<RoutineStepResponse> steps;
+
+    @Schema(description = "연동된 앱 목록", example = "[\"앱1\", \"앱2\"]")
     private List<String> apps; // todo : App list로 변경 
+
+    @Schema(description = "생성일시", example = "2024-01-01T09:00:00")
     private LocalDateTime createdAt;
+
+    @Schema(description = "수정일시", example = "2024-01-01T09:00:00")
     private LocalDateTime updatedAt;
     
     public static RoutineResponse of(Routine routine, List<RoutineTag> tags, List<RoutineStep> steps,
@@ -37,7 +59,7 @@ public class RoutineResponse {
                 .tags(tags.stream()
                         .map(rt -> rt.getTag().getName())
                         .collect(Collectors.toList()))
-                .isUserVisible(routine.isUserVisible()) // ← 실제는 isUserVisible 필드에 해당
+                .isUserVisible(routine.isUserVisible())
                 .description(routine.getContent()) // DB에선 content, API에선 description
                 .steps(steps.stream()
                         .map(RoutineStepResponse::from)
