@@ -3,6 +3,7 @@ package com.moru.backend.domain.routine.application;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
@@ -38,6 +39,7 @@ public class RoutineService {
     public Object createRoutine(RoutineCreateRequest request, User user) {
         // 루틴 엔티티 생성 및 저장 
         Routine routine = Routine.builder()
+            .id(UUID.randomUUID())
             .user(user)
             .title(request.getTitle())
             .isSimple(request.getIsSimple())

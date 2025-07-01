@@ -21,7 +21,6 @@ import java.util.UUID;
 @Builder
 public class Routine {
     @Id
-    @GeneratedValue
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
