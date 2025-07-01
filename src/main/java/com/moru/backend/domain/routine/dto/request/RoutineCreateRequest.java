@@ -27,7 +27,7 @@ public class RoutineCreateRequest {
     @Size(max = 32)
     private String description; // 선택
 
-    @Schema(description = "루틴 스텝 목록", example = "[\"물 마시기\", \"아침 운동\", \"아침 먹기\"]")
+    @Schema(description = "루틴 스텝 목록", example = "[{\"name\": \"물 마시기\", \"stepOrder\": 1, \"estimatedTime\": \"00:05:00\"}, {\"name\": \"아침 운동\", \"stepOrder\": 2, \"estimatedTime\": \"00:30:00\"}, {\"name\": \"아침 먹기\", \"stepOrder\": 3, \"estimatedTime\": \"00:15:00\"}]")
     @NotNull
     @Size(min = 3, max = 6) //루틴 당 스텝 개수는 최소 3개, 최대 6개 
     private List<@Valid RoutineStepRequest> steps;
