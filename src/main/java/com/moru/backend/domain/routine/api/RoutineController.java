@@ -2,7 +2,6 @@ package com.moru.backend.domain.routine.api;
 
 import com.moru.backend.domain.routine.application.RoutineService;
 import com.moru.backend.domain.routine.dto.request.RoutineCreateRequest;
-import com.moru.backend.domain.routine.dto.response.RoutineResponse;
 import com.moru.backend.domain.user.domain.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +15,7 @@ public class RoutineController {
     private final RoutineService routineService;
 
     @PostMapping
-    public RoutineResponse createRoutine(
+    public Object createRoutine(
             @Valid @RequestBody RoutineCreateRequest request,
             @AuthenticationPrincipal User user
     ) {

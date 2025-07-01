@@ -19,7 +19,8 @@ import com.moru.backend.domain.routine.domain.RoutineApp;
 import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.RoutineTag;
 import com.moru.backend.domain.routine.dto.request.RoutineCreateRequest;
-import com.moru.backend.domain.routine.dto.response.RoutineResponse;
+import com.moru.backend.domain.routine.dto.response.SimpleRoutineResponse;
+import com.moru.backend.domain.routine.dto.response.DetailedRoutineResponse;
 import com.moru.backend.domain.user.domain.User;
 
 import lombok.RequiredArgsConstructor;
@@ -34,7 +35,7 @@ public class RoutineService {
     private final TagRepository tagRepository;
     private final AppRepository appRepository;
 
-    public RoutineResponse createRoutine(RoutineCreateRequest request, User user) {
+    public Object createRoutine(RoutineCreateRequest request, User user) {
         // 루틴 엔티티 생성 및 저장 
         Routine routine = Routine.builder()
             .user(user)
@@ -91,7 +92,11 @@ public class RoutineService {
                         .toList();
         routineAppRepository.saveAll(routineApps);
 
-        // 응답 DTO 생성
-        return RoutineResponse.of(savedRoutine, routineTags, routineSteps, routineApps);
+        // isSimple에 따라 다른 응답 반환
+        if (request.getIsSimple()) {
+            return SimpleRoutineResponse.of(savedRoutine, routineTags);
+        } else {
+            return DetailedRoutineResponse.of(savedRoutine, routineTags, routineSteps, routineApps);
+        }
     }
 }
