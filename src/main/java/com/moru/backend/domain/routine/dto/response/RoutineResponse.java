@@ -35,6 +35,9 @@ public class RoutineResponse {
     @Schema(description = "루틴 표시시 사용자 표시 여부", example = "true")
     private Boolean isUserVisible;
 
+    @Schema(description = "간단 루틴 여부", example = "true")
+    private boolean isSimple;
+
     @Schema(description = "루틴 설명", example = "매일 아침 건강한 하루를 시작하는 루틴입니다.")
     private String description; // nullable 가능 
 
@@ -60,6 +63,7 @@ public class RoutineResponse {
                         .map(rt -> rt.getTag().getName())
                         .collect(Collectors.toList()))
                 .isUserVisible(routine.isUserVisible())
+                .isSimple(routine.isSimple())
                 .description(routine.getContent()) // DB에선 content, API에선 description
                 .steps(steps.stream()
                         .map(RoutineStepResponse::from)
