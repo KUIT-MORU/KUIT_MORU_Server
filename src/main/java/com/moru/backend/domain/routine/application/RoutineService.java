@@ -24,6 +24,7 @@ import com.moru.backend.domain.routine.dto.response.SimpleRoutineResponse;
 import com.moru.backend.domain.routine.dto.response.DetailedRoutineResponse;
 import com.moru.backend.domain.user.domain.User;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -36,6 +37,7 @@ public class RoutineService {
     private final TagRepository tagRepository;
     private final AppRepository appRepository;
 
+    @Transactional
     public Object createRoutine(RoutineCreateRequest request, User user) {
 
         // 단순 루틴인지 확인 
