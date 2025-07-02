@@ -37,28 +37,33 @@ public class RoutineService {
     private final AppRepository appRepository;
 
     public Object createRoutine(RoutineCreateRequest request, User user) {
-        // requiredTime 계산 (스텝들의 estimatedTime 합산)
-        LocalTime totalTime = request.getSteps().stream()
-            .map(step -> step.getEstimatedTime() != null ? LocalTime.parse(step.getEstimatedTime()) : LocalTime.of(0, 0))
-            .reduce(LocalTime.of(0, 0), (time1, time2) -> 
-                time1.plusHours(time2.getHour())
-                    .plusMinutes(time2.getMinute())
-                    .plusSeconds(time2.getSecond())
-            );
+
+        // 단순 루틴인지 확인 
+        boolean isSimple = request.getIsSimple();
+        LocalTime totalTime = null;
+        if (!isSimple) {
+            totalTime = request.getSteps().stream()
+                .map(step -> step.getEstimatedTime() != null ? LocalTime.parse(step.getEstimatedTime()) : LocalTime.of(0, 0))
+                .reduce(LocalTime.of(0, 0), (time1, time2) -> 
+                    time1.plusHours(time2.getHour())
+                        .plusMinutes(time2.getMinute())
+                        .plusSeconds(time2.getSecond())
+                );
+        }
         
         // 루틴 엔티티 생성 및 저장 
         Routine routine = Routine.builder()
             .id(UUID.randomUUID())
             .user(user)
             .title(request.getTitle())
-            .isSimple(request.getIsSimple())
+            .isSimple(isSimple)
             .isUserVisible(request.getIsUserVisible())
             .likeCount(0)
             .content(Optional.ofNullable(request.getDescription()).orElse("")) // nullable 가능 
-            .requiredTime(totalTime)
+            .requiredTime(isSimple ? null : totalTime)
             .status(true)
             .build();
-            
+
         Routine savedRoutine = routineRepository.save(routine);
 
         // 태그 저장 (최대 3개)
@@ -77,36 +82,36 @@ public class RoutineService {
 
         // 스텝 저장 (최대 6개)
         List<RoutineStep> routineSteps = request.getSteps().stream()
-        // 요청에서 받은 루틴 단계들을 돌면서 이름, 순서, 예상 시간 정보를 갖는 RoutineStep 생성 
-                .map(stepReq -> RoutineStep.builder()
+            .map(stepReq -> {
+                RoutineStep.RoutineStepBuilder builder = RoutineStep.builder()
                         .routine(savedRoutine)
                         .name(stepReq.getName())
-                        .stepOrder(stepReq.getStepOrder())
-                        .estimatedTime(LocalTime.parse(stepReq.getEstimatedTime()))
-                        .build())
-                .toList();
-                // 저장 후 루틴과 연결
+                        .stepOrder(stepReq.getStepOrder());
+                if (!isSimple && stepReq.getEstimatedTime() != null) {
+                    builder.estimatedTime(LocalTime.parse(stepReq.getEstimatedTime()));
+                }
+                return builder.build();
+            })
+            .toList();
         routineStepRepository.saveAll(routineSteps);
 
         // 앱 저장 (최대 4개)
-        List<RoutineApp> routineApps = request.getAppIds() == null ? List.of() :
-                request.getAppIds().stream()
-                        .map(appId -> {
-                            //앱 ID 리스트가 있으면 루프를 돌면서: 
-                            App app = appRepository.findById(appId)
-                            // 해당 앱을 찾고 없으면 예외 발생
-                                    .orElseThrow(() -> new IllegalArgumentException("앱을 찾을 수 없습니다: " + appId));
-                            // 앱과 루틴을 연결하는 RoutineApp 객체를 생성해 저장 
-                            return RoutineApp.builder()
-                                    .routine(savedRoutine)
-                                    .app(app)
-                                    .build();
-                        })
-                        .toList();
-        routineAppRepository.saveAll(routineApps);
+        List<RoutineApp> routineApps = List.of();
+        if (!isSimple && request.getAppIds() != null) {
+            routineApps = request.getAppIds().stream()
+                    .map(appId -> {
+                        App app = appRepository.findById(appId)
+                                .orElseThrow(() -> new IllegalArgumentException("앱을 찾을 수 없습니다: " + appId));
+                        return RoutineApp.builder()
+                                .routine(savedRoutine)
+                                .app(app)
+                                .build();
+                    })
+                    .toList();
+            routineAppRepository.saveAll(routineApps);
+        }
 
-        // isSimple에 따라 다른 응답 반환
-        if (request.getIsSimple()) {
+        if (isSimple) {
             return SimpleRoutineResponse.of(savedRoutine, routineTags, routineSteps);
         } else {
             return DetailedRoutineResponse.of(savedRoutine, routineTags, routineSteps, routineApps);
