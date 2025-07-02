@@ -1,17 +1,21 @@
 package com.moru.backend.domain.auth.application;
 
 import com.moru.backend.domain.auth.dto.LoginRequest;
-import com.moru.backend.domain.auth.dto.LoginResponse;
 import com.moru.backend.domain.auth.dto.SignupRequest;
+import com.moru.backend.domain.auth.dto.TokenRefreshRequest;
+import com.moru.backend.domain.auth.dto.TokenResponse;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.jwt.JwtProvider;
+import com.moru.backend.global.redis.RefreshTokenRepositoryImpl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +23,8 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
+    private final RefreshTokenRepositoryImpl refreshTokenRepository;
+    private final RedisTemplate<String, String> redisTemplate;
 
     public void signup(SignupRequest request) {
         if(userRepository.existsByEmail(request.email())) {
@@ -42,19 +48,51 @@ public class AuthService {
         userRepository.save(user);
     }
 
-    public LoginResponse login(LoginRequest request) {
+    public TokenResponse login(LoginRequest request) {
         Optional<User> user = userRepository.findByEmail(request.email());
 
-        if(user == null){
+        if(user.isEmpty()) {
             // 존재하지 않는 이메일
         }
         if(!passwordEncoder.matches(request.password(), user.get().getPassword())) {
             // 잘못된 비밀번호
         }
 
-        String accessToken = jwtProvider.createAccessToken(user.get().getId());
-        String refreshToken = jwtProvider.createRefreshToken(user.get().getId());
+        UUID userId = user.get().getId();
+        String accessToken = jwtProvider.createAccessToken(userId);
+        String refreshToken = jwtProvider.createRefreshToken(userId);
 
-        return new LoginResponse(accessToken, refreshToken);
+        refreshTokenRepository.save(
+                userId.toString(),
+                refreshToken
+        );
+
+        return new TokenResponse(accessToken, refreshToken);
+    }
+
+    public TokenResponse refreshToken(TokenRefreshRequest request) {
+        String refreshToken = request.refreshToken();
+
+        UUID userId = jwtProvider.getSubject(refreshToken);
+
+        String storedRefreshToken = refreshTokenRepository.get(userId.toString());
+        if(storedRefreshToken == null) {
+            // 유효하지 않은 재발급 토큰
+        }
+
+        if(!refreshToken.equals(storedRefreshToken)) {
+            // 리프레시 토큰 불일치
+        }
+
+        String newAccessToken = jwtProvider.createAccessToken(userId);
+        String newRefreshToken = jwtProvider.createRefreshToken(userId);
+
+        // Redis 갱신
+        refreshTokenRepository.save(
+                userId.toString(),
+                newRefreshToken
+        );
+
+        return new TokenResponse(newAccessToken, newRefreshToken);
     }
 }

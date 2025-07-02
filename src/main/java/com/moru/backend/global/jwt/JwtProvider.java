@@ -4,6 +4,7 @@ import com.moru.backend.global.config.JwtProperties;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import lombok.Getter;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
@@ -17,6 +18,8 @@ public class JwtProvider {
     private Key secretKey;
 
     private final long accessTokenValidity = 1000 * 60 * 60; // 1hour
+
+    @Getter
     private final long refreshTokenValidity = 1000 * 60 * 60 * 24; // 1 day
 
     public JwtProvider(JwtProperties jwtProperties) {
@@ -47,5 +50,20 @@ public class JwtProvider {
                 .setExpiration(expiration)
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    public UUID getSubject(String token) {
+        try {
+            String subject = Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .getSubject();
+            return UUID.fromString(subject);
+        } catch (Exception e) {
+            // 유효하지 않은 토큰
+            return null;
+        }
     }
 }

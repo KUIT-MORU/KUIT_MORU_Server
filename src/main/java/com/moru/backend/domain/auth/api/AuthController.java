@@ -2,10 +2,10 @@ package com.moru.backend.domain.auth.api;
 
 import com.moru.backend.domain.auth.application.AuthService;
 import com.moru.backend.domain.auth.dto.LoginRequest;
-import com.moru.backend.domain.auth.dto.LoginResponse;
 import com.moru.backend.domain.auth.dto.SignupRequest;
+import com.moru.backend.domain.auth.dto.TokenRefreshRequest;
+import com.moru.backend.domain.auth.dto.TokenResponse;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.models.responses.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +29,13 @@ public class AuthController {
 
     @Operation(summary = "로그인")
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
+    public ResponseEntity<TokenResponse> login(@RequestBody @Valid LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @Operation(summary = "토큰 재발급 (access & refresh 모두 새로 만들어짐)")
+    @PostMapping("/refresh")
+    public ResponseEntity<TokenResponse> refresh(@RequestBody @Valid TokenRefreshRequest request) {
+        return ResponseEntity.ok(authService.refreshToken(request));
     }
 }
