@@ -11,7 +11,6 @@ spring:
     user:
       name: user
       password: $2a$10$SUKPX4PRaPeNnPjG8r7oJOoPrDGFw4SwQTk/sGz.js2NkaljfIkAi
-
   jpa:
     hibernate:
       ddl-auto: update   # 개발 중에는 update / 운영 시에는 validate 권장
@@ -27,3 +26,6 @@ springdoc:
     path: /swagger-ui.html
     operations-sorter: method
     tags-sorter: alpha
+
+jwt:
+  secret: w9X37H8oCdKf4Blh5Mv2N5QwU9YeT4F2t4WJ0jB9FpE
