@@ -122,6 +122,21 @@ public class RoutineService {
 
     @Transactional
     public List<Object> getRoutineList(User user) {
-        routineRepository.findAllByUser(user);
-    }
+        List<Routine> routines = routineRepository.findAllByUser(user);
+        return routines.stream()
+        .map(routine -> {
+            List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
+            List<RoutineStep> steps = routineStepRepository.findByRoutine(routine);
+            List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
+
+            if (routine.isSimple()) {
+                return SimpleRoutineResponse.of(routine, tags, steps);
+            } else {
+                return DetailedRoutineResponse.of(routine, tags, steps, apps);
+            }
+        })
+        .toList();
 }
+
+
+    }

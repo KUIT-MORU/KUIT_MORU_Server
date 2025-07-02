@@ -59,6 +59,6 @@ public class Routine {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column(nullable = false)
+    @Builder.Default
     private Boolean status = true;
 }
