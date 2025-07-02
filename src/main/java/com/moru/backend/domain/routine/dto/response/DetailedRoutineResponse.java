@@ -57,7 +57,7 @@ public class DetailedRoutineResponse {
         return DetailedRoutineResponse.builder()
                 .id(routine.getId())
                 .title(routine.getTitle())
-                .imageUrl(null) // 현재 Routine에 imageUrl 없음 → 나중에 확장
+                .imageUrl(routine.getImageUrl())
                 .tags(tags.stream()
                         .map(rt -> rt.getTag().getName())
                         .collect(Collectors.toList()))

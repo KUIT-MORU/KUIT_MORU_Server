@@ -44,6 +44,9 @@ public class Routine {
     @Column(nullable = false)
     private LocalTime requiredTime;
 
+    @Column(length = 500)
+    private String imageUrl;
+
     @Lob
     @Column(columnDefinition = "text", nullable = false)
     private String content;
