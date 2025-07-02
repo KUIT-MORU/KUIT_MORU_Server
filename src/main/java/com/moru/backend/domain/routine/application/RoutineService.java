@@ -119,4 +119,9 @@ public class RoutineService {
             return DetailedRoutineResponse.of(savedRoutine, routineTags, routineSteps, routineApps);
         }
     }
+
+    @Transactional
+    public List<Object> getRoutineList(User user) {
+        routineRepository.findAllByUser(user);
+    }
 }
