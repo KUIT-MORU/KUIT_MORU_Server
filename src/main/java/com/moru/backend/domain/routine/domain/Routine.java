@@ -41,7 +41,7 @@ public class Routine {
     @Column(columnDefinition = "int unsigned default 0", nullable = false)
     private Integer likeCount;
 
-    @Column(nullable = false)
+    @Column
     private LocalTime requiredTime;
 
     @Column(length = 500)
