@@ -2,6 +2,7 @@ package com.moru.backend.global.config;
 
 import com.moru.backend.global.jwt.JwtProvider;
 import com.moru.backend.global.jwt.filter.JwtAuthenticationFilter;
+import com.moru.backend.global.redis.RefreshTokenRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -17,9 +18,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
     private final JwtProvider jwtProvider;
+    private final RefreshTokenRepository refreshTokenRepository;
 
-    public SecurityConfig(JwtProvider jwtProvider) {
+    public SecurityConfig(JwtProvider jwtProvider, RefreshTokenRepository refreshTokenRepository) {
         this.jwtProvider = jwtProvider;
+        this.refreshTokenRepository = refreshTokenRepository;
     }
 
     @Bean
@@ -44,7 +47,7 @@ public class SecurityConfig {
                     ).permitAll()
                     .anyRequest().authenticated() // 그 외에는 인증 필요
             )
-                .addFilterBefore(new JwtAuthenticationFilter(jwtProvider),
+                .addFilterBefore(new JwtAuthenticationFilter(jwtProvider, refreshTokenRepository),
                         UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
