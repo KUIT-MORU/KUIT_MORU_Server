@@ -1,11 +1,9 @@
 package com.moru.backend.domain.auth.api;
 
 import com.moru.backend.domain.auth.application.AuthService;
-import com.moru.backend.domain.auth.dto.LoginRequest;
-import com.moru.backend.domain.auth.dto.SignupRequest;
-import com.moru.backend.domain.auth.dto.TokenRefreshRequest;
-import com.moru.backend.domain.auth.dto.TokenResponse;
+import com.moru.backend.domain.auth.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -37,5 +35,12 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<TokenResponse> refresh(@RequestBody @Valid TokenRefreshRequest request) {
         return ResponseEntity.ok(authService.refreshToken(request));
+    }
+
+    @Operation(summary = "로그아웃")
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(HttpServletRequest request) {
+        authService.logout(request);
+        return ResponseEntity.ok().build();
     }
 }

@@ -1,15 +1,14 @@
 package com.moru.backend.domain.auth.application;
 
-import com.moru.backend.domain.auth.dto.LoginRequest;
-import com.moru.backend.domain.auth.dto.SignupRequest;
-import com.moru.backend.domain.auth.dto.TokenRefreshRequest;
-import com.moru.backend.domain.auth.dto.TokenResponse;
+import com.moru.backend.domain.auth.dto.*;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.jwt.JwtProvider;
 import com.moru.backend.global.redis.RefreshTokenRepositoryImpl;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -94,5 +93,14 @@ public class AuthService {
         );
 
         return new TokenResponse(newAccessToken, newRefreshToken);
+    }
+
+    public void logout(HttpServletRequest request) {
+        String accessToken = jwtProvider.extractAccessToken(request);
+        if(accessToken != null) {
+            UUID userId = jwtProvider.getSubject(accessToken);
+            refreshTokenRepository.delete(userId.toString());
+        }
+        SecurityContextHolder.clearContext();
     }
 }
