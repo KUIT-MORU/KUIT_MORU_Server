@@ -1,7 +1,6 @@
 package com.moru.backend.domain.auth.application;
 
 import com.moru.backend.domain.auth.dto.*;
-import com.moru.backend.domain.auth.util.PasswordValidator;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.exception.CustomException;
@@ -11,7 +10,6 @@ import com.moru.backend.global.redis.RefreshTokenRepositoryImpl;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
