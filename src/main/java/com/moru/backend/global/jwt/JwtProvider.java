@@ -4,6 +4,7 @@ import com.moru.backend.global.config.JwtProperties;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import org.springframework.stereotype.Component;
 
@@ -64,6 +65,40 @@ public class JwtProvider {
         } catch (Exception e) {
             // 유효하지 않은 토큰
             return null;
+        }
+    }
+
+    public String extractAccessToken(HttpServletRequest request) {
+        String authrizationHeader = request.getHeader("Authorization");
+        if(authrizationHeader != null && authrizationHeader.startsWith("Bearer ")) {
+            return authrizationHeader.substring(7);
+        }
+        return null;
+    }
+
+    public boolean isTokenExpired(String token) {
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .getExpiration()
+                    .before(new Date());
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
+                    .build()
+                    .parseClaimsJws(token);
+            return true;
+        } catch (Exception e) {
+            return false;
         }
     }
 }
