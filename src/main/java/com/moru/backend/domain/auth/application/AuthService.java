@@ -1,20 +1,23 @@
 package com.moru.backend.domain.auth.application;
 
 import com.moru.backend.domain.auth.dto.*;
+import com.moru.backend.domain.auth.util.PasswordValidator;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.global.exception.CustomException;
+import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.jwt.JwtProvider;
 import com.moru.backend.global.redis.RefreshTokenRepositoryImpl;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -27,10 +30,13 @@ public class AuthService {
 
     public void signup(SignupRequest request) {
         if(userRepository.existsByEmail(request.email())) {
-            // 이미 회원가입된 이메일
+            throw new CustomException(ErrorCode.USER_EMAIL_ALREADY_EXISTS);
         }
         if (userRepository.existsByNickname(request.nickname())) {
-            // 이미 사용 중인 닉네임
+            throw new CustomException(ErrorCode.USER_NICKNAME_ALREADY_EXISTS);
+        }
+        if(!PasswordValidator.validatePassword(request.password())) {
+            throw new CustomException(ErrorCode.INVALID_PASSWORD_FORMAT);
         }
 
         User user = User.builder()
@@ -51,10 +57,10 @@ public class AuthService {
         Optional<User> user = userRepository.findByEmail(request.email());
 
         if(user.isEmpty()) {
-            // 존재하지 않는 이메일
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
         }
         if(!passwordEncoder.matches(request.password(), user.get().getPassword())) {
-            // 잘못된 비밀번호
+            throw new CustomException(ErrorCode.INVALID_PASSWORD);
         }
 
         UUID userId = user.get().getId();
@@ -71,16 +77,15 @@ public class AuthService {
 
     public TokenResponse refreshToken(TokenRefreshRequest request) {
         String refreshToken = request.refreshToken();
-
         UUID userId = jwtProvider.getSubject(refreshToken);
 
         String storedRefreshToken = refreshTokenRepository.get(userId.toString());
         if(storedRefreshToken == null) {
-            // 유효하지 않은 재발급 토큰
+            throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
 
         if(!refreshToken.equals(storedRefreshToken)) {
-            // 리프레시 토큰 불일치
+            throw new CustomException(ErrorCode.REFRESH_TOKEN_MISMATCH);
         }
 
         String newAccessToken = jwtProvider.createAccessToken(userId);
