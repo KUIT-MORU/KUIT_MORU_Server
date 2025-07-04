@@ -35,9 +35,6 @@ public class AuthService {
         if (userRepository.existsByNickname(request.nickname())) {
             throw new CustomException(ErrorCode.USER_NICKNAME_ALREADY_EXISTS);
         }
-        if(!PasswordValidator.validatePassword(request.password())) {
-            throw new CustomException(ErrorCode.INVALID_PASSWORD_FORMAT);
-        }
 
         User user = User.builder()
                 .id(UUID.randomUUID())
