@@ -44,6 +44,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     // 응답 헤더
                     response.setHeader("Authorization", "Bearer " + newAccessToken);
+                    response.setHeader("X-Refresh-Token", newRefreshToken);
 
                     // SecurityContext 갱신
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userId, null, null);
