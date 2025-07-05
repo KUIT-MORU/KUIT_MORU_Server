@@ -8,7 +8,7 @@ import lombok.Getter;
 
 @Getter
 @Builder
-@Schema(description = "루틴 스텝 응답")
+@Schema(description = "집중 루틴 스텝 생성용 응답")
 public class FocusedRoutineStepResponse {
     @Schema(description = "스텝 순서", example = "1")
     private Integer stepOrder;

@@ -17,7 +17,7 @@ import lombok.Getter;
 
 @Getter
 @Builder
-@Schema(description = "집중 루틴 응답")
+@Schema(description = "집중 루틴 생성용 응답")
 public class FocusedRoutineResponse {
     @Schema(description = "루틴 ID", example = "550e8400-e29b-41d4-a716-446655440000")
     private UUID id;
