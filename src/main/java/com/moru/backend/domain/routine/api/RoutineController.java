@@ -2,56 +2,67 @@ package com.moru.backend.domain.routine.api;
 
 import com.moru.backend.domain.routine.application.RoutineService;
 import com.moru.backend.domain.routine.dto.request.RoutineCreateRequest;
+import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 import com.moru.backend.domain.user.dao.UserRepository;
-import com.moru.backend.domain.user.domain.Gender;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.global.exception.CustomException;
+import com.moru.backend.global.exception.ErrorCode;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/routines")
 @RequiredArgsConstructor
+@Tag(name = "루틴", description = "루틴 관련 API")
 public class RoutineController {
     private final RoutineService routineService;
     private final UserRepository userRepository;
 
+    @Operation(summary = "루틴 생성", description = "새로운 루틴을 생성합니다.")
     @PostMapping
     public Object createRoutine(@Valid @RequestBody RoutineCreateRequest request) {
-        // 기존 테스트 사용자를 찾거나 없으면 생성
-        User testUser = userRepository.findByEmail("test@example.com")
-            .orElseGet(() -> {
-                User dummyUser = new User(
-                    UUID.randomUUID(),
-                    "test@example.com",
-                    "password123",
-                    "테스트유저",
-                    Gender.MALE,
-                    LocalDate.of(1990, 1, 1),
-                    "테스트 사용자입니다.",
-                    null,
-                    LocalDateTime.now(),
-                    LocalDateTime.now(),
-                    true
-                );
-                return userRepository.save(dummyUser);
-            });
+        // 현재 로그인된 사용자 정보 가져오기
+        User currentUser = getCurrentUser();
         
-        return routineService.createRoutine(request, testUser);
+        return routineService.createRoutine(request, currentUser);
     }
 
+    @Operation(summary = "내 루틴 목록 조회", description = "현재 로그인된 사용자의 루틴 목록을 조회합니다.")
     @GetMapping
-    public List<Object> getRoutineList() {
-        // todo : 실제에서는 로그인 정보로부터 가져오기
-        // todo : likeCount가 추가되면 전용 response dto만들어서 응답 생성 
-        User testUser = userRepository.findByEmail("test@example.com")
-        .orElseThrow(() -> new RuntimeException("테스트 유저가 없습니다."));
-        return routineService.getRoutineList(testUser);
+    public List<RoutineListResponse> getRoutineList() {
+        // 현재 로그인된 사용자 정보 가져오기
+        User currentUser = getCurrentUser();
+        return routineService.getRoutineList(currentUser);
+    }
+
+    /**
+     * 현재 로그인된 사용자 정보를 가져오는 메서드
+     * @return 현재 로그인된 사용자
+     * @throws CustomException 인증되지 않은 사용자인 경우
+     */
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+        
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof UUID) {
+            UUID userId = (UUID) principal;
+            return userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        } else {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
     }
 } 

@@ -22,6 +22,7 @@ import com.moru.backend.domain.routine.domain.RoutineTag;
 import com.moru.backend.domain.routine.dto.request.RoutineCreateRequest;
 import com.moru.backend.domain.routine.dto.response.SimpleRoutineResponse;
 import com.moru.backend.domain.routine.dto.response.DetailedRoutineResponse;
+import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 import com.moru.backend.domain.user.domain.User;
 
 import jakarta.transaction.Transactional;
@@ -121,22 +122,14 @@ public class RoutineService {
     }
 
     @Transactional
-    public List<Object> getRoutineList(User user) {
+    public List<RoutineListResponse> getRoutineList(User user) {
         List<Routine> routines = routineRepository.findAllByUser(user);
         return routines.stream()
         .map(routine -> {
             List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
-            List<RoutineStep> steps = routineStepRepository.findByRoutine(routine);
-            List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
-
-            if (routine.isSimple()) {
-                return SimpleRoutineResponse.of(routine, tags, steps);
-            } else {
-                return DetailedRoutineResponse.of(routine, tags, steps, apps);
-            }
+            return RoutineListResponse.of(routine, tags);
         })
         .toList();
-}
-
-
     }
+
+}
