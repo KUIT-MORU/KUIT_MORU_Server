@@ -5,13 +5,12 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/moru_db
     username: root
-    password: spring12!     # 비밀번호 없으면 이대로 둬도 됨
+    password: Spring12!@     # 비밀번호 없으면 이대로 둬도 됨
     driver-class-name: com.mysql.cj.jdbc.Driver
   security:
     user:
       name: user
-      password: 1111
-
+      password: $2a$10$SUKPX4PRaPeNnPjG8r7oJOoPrDGFw4SwQTk/sGz.js2NkaljfIkAi
   jpa:
     hibernate:
       ddl-auto: update   # 개발 중에는 update / 운영 시에는 validate 권장
@@ -19,7 +18,10 @@ spring:
     properties:
       hibernate:
         format_sql: true
-
+  data:
+    redis:
+      host: localhost
+      port: 6379
 springdoc:
   api-docs:
     path: /api-docs
@@ -27,3 +29,6 @@ springdoc:
     path: /swagger-ui.html
     operations-sorter: method
     tags-sorter: alpha
+
+jwt:
+  secret: w9X37H8oCdKf4Blh5Mv2N5QwU9YeT4F2t4WJ0jB9FpE
