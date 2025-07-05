@@ -21,8 +21,11 @@ import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.RoutineTag;
 import com.moru.backend.domain.routine.dto.request.RoutineCreateRequest;
 import com.moru.backend.domain.routine.dto.response.RoutineCreateResponse;
+import com.moru.backend.domain.routine.dto.response.RoutineDetailResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.global.exception.CustomException;
+import com.moru.backend.global.exception.ErrorCode;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -125,6 +128,20 @@ public class RoutineService {
             return RoutineListResponse.of(routine, tags);
         })
         .toList();
+    }
+
+    @Transactional
+    public RoutineDetailResponse getRoutineDetail(UUID routineId, User currentUser) {
+        Routine routine = routineRepository.findById(routineId)
+            .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
+        // 본인 소유 루틴만 허용하려면 아래 조건 추가
+        if (!routine.getUser().getId().equals(currentUser.getId())) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
+        List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
+        List<RoutineStep> steps = routineStepRepository.findByRoutine(routine);
+        List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
+        return RoutineDetailResponse.of(routine, tags, steps, apps);
     }
 
 }

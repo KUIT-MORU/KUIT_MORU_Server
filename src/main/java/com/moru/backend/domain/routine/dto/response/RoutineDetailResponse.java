@@ -8,6 +8,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import com.moru.backend.domain.routine.domain.Routine;
+import com.moru.backend.domain.routine.domain.RoutineApp;
+import com.moru.backend.domain.routine.domain.RoutineStep;
+import com.moru.backend.domain.routine.domain.RoutineTag;
+
 @Getter
 @Builder
 @Schema(description = "루틴 상세 응답")

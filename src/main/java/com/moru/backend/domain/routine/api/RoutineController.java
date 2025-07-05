@@ -3,6 +3,7 @@ package com.moru.backend.domain.routine.api;
 import com.moru.backend.domain.routine.application.RoutineService;
 import com.moru.backend.domain.routine.dto.request.RoutineCreateRequest;
 import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
+import com.moru.backend.domain.routine.dto.response.RoutineDetailResponse;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.exception.CustomException;
@@ -42,6 +43,13 @@ public class RoutineController {
         // 현재 로그인된 사용자 정보 가져오기
         User currentUser = getCurrentUser();
         return routineService.getRoutineList(currentUser);
+    }
+
+    @Operation(summary = "루틴 상세 조회", description = "특정 루틴의 상세 정보를 조회합니다.")
+    @GetMapping("/{routineId}")
+    public RoutineDetailResponse getRoutineDetail(@PathVariable UUID routineId) {
+        User currentUser = getCurrentUser();
+        return routineService.getRoutineDetail(routineId, currentUser);
     }
 
     /**
