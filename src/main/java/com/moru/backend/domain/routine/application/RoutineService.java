@@ -21,7 +21,7 @@ import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.RoutineTag;
 import com.moru.backend.domain.routine.dto.request.RoutineCreateRequest;
 import com.moru.backend.domain.routine.dto.response.SimpleRoutineResponse;
-import com.moru.backend.domain.routine.dto.response.DetailedRoutineResponse;
+import com.moru.backend.domain.routine.dto.response.FocusedRoutineResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 import com.moru.backend.domain.user.domain.User;
 
@@ -117,7 +117,7 @@ public class RoutineService {
         if (isSimple) {
             return SimpleRoutineResponse.of(savedRoutine, routineTags, routineSteps);
         } else {
-            return DetailedRoutineResponse.of(savedRoutine, routineTags, routineSteps, routineApps);
+            return FocusedRoutineResponse.of(savedRoutine, routineTags, routineSteps, routineApps);
         }
     }
 

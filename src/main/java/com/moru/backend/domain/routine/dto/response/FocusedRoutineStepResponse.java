@@ -9,7 +9,7 @@ import lombok.Getter;
 @Getter
 @Builder
 @Schema(description = "루틴 스텝 응답")
-public class DetailedRoutineStepResponse {
+public class FocusedRoutineStepResponse {
     @Schema(description = "스텝 순서", example = "1")
     private Integer stepOrder;
 
@@ -19,8 +19,8 @@ public class DetailedRoutineStepResponse {
     @Schema(description = "소요시간", example = "00:05:00")
     private String estimatedTime;
 
-    public static DetailedRoutineStepResponse from(RoutineStep step) {
-        return DetailedRoutineStepResponse.builder()
+    public static FocusedRoutineStepResponse from(RoutineStep step) {
+        return FocusedRoutineStepResponse.builder()
                 .stepOrder(step.getStepOrder())
                 .name(step.getName())
                 .estimatedTime(step.getEstimatedTime() != null ? step.getEstimatedTime().toString() : null)

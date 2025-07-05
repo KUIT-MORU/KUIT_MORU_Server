@@ -18,7 +18,7 @@ import lombok.Getter;
 @Getter
 @Builder
 @Schema(description = "집중 루틴 응답")
-public class DetailedRoutineResponse {
+public class FocusedRoutineResponse {
     @Schema(description = "루틴 ID", example = "550e8400-e29b-41d4-a716-446655440000")
     private UUID id;
     
@@ -38,7 +38,7 @@ public class DetailedRoutineResponse {
     private String description;
     
     @Schema(description = "루틴 스텝 목록", example = "[\"물 마시기\", \"아침 운동\", \"아침 먹기\"]")
-    private List<DetailedRoutineStepResponse> steps;
+    private List<FocusedRoutineStepResponse> steps;
     
     @Schema(description = "연동된 앱 목록", example = "[\"앱1\", \"앱2\"]")
     private List<String> apps;
@@ -52,9 +52,9 @@ public class DetailedRoutineResponse {
     @Schema(description = "필요 시간", example = "00:50:00")
     private String requiredTime;
     
-    public static DetailedRoutineResponse of(Routine routine, List<RoutineTag> tags, List<RoutineStep> steps,
+    public static FocusedRoutineResponse of(Routine routine, List<RoutineTag> tags, List<RoutineStep> steps,
             List<RoutineApp> apps) {
-        return DetailedRoutineResponse.builder()
+        return FocusedRoutineResponse.builder()
                 .id(routine.getId())
                 .title(routine.getTitle())
                 .imageUrl(routine.getImageUrl())
@@ -64,7 +64,7 @@ public class DetailedRoutineResponse {
                 .isUserVisible(routine.isUserVisible())
                 .description(routine.getContent())
                 .steps(steps.stream()
-                        .map(DetailedRoutineStepResponse::from)
+                        .map(FocusedRoutineStepResponse::from)
                         .collect(Collectors.toList()))
                 .apps(apps.stream()
                         .map(ra -> ra.getApp().getName())
