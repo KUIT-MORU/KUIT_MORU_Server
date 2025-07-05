@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
+
 @Getter
 @Schema(description = "루틴 생성 요청")
 public class RoutineCreateRequest {
@@ -27,21 +28,26 @@ public class RoutineCreateRequest {
     @Size(max = 32)
     private String description; // 선택
 
-    @Schema(description = "루틴 스텝 목록", example = "[{\"name\": \"물 마시기\", \"stepOrder\": 1, \"estimatedTime\": \"00:05:00\"}, {\"name\": \"아침 운동\", \"stepOrder\": 2, \"estimatedTime\": \"00:30:00\"}, {\"name\": \"아침 먹기\", \"stepOrder\": 3, \"estimatedTime\": \"00:15:00\"}]")
+    @Schema(
+        description = "루틴 스텝 목록. 집중 루틴은 estimatedTime 필수, 간편 루틴은 null 또는 미포함",
+        example = "[{\"name\": \"물 마시기\", \"stepOrder\": 1, \"estimatedTime\": \"00:05:00\"}, {\"name\": \"아침 운동\", \"stepOrder\": 2, \"estimatedTime\": \"00:30:00\"}, {\"name\": \"아침 먹기\", \"stepOrder\": 3, \"estimatedTime\": \"00:15:00\"}]"
+    )
     @NotNull
     @Size(min = 3, max = 6) //루틴 당 스텝 개수는 최소 3개, 최대 6개 
     private List<@Valid RoutineStepRequest> steps;
 
-    @Schema(description = "연동된 앱 목록", example = "[\"550e8400-e29b-41d4-a716-446655440000\"]")
+    @Schema(
+        description = "실행시 제한되는 앱 목록(집중 루틴만 사용, 간편 루틴은 null 또는 빈 배열)",
+        example = "[\"550e8400-e29b-41d4-a716-446655440000\"]"
+    )
     @Size(max = 4) // 연동된 앱 목록, 최대 4개 
     private List<@NotNull UUID> appIds; // 앱 ID 리스트
 
-    @Schema(description = "단순 루틴 여부", example = "true")
+    @Schema(description = "단순 루틴 여부(true: 간편 루틴, false: 집중 루틴)", example = "true")
     @NotNull
     private Boolean isSimple;
 
     @Schema(description = "루틴 표시시 사용자 표시 여부", example = "true")
     @NotNull
     private Boolean isUserVisible;
-    
 }

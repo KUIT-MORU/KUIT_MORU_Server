@@ -18,6 +18,6 @@ public class RoutineStepRequest {
     @NotNull
     private Integer stepOrder;
 
-    @Schema(description = "소요시간", example = "00:05:00")
-    private String estimatedTime; // 소요시간 ; 선택 (HH:MM:SS 형식)
+    @Schema(description = "소요시간(집중 루틴만 값, 간편 루틴은 null)", example = "00:05:00")
+    private String estimatedTime; // 집중 루틴만 값, 간편 루틴은 null (HH:MM:SS 형식)
 }

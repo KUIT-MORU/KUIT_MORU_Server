@@ -14,8 +14,8 @@ import lombok.Getter;
 
 @Getter
 @Builder
-@Schema(description = "모든 루틴 목록 응답")
-public class RoutineListResponse { 
+@Schema(description = "루틴 목록 응답")
+public class RoutineListResponse {
     @Schema(description = "루틴 ID", example = "550e8400-e29b-41d4-a716-446655440000")
     private UUID id;
     

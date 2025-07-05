@@ -20,8 +20,7 @@ import com.moru.backend.domain.routine.domain.RoutineApp;
 import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.RoutineTag;
 import com.moru.backend.domain.routine.dto.request.RoutineCreateRequest;
-import com.moru.backend.domain.routine.dto.response.SimpleRoutineResponse;
-import com.moru.backend.domain.routine.dto.response.FocusedRoutineResponse;
+import com.moru.backend.domain.routine.dto.response.RoutineCreateResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 import com.moru.backend.domain.user.domain.User;
 
@@ -39,9 +38,7 @@ public class RoutineService {
     private final AppRepository appRepository;
 
     @Transactional
-    public Object createRoutine(RoutineCreateRequest request, User user) {
-
-        // 단순 루틴인지 확인 
+    public RoutineCreateResponse createRoutine(RoutineCreateRequest request, User user) {
         boolean isSimple = request.getIsSimple();
         LocalTime totalTime = null;
         if (!isSimple) {
@@ -62,11 +59,10 @@ public class RoutineService {
             .isSimple(isSimple)
             .isUserVisible(request.getIsUserVisible())
             .likeCount(0)
-            .content(Optional.ofNullable(request.getDescription()).orElse("")) // nullable 가능 
+            .content(Optional.ofNullable(request.getDescription()).orElse(""))
             .requiredTime(isSimple ? null : totalTime)
             .status(true)
             .build();
-
         Routine savedRoutine = routineRepository.save(routine);
 
         // 태그 저장 (최대 3개)
@@ -97,10 +93,9 @@ public class RoutineService {
             })
             .toList();
         routineStepRepository.saveAll(routineSteps);
-
-        // 앱 저장 (최대 4개)
+        // 앱 저장 (최대 4개) - 해당 루틴 실행시 제한되는 앱 목록
         List<RoutineApp> routineApps = List.of();
-        if (!isSimple && request.getAppIds() != null) {
+        if (request.getAppIds() != null) {
             routineApps = request.getAppIds().stream()
                     .map(appId -> {
                         App app = appRepository.findById(appId)
@@ -113,12 +108,12 @@ public class RoutineService {
                     .toList();
             routineAppRepository.saveAll(routineApps);
         }
-
-        if (isSimple) {
-            return SimpleRoutineResponse.of(savedRoutine, routineTags, routineSteps);
-        } else {
-            return FocusedRoutineResponse.of(savedRoutine, routineTags, routineSteps, routineApps);
-        }
+        // 생성 응답은 최소 정보만 반환
+        return RoutineCreateResponse.builder()
+                .id(savedRoutine.getId())
+                .title(savedRoutine.getTitle())
+                .createdAt(savedRoutine.getCreatedAt())
+                .build();
     }
 
     @Transactional
