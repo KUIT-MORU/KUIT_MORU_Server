@@ -47,4 +47,26 @@ public class RoutineDetailResponse {
 
     @Schema(description = "필요 시간(집중 루틴만 값, 간편 루틴은 null)", example = "00:50:00")
     private String requiredTime;
+
+    public static RoutineDetailResponse of(
+        Routine routine,
+        List<RoutineTag> tags,
+        List<RoutineStep> steps,
+        List<RoutineApp> apps
+    ) {
+        return RoutineDetailResponse.builder()
+            .id(routine.getId())
+            .title(routine.getTitle())
+            .imageUrl(routine.getImageUrl())
+            .tags(tags.stream().map(rt -> rt.getTag().getName()).toList())
+            .description(routine.getContent())
+            .isSimple(routine.isSimple())
+            .isUserVisible(routine.isUserVisible())
+            .steps(steps.stream().map(RoutineStepDetailResponse::from).toList())
+            .apps(apps.stream().map(ra -> ra.getApp().getName()).toList())
+            .createdAt(routine.getCreatedAt())
+            .updatedAt(routine.getUpdatedAt())
+            .requiredTime(routine.getRequiredTime() != null ? routine.getRequiredTime().toString() : null)
+            .build();
+    }
 } 
