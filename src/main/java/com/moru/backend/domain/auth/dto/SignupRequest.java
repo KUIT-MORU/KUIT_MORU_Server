@@ -1,6 +1,7 @@
 package com.moru.backend.domain.auth.dto;
 
 import com.moru.backend.domain.user.domain.Gender;
+import com.moru.backend.global.validator.annotation.Password;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 
@@ -11,8 +12,8 @@ public record SignupRequest (
         @Schema(description = "이메일", example = "test@example.com")
         @Email @NotBlank String email,
 
-        @Schema(description = "비밀번호", example = "1234abcde")
-        @NotBlank @Size(min = 8, max = 20) String password,
+        @Schema(description = "비밀번호", example = "1234abcde!@")
+        @Password @NotBlank String password,
 
         @Schema(description = "닉네임", example = "MORU")
         @NotBlank @Size(max = 10) String nickname,
