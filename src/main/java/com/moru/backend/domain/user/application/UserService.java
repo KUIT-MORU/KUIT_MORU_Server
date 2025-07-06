@@ -64,6 +64,7 @@ public class UserService {
         return UserProfileResponse.from(user);
     }
 
+    @Transactional
     public void deactivateUser(User user) {
         if(!user.isActive()) {
             throw new CustomException(ErrorCode.USER_DEACTIVATED);
