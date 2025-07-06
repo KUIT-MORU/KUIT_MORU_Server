@@ -23,6 +23,8 @@ public enum ErrorCode {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다."),
     DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "중복된 닉네임입니다."),
     INVALID_NICKNAME(HttpStatus.BAD_REQUEST, "잘못된 닉네임입니다."),
+    USER_DEACTIVATED(HttpStatus.FORBIDDEN, "탈퇴한 계정입니다. 로그인할 수 없습니다." ),
+
     // 루틴 관련 예외
     ROUTINE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 루틴입니다.");
 
