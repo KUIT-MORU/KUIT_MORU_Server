@@ -137,7 +137,7 @@ public class RoutineService {
             throw new CustomException(ErrorCode.FORBIDDEN);
         }
         List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
-        List<RoutineStep> steps = routineStepRepository.findByRoutine(routine);
+        List<RoutineStep> steps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
         List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
         return RoutineDetailResponse.of(routine, tags, steps, apps);
     }

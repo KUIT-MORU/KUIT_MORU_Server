@@ -45,4 +45,8 @@ public class RoutineStep {
     @LastModifiedDate
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    public void updateStepOrder(Integer stepOrder) {
+        this.stepOrder = stepOrder;
+    }
 }
