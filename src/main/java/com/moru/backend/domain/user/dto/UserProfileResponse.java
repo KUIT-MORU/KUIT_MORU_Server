@@ -12,16 +12,25 @@ public record UserProfileResponse (
     Gender gender,
     LocalDate birthday,
     String bio,
-    String profileImageUrl
+    String profileImageUrl,
+    Long routineCount,
+    Long followerCount,
+    Long followingCount
 ) {
-    public static UserProfileResponse from(User user) {
+    public static UserProfileResponse from(User user,
+                                           Long routineCount,
+                                           Long followerCount,
+                                           Long followingCount) {
         return new UserProfileResponse(
                 user.getId(),
                 user.getNickname(),
                 user.getGender(),
                 user.getBirthday(),
                 user.getBio(),
-                user.getProfileImageUrl()
+                user.getProfileImageUrl(),
+                routineCount,
+                followerCount,
+                followingCount
         );
     }
 }

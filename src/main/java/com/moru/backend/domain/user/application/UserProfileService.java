@@ -1,35 +1,32 @@
 package com.moru.backend.domain.user.application;
 
+import com.moru.backend.domain.user.dao.UserFollowRepository;
 import com.moru.backend.domain.user.dao.UserRepository;
+import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.domain.user.dto.UserProfileRequest;
 import com.moru.backend.domain.user.dto.UserProfileResponse;
-import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
-import com.moru.backend.global.redis.RefreshTokenRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class UserService {
+public class UserProfileService {
+//    private final RoutineRepository routineRepository;
+    private final UserFollowRepository userFollowRepository;
     private final UserRepository userRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
 
     public UserProfileResponse getProfile(User user) {
         if(!user.isActive()) {
             throw new CustomException(ErrorCode.USER_DEACTIVATED);
         }
-        return UserProfileResponse.from(user);
-    }
-
-
-    public boolean isNicknameAvailable(String nickname) {
-        if (nickname == null || nickname.trim().isEmpty()) {
-            throw new CustomException(ErrorCode.INVALID_NICKNAME);
-        }
-        return !userRepository.existsByNickname(nickname);
+//        Long routineCount = routineRepository.countByUser(user);
+        Long routineCount = Long.parseLong("999"); // routineRepository 구현 후 연결.
+        Long followerCount = userFollowRepository.countByFollowingId(user.getId());
+        Long followingCount = userFollowRepository.countByFollowerId(user.getId());
+        return UserProfileResponse.from(user, routineCount, followerCount, followingCount);
     }
 
     @Transactional
@@ -61,16 +58,6 @@ public class UserService {
             user.setProfileImageUrl(request.profileImageUrl());
         }
 
-        return UserProfileResponse.from(user);
-    }
-
-    @Transactional
-    public void deactivateUser(User user) {
-        if(!user.isActive()) {
-            throw new CustomException(ErrorCode.USER_DEACTIVATED);
-        }
-
-        user.deactivate();
-        refreshTokenRepository.delete(user.getId().toString());
+        return UserProfileResponse.from(user, null, null, null);
     }
 }
