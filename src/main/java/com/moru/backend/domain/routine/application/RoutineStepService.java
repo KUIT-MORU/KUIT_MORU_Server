@@ -62,7 +62,9 @@ public class RoutineStepService {
                 .routine(routine)
                 .name(request.getName())
                 .stepOrder(request.getStepOrder())
-                .estimatedTime(request.getEstimatedTime() != null ? LocalTime.parse(request.getEstimatedTime()) : null)
+                .estimatedTime(request.getEstimatedTime() != null
+                        ? LocalTime.parse(request.getEstimatedTime())
+                        : null)
                 .build();
 
         routineStepRepository.save(newStep);

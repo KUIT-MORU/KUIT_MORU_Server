@@ -6,6 +6,7 @@ import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineDetailResponse;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.global.annotation.CurrentUser;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,47 +31,25 @@ public class RoutineController {
 
     @Operation(summary = "루틴 생성", description = "새로운 루틴을 생성합니다.")
     @PostMapping
-    public Object createRoutine(@Valid @RequestBody RoutineCreateRequest request) {
-        // 현재 로그인된 사용자 정보 가져오기
-        User currentUser = getCurrentUser();
-        
+    public Object createRoutine(
+            @CurrentUser User currentUser,
+            @Valid @RequestBody RoutineCreateRequest request) {
         return routineService.createRoutine(request, currentUser);
     }
 
     @Operation(summary = "내 루틴 목록 조회", description = "현재 로그인된 사용자의 루틴 목록을 조회합니다.")
     @GetMapping
-    public List<RoutineListResponse> getRoutineList() {
-        // 현재 로그인된 사용자 정보 가져오기
-        User currentUser = getCurrentUser();
+    public List<RoutineListResponse> getRoutineList(
+            @CurrentUser User currentUser
+    ) {
         return routineService.getRoutineList(currentUser);
     }
 
     @Operation(summary = "루틴 상세 조회", description = "특정 루틴의 상세 정보를 조회합니다.")
     @GetMapping("/{routineId}")
-    public RoutineDetailResponse getRoutineDetail(@PathVariable UUID routineId) {
-        User currentUser = getCurrentUser();
+    public RoutineDetailResponse getRoutineDetail(
+            @CurrentUser User currentUser,
+            @PathVariable UUID routineId) {
         return routineService.getRoutineDetail(routineId, currentUser);
-    }
-
-    /**
-     * 현재 로그인된 사용자 정보를 가져오는 메서드
-     * @return 현재 로그인된 사용자
-     * @throws CustomException 인증되지 않은 사용자인 경우
-     */
-    private User getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
-        
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof UUID) {
-            UUID userId = (UUID) principal;
-            return userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        } else {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
     }
 } 
