@@ -6,19 +6,21 @@ import com.moru.backend.domain.user.dto.UserProfileResponse;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
+import com.moru.backend.global.redis.RefreshTokenRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
 
-    public UserProfileResponse getProfile(UUID userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    public UserProfileResponse getProfile(User user) {
+        if(!user.isActive()) {
+            throw new CustomException(ErrorCode.USER_DEACTIVATED);
+        }
         return UserProfileResponse.from(user);
     }
 
@@ -30,9 +32,11 @@ public class UserService {
         return !userRepository.existsByNickname(nickname);
     }
 
-    public UserProfileResponse updateProfile(UUID userId, UserProfileRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    @Transactional
+    public UserProfileResponse updateProfile(User user, UserProfileRequest request) {
+        if(!user.isActive()) {
+            throw new CustomException(ErrorCode.USER_DEACTIVATED);
+        }
 
         if(request.nickname() != null && !request.nickname().trim().isBlank()) {
             if (userRepository.existsByNickname(request.nickname())) {
@@ -60,10 +64,12 @@ public class UserService {
         return UserProfileResponse.from(user);
     }
 
-    public void deactivateUser(UUID userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(()->new CustomException(ErrorCode.USER_NOT_FOUND));
+    public void deactivateUser(User user) {
+        if(!user.isActive()) {
+            throw new CustomException(ErrorCode.USER_DEACTIVATED);
+        }
 
         user.deactivate();
+        refreshTokenRepository.delete(user.getId().toString());
     }
 }
