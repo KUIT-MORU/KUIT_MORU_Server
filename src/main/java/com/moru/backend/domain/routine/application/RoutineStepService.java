@@ -5,6 +5,7 @@ import com.moru.backend.domain.routine.dao.RoutineStepRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.dto.request.RoutineStepRequest;
+import com.moru.backend.domain.routine.dto.response.RoutineStepDetailResponse;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
@@ -73,6 +74,22 @@ public class RoutineStepService {
                 "message", "스텝이 성공적으로 추가되었습니다.",
                 "stepOrder", newStepOrder
         );
+    }
+
+    @Transactional
+    public List<RoutineStepDetailResponse> getRoutineSteps(UUID routineId, User currentUser) {
+        Routine routine = routineRepository.findById(routineId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
+
+        if (!routine.getUser().getId().equals(currentUser.getId())) {
+            throw new CustomException(ErrorCode.USER_NOT_MATCH);
+        }
+
+        //stepOrder 순서대로 정렬된 스텝 목록 조회
+        List<RoutineStep> steps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
+        return steps.stream()
+                .map(RoutineStepDetailResponse::from)
+                .toList();
     }
 
 }

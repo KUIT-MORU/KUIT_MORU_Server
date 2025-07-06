@@ -2,6 +2,7 @@ package com.moru.backend.domain.routine.api;
 
 import com.moru.backend.domain.routine.application.RoutineStepService;
 import com.moru.backend.domain.routine.dto.request.RoutineStepRequest;
+import com.moru.backend.domain.routine.dto.response.RoutineStepDetailResponse;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.annotation.CurrentUser;
@@ -15,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -32,5 +34,13 @@ public class RoutineStepController {
             @CurrentUser User currentUser,
             @Valid @RequestBody RoutineStepRequest request) {
         return routineStepService.addStepToRoutine(routineId, request, currentUser);
+    }
+
+    @Operation(summary = "루틴의 스텝 목록 조회", description = "특정 루틴의 모든 스텝을 조회")
+    @GetMapping
+    public List<RoutineStepDetailResponse> getRoutineSteps(
+            @PathVariable UUID routineId,
+            @CurrentUser User currentUser) {
+        return routineStepService.getRoutineSteps(routineId, currentUser);
     }
 }
