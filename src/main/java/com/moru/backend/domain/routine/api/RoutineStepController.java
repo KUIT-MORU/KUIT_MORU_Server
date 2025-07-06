@@ -47,4 +47,12 @@ public class RoutineStepController {
                              @Valid @RequestBody RoutineStepRequest request) {
         return routineStepService.updateStep(routineId, stepId, request, currentUser);
     }
+
+    @Operation(summary = "특정 스텝 삭제", description = "특정 루틴의 특정 스텝을 삭제")
+    @DeleteMapping("/{stepId}")
+    public Object deleteStep(@PathVariable UUID routineId,
+                             @CurrentUser User currentUser,
+                             @PathVariable UUID stepId) {
+        return routineStepService.deleteStep(routineId, stepId, currentUser);
+    }
 }

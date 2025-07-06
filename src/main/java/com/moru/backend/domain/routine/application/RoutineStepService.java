@@ -158,4 +158,34 @@ public class RoutineStepService {
         return Map.of("message", "스텝이 성공적으로 수정되었습니다.");
     }
 
+    @Transactional
+    public Object deleteStep(UUID routineId, UUID stepId, User currentUser) {
+        Routine routine = routineRepository.findById(routineId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
+
+        if (!routine.getUser().getId().equals(currentUser.getId())) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
+
+        RoutineStep step = routineStepRepository.findById(stepId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_STEP_NOT_FOUND));
+
+        if (!step.getRoutine().getId().equals(routineId)) {
+            throw new CustomException(ErrorCode.ROUTINE_NOT_FOUND);
+        }
+
+        int deletedStepOrder = step.getStepOrder();
+
+        routineStepRepository.delete(step);
+
+        //삭제된 스텝 이후의 스텝들의 순서를 한칸씩 앞으로 이동하기
+        List<RoutineStep> remainingSteps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
+        for (RoutineStep remainingStep : remainingSteps) {
+            if (remainingStep.getStepOrder() > deletedStepOrder) {
+                remainingStep.updateStepOrder(remainingStep.getStepOrder() - 1);
+                routineStepRepository.save(remainingStep);
+            }
+        }
+        return Map.of("message", "스텝이 성공적으로 삭제되었습니다.");
+    }
 }
