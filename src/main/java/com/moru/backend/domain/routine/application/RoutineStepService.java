@@ -92,4 +92,70 @@ public class RoutineStepService {
                 .toList();
     }
 
+    /**
+     * 예외 : 해당 stepId를 가지는 루틴이 존재하지 않을 때.
+     */
+    @Transactional
+    public Object updateStep(UUID routineId, UUID stepId, RoutineStepRequest request, User currentUser) {
+        Routine routine = routineRepository.findById(routineId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
+
+        if (!routine.getUser().getId().equals(currentUser.getId())) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
+
+        RoutineStep step = routineStepRepository.findById(stepId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_STEP_NOT_FOUND));
+
+        if (!step.getRoutine().getId().equals(routineId)) {
+            throw new CustomException(ErrorCode.ROUTINE_NOT_FOUND);
+        }
+
+        int oldStepOrder = step.getStepOrder();
+        int newStepOrder = request.getStepOrder();
+
+        // 순서가 변경된 경우에만 순서 조정
+        if (oldStepOrder != newStepOrder) {
+            List<RoutineStep> allSteps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
+
+            // 새로운 순서가 유효한 범위인지
+            if (newStepOrder < 1 || newStepOrder > allSteps.size()) {
+                throw new CustomException(ErrorCode.INVALID_STEP_ORDER);
+            }
+
+            //기존 스텝들 순서 조정
+            for (RoutineStep otherStep : allSteps) {
+                if (otherStep.getId().equals(stepId)) {
+                    continue; //현재 수정 중인 스텝 건너뜀
+                }
+
+                int currentOrder = otherStep.getStepOrder();
+
+                if (oldStepOrder < newStepOrder) {
+                    // 뒤로 이동하는 경우: oldStepOrder와 newStepOrder 사이의 스텝들을 앞으로 이동
+                    if (currentOrder > oldStepOrder && currentOrder <= newStepOrder) {
+                        otherStep.updateStepOrder(currentOrder - 1);
+                        routineStepRepository.save(otherStep);
+                    }
+                } else {
+                    // 앞으로 이동하는 경우: newStepOrder와 oldStepOrder 사이의 스텝들을 뒤로 이동
+                    if (currentOrder >= newStepOrder && currentOrder < oldStepOrder) {
+                        otherStep.updateStepOrder(currentOrder + 1);
+                        routineStepRepository.save(otherStep);
+                    }
+                }
+            }
+        }
+
+        // 스텝 정보 업데이트
+        step.updateName(request.getName());
+        step.updateStepOrder(newStepOrder);
+        if (request.getEstimatedTime() != null) {
+            step.updateEstimatedTime(LocalTime.parse(request.getEstimatedTime()));
+        }
+
+        routineStepRepository.save(step);
+        return Map.of("message", "스텝이 성공적으로 수정되었습니다.");
+    }
+
 }

@@ -49,4 +49,12 @@ public class RoutineStep {
     public void updateStepOrder(Integer stepOrder) {
         this.stepOrder = stepOrder;
     }
+
+    public void updateName(String name) {
+        this.name = name;
+    }
+
+    public void updateEstimatedTime(LocalTime estimatedTime) {
+        this.estimatedTime = estimatedTime;
+    }
 }

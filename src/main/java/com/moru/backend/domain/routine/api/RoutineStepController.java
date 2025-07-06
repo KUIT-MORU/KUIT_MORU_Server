@@ -3,17 +3,12 @@ package com.moru.backend.domain.routine.api;
 import com.moru.backend.domain.routine.application.RoutineStepService;
 import com.moru.backend.domain.routine.dto.request.RoutineStepRequest;
 import com.moru.backend.domain.routine.dto.response.RoutineStepDetailResponse;
-import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.annotation.CurrentUser;
-import com.moru.backend.global.exception.CustomException;
-import com.moru.backend.global.exception.ErrorCode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -42,5 +37,14 @@ public class RoutineStepController {
             @PathVariable UUID routineId,
             @CurrentUser User currentUser) {
         return routineStepService.getRoutineSteps(routineId, currentUser);
+    }
+
+    @Operation(summary = "특정 스텝 수정", description = "특정 루틴의 특정 스텝을 수정")
+    @PatchMapping("/{stepId}")
+    public Object updateStep(@PathVariable UUID routineId,
+                             @PathVariable UUID stepId,
+                             @CurrentUser User currentUser,
+                             @Valid @RequestBody RoutineStepRequest request) {
+        return routineStepService.updateStep(routineId, stepId, request, currentUser);
     }
 }
