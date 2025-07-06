@@ -9,6 +9,8 @@ import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.jwt.JwtProvider;
 import com.moru.backend.global.redis.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -41,5 +43,23 @@ public class LoginService {
         );
 
         return new TokenResponse(accessToken, refreshToken);
+    }
+
+    /**
+     * SecurityContext에서 현재 로그인된 User을 찾아서 반환
+     * @throws CustomException 인증되지 않았거나 사용자를 찾을 수 없으면 에러
+     */
+    public User getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+        Object principal = auth.getPrincipal();
+        if (!(principal instanceof UUID)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+        UUID userId = (UUID) principal;
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 }
