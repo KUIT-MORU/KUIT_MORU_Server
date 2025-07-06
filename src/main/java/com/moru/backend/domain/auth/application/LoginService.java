@@ -24,16 +24,14 @@ public class LoginService {
     private final RefreshTokenRepository refreshTokenRepository;
 
     public TokenResponse login(LoginRequest request) {
-        Optional<User> user = userRepository.findByEmail(request.email());
+        User user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        if(user.isEmpty()) {
-            throw new CustomException(ErrorCode.USER_NOT_FOUND);
-        }
-        if(!passwordEncoder.matches(request.password(), user.get().getPassword())) {
+        if(!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new CustomException(ErrorCode.INVALID_PASSWORD);
         }
 
-        UUID userId = user.get().getId();
+        UUID userId = user.getId();
         String accessToken = jwtProvider.createAccessToken(userId);
         String refreshToken = jwtProvider.createRefreshToken(userId);
 

@@ -2,7 +2,6 @@ package com.moru.backend.domain.auth.application;
 
 import com.moru.backend.domain.auth.dto.TokenRefreshRequest;
 import com.moru.backend.domain.auth.dto.TokenResponse;
-import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.jwt.JwtProvider;
