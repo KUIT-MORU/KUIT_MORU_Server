@@ -7,8 +7,8 @@ import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.dto.request.RoutineStepRequest;
 import com.moru.backend.domain.routine.dto.response.RoutineStepDetailResponse;
 import com.moru.backend.domain.user.domain.User;
-import com.moru.backend.global.exception.CustomException;
-import com.moru.backend.global.exception.ErrorCode;
+import com.moru.backend.global.validator.RoutineStepValidator;
+import com.moru.backend.global.validator.RoutineValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +23,8 @@ import java.util.UUID;
 public class RoutineStepService {
     private final RoutineStepRepository routineStepRepository;
     private final RoutineRepository routineRepository;
+    private final RoutineStepValidator routineStepValidator;
+    private final RoutineValidator routineValidator;
 
     /**
      * 예외 : userId가 match되지 않고, 스텝의 사이즈가 초과되었을때
@@ -31,18 +33,8 @@ public class RoutineStepService {
     @Transactional
     // 특정 루틴에 스텝 추가
     public Object addStepToRoutine(UUID routineId, RoutineStepRequest request, User currentUser) {
-        Routine routine = routineRepository.findById(routineId)
-                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
-
-        if (!routine.getUser().getId().equals(currentUser.getId())) {
-            throw new CustomException(ErrorCode.USER_NOT_MATCH);
-        }
-
-        List<RoutineStep> existingSteps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
-        // 이미 스텝이 6개 이상이면 예외
-        if (existingSteps.size() >= 6) {
-            throw new CustomException(ErrorCode.STEP_OVERLOADED);
-        }
+        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
+        List<RoutineStep> existingSteps = routineStepValidator.validateStepCountLimit(routine);
 
         // stepOrder 검사 로직 추가
         int newStepOrder = request.getStepOrder();
@@ -78,13 +70,7 @@ public class RoutineStepService {
 
     @Transactional
     public List<RoutineStepDetailResponse> getRoutineSteps(UUID routineId, User currentUser) {
-        Routine routine = routineRepository.findById(routineId)
-                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
-
-        if (!routine.getUser().getId().equals(currentUser.getId())) {
-            throw new CustomException(ErrorCode.USER_NOT_MATCH);
-        }
-
+        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
         //stepOrder 순서대로 정렬된 스텝 목록 조회
         List<RoutineStep> steps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
         return steps.stream()
@@ -97,19 +83,8 @@ public class RoutineStepService {
      */
     @Transactional
     public Object updateStep(UUID routineId, UUID stepId, RoutineStepRequest request, User currentUser) {
-        Routine routine = routineRepository.findById(routineId)
-                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
-
-        if (!routine.getUser().getId().equals(currentUser.getId())) {
-            throw new CustomException(ErrorCode.FORBIDDEN);
-        }
-
-        RoutineStep step = routineStepRepository.findById(stepId)
-                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_STEP_NOT_FOUND));
-
-        if (!step.getRoutine().getId().equals(routineId)) {
-            throw new CustomException(ErrorCode.ROUTINE_NOT_FOUND);
-        }
+        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
+        RoutineStep step = routineStepValidator.validateStepAndRoutineRelation(stepId, routineId);
 
         int oldStepOrder = step.getStepOrder();
         int newStepOrder = request.getStepOrder();
@@ -117,11 +92,7 @@ public class RoutineStepService {
         // 순서가 변경된 경우에만 순서 조정
         if (oldStepOrder != newStepOrder) {
             List<RoutineStep> allSteps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
-
-            // 새로운 순서가 유효한 범위인지
-            if (newStepOrder < 1 || newStepOrder > allSteps.size()) {
-                throw new CustomException(ErrorCode.INVALID_STEP_ORDER);
-            }
+            routineStepValidator.validateStepOrder(routine, newStepOrder);
 
             //기존 스텝들 순서 조정
             for (RoutineStep otherStep : allSteps) {
@@ -160,19 +131,8 @@ public class RoutineStepService {
 
     @Transactional
     public Object deleteStep(UUID routineId, UUID stepId, User currentUser) {
-        Routine routine = routineRepository.findById(routineId)
-                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
-
-        if (!routine.getUser().getId().equals(currentUser.getId())) {
-            throw new CustomException(ErrorCode.FORBIDDEN);
-        }
-
-        RoutineStep step = routineStepRepository.findById(stepId)
-                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_STEP_NOT_FOUND));
-
-        if (!step.getRoutine().getId().equals(routineId)) {
-            throw new CustomException(ErrorCode.ROUTINE_NOT_FOUND);
-        }
+        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
+        RoutineStep step = routineStepValidator.validateStepAndRoutineRelation(stepId, routineId);
 
         int deletedStepOrder = step.getStepOrder();
 

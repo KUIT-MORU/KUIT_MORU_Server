@@ -17,8 +17,7 @@ import com.moru.backend.domain.routine.dto.response.RoutineCreateResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineDetailResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 import com.moru.backend.domain.user.domain.User;
-import com.moru.backend.global.exception.CustomException;
-import com.moru.backend.global.exception.ErrorCode;
+import com.moru.backend.global.validator.RoutineValidator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -37,6 +36,7 @@ public class RoutineService {
     private final RoutineAppRepository routineAppRepository;
     private final TagRepository tagRepository;
     private final AppRepository appRepository;
+    private final RoutineValidator routineValidator;
 
     @Transactional
     public RoutineCreateResponse createRoutine(RoutineCreateRequest request, User user) {
@@ -130,12 +130,7 @@ public class RoutineService {
 
     @Transactional
     public RoutineDetailResponse getRoutineDetail(UUID routineId, User currentUser) {
-        Routine routine = routineRepository.findById(routineId)
-            .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
-        // 본인 소유 루틴만 허용하려면 아래 조건 추가
-        if (!routine.getUser().getId().equals(currentUser.getId())) {
-            throw new CustomException(ErrorCode.FORBIDDEN);
-        }
+        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
         List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
         List<RoutineStep> steps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
         List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
