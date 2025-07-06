@@ -8,7 +8,6 @@ import com.moru.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -20,5 +19,13 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         return UserProfileResponse.from(user);
+    }
+
+
+    public boolean isNicknameAvailable(String nickname) {
+        if (nickname == null || nickname.trim().isEmpty()) {
+            throw new CustomException(ErrorCode.INVALID_NICKNAME);
+        }
+        return !userRepository.existsByNickname(nickname);
     }
 }

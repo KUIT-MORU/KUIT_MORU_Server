@@ -9,8 +9,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -29,8 +31,11 @@ public class UserController {
 
         return ResponseEntity.ok(response);
     }
-//
-//    @Operation(summary = "닉네임 중복 여부 확인")
-//    @GetMapping("/nickname")
-//    public ResponseEntity<Boolean> getCurrentUserNickname() {}
+
+    @Operation(summary = "닉네임 사용 가능 여부")
+    @GetMapping("/nickname")
+    public ResponseEntity<Map<String, Boolean>> checkNicknameDuplicate(@RequestParam("nickname") String nickname) {
+        boolean available = userService.isNicknameAvailable(nickname);
+        return ResponseEntity.ok(Map.of("available", available));
+    }
 }
