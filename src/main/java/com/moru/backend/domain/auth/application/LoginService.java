@@ -26,7 +26,9 @@ public class LoginService {
     public TokenResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
+        if(!user.isActive()) {
+            throw new CustomException(ErrorCode.USER_DEACTIVATED);
+        }
         if(!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new CustomException(ErrorCode.INVALID_PASSWORD);
         }
