@@ -22,9 +22,13 @@ public enum ErrorCode {
     // 유저 관련 예외
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다."),
     DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "중복된 닉네임입니다."),
+    USER_NOT_MATCH(HttpStatus.CONFLICT, "루틴을 생성한 유저와 매칭되지 않는 유저입니다."),
 
     // 루틴 관련 예외
-    ROUTINE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 루틴입니다.");
+    ROUTINE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 루틴입니다."),
+
+    // 스텝 관련 예외
+    STEP_OVERLOADED(HttpStatus.BAD_REQUEST, "루틴 당 스텝의 최대 개수는 6개입니다");
 
     private final HttpStatus status;
     private final String message;
