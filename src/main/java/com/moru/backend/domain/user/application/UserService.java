@@ -59,4 +59,11 @@ public class UserService {
 
         return UserProfileResponse.from(user);
     }
+
+    public void deactivateUser(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(()->new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        user.deactivate();
+    }
 }

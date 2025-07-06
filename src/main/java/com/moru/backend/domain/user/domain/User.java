@@ -58,4 +58,11 @@ public class User {
 
     @Column(columnDefinition = "tinyint default 1", nullable = false)
     private Boolean status = true;
+
+    public void deactivate() {
+        this.status = false;
+    }
+
+
+
 }

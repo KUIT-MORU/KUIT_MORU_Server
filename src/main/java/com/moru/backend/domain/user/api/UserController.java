@@ -49,4 +49,14 @@ public class UserController {
         UserProfileResponse response = userService.updateProfile(userId, userProfileRequest);
         return ResponseEntity.ok(response);
     }
+
+    @Operation(summary = "사용자 정보 삭제")
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteUser(HttpServletRequest request) {
+        String accessToken = jwtProvider.extractAccessToken(request);
+        UUID userId = jwtProvider.getSubject(accessToken);
+
+        userService.deactivateUser(userId);
+        return ResponseEntity.noContent().build(); // 204
+    }
 }
