@@ -4,24 +4,20 @@ import com.moru.backend.domain.user.application.UserService;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.domain.user.dto.UserProfileRequest;
 import com.moru.backend.domain.user.dto.UserProfileResponse;
-import com.moru.backend.global.jwt.JwtProvider;
 import com.moru.backend.global.validator.annotation.CurrentUser;
 import io.swagger.v3.oas.annotations.Operation;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/user")
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
-    private final JwtProvider jwtProvider;
 
     @Operation(summary = "사용자 프로필 정보 조회")
     @GetMapping("/me")
