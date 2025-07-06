@@ -63,6 +63,7 @@ public class User {
         this.status = false;
     }
 
-
-
+    public Boolean isActive() {
+        return status;
+    }
 }
