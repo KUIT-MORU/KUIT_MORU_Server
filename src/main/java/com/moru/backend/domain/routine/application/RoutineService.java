@@ -1,12 +1,5 @@
 package com.moru.backend.domain.routine.application;
 
-import java.time.LocalTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import org.springframework.stereotype.Service;
-
 import com.moru.backend.domain.Tag.dao.TagRepository;
 import com.moru.backend.domain.Tag.domain.Tag;
 import com.moru.backend.domain.meta.dao.AppRepository;
@@ -26,9 +19,14 @@ import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
-
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
