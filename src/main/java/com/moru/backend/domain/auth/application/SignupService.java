@@ -21,7 +21,7 @@ public class SignupService {
         if(userRepository.existsByEmail(request.email())) {
             throw new CustomException(ErrorCode.USER_EMAIL_ALREADY_EXISTS);
         }
-        if (userRepository.existsByNickname(request.nickname())) {
+        if(userRepository.existsByNickname(request.nickname())) {
             throw new CustomException(ErrorCode.USER_NICKNAME_ALREADY_EXISTS);
         }
 
