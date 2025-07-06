@@ -1,8 +1,8 @@
 package com.moru.backend.global.resolver;
 
-import com.moru.backend.domain.auth.application.AuthService;
+import com.moru.backend.domain.auth.application.LoginService;
 import com.moru.backend.domain.user.domain.User;
-import com.moru.backend.global.annotation.CurrentUser;
+import com.moru.backend.global.validator.annotation.CurrentUser;
 import org.springframework.core.MethodParameter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.support.WebDataBinderFactory;
@@ -12,9 +12,9 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 
 @Component
 public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolver {
-    private final AuthService authService;
+    private final LoginService authService;
 
-    public CurrentUserArgumentResolver(AuthService authService) {
+    public CurrentUserArgumentResolver(LoginService authService) {
         this.authService = authService;
     }
 
