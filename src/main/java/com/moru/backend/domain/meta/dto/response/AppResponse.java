@@ -1,4 +1,4 @@
-package com.moru.backend.domain.meta.dto;
+package com.moru.backend.domain.meta.dto.response;
 
 import java.util.UUID;
 
