@@ -31,7 +31,7 @@ public class RoutineController {
 
     @Operation(summary = "루틴 생성", description = "새로운 루틴을 생성합니다.")
     @PostMapping
-    public Object createRoutine(
+    public Object createRoutine( // todo: ResponseEntity로 통일하기
             @CurrentUser User currentUser,
             @Valid @RequestBody RoutineCreateRequest request) {
         return routineService.createRoutine(request, currentUser);
