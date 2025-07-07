@@ -2,8 +2,9 @@ package com.moru.backend.domain.auth.api;
 
 import com.moru.backend.domain.auth.application.*;
 import com.moru.backend.domain.auth.dto.*;
+import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.global.validator.annotation.CurrentUser;
 import io.swagger.v3.oas.annotations.Operation;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -42,8 +43,8 @@ public class AuthController {
 
     @Operation(summary = "로그아웃")
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpServletRequest request) {
-        logoutService.logout(request);
+    public ResponseEntity<Void> logout(@CurrentUser User user) {
+        logoutService.logout(user);
         return ResponseEntity.ok().build();
     }
 }
