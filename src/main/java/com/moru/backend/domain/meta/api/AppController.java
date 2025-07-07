@@ -1,10 +1,7 @@
 package com.moru.backend.domain.meta.api;
 
-import com.moru.backend.domain.meta.application.AppService;
 import com.moru.backend.domain.meta.dto.request.InstalledAppsRequest;
 import com.moru.backend.domain.meta.dto.request.SelectedAppsRequest;
-import com.moru.backend.domain.meta.dto.response.InstalledAppResponse;
-import com.moru.backend.domain.meta.dto.response.SelectedAppsResponse;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.annotation.CurrentUser;
 import io.swagger.v3.oas.annotations.Operation;

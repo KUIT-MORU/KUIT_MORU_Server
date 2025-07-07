@@ -2,8 +2,6 @@ package com.moru.backend.domain.routine.application;
 
 import com.moru.backend.domain.meta.dao.TagRepository;
 import com.moru.backend.domain.meta.domain.Tag;
-import com.moru.backend.domain.meta.dao.AppRepository;
-import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.routine.dao.RoutineAppRepository;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
 import com.moru.backend.domain.routine.dao.RoutineStepRepository;
@@ -35,7 +33,6 @@ public class RoutineService {
     private final RoutineTagRepository routineTagRepository;
     private final RoutineAppRepository routineAppRepository;
     private final TagRepository tagRepository;
-    private final AppRepository appRepository;
     private final RoutineValidator routineValidator;
 
     @Transactional
@@ -96,16 +93,12 @@ public class RoutineService {
         routineStepRepository.saveAll(routineSteps);
         // 앱 저장 (최대 4개) - 해당 루틴 실행시 제한되는 앱 목록
         List<RoutineApp> routineApps = List.of();
-        if (request.getAppIds() != null) {
-            routineApps = request.getAppIds().stream()
-                    .map(appId -> {
-                        App app = appRepository.findById(appId)
-                                .orElseThrow(() -> new IllegalArgumentException("앱을 찾을 수 없습니다: " + appId));
-                        return RoutineApp.builder()
-                                .routine(savedRoutine)
-                                .app(app)
-                                .build();
-                    })
+        if (request.getSelectedApps() != null && !request.getSelectedApps().isEmpty()) {
+            routineApps = request.getSelectedApps().stream()
+                    .map(packageName -> RoutineApp.builder()
+                            .routine(savedRoutine)
+                            .packageName(packageName)
+                            .build())
                     .toList();
             routineAppRepository.saveAll(routineApps);
         }
