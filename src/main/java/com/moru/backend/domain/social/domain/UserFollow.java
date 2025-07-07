@@ -1,5 +1,6 @@
-package com.moru.backend.domain.user.domain;
+package com.moru.backend.domain.social.domain;
 
+import com.moru.backend.domain.user.domain.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
