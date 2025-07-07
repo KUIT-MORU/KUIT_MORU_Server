@@ -1,4 +1,4 @@
-package com.moru.backend.domain.routine.domain;
+package com.moru.backend.domain.log.domain;
 
 import com.moru.backend.domain.meta.domain.Tag;
 import jakarta.persistence.*;
