@@ -1,5 +1,9 @@
 package com.moru.backend.global.jwt.filter;
 
+import com.moru.backend.domain.user.dao.UserRepository;
+import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.global.exception.CustomException;
+import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.jwt.JwtProvider;
 import com.moru.backend.global.redis.RefreshTokenRepository;
 import jakarta.servlet.FilterChain;
@@ -16,10 +20,12 @@ import java.util.UUID;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtProvider jwtProvider;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final UserRepository userRepository;
 
-    public JwtAuthenticationFilter(JwtProvider jwtProvider, RefreshTokenRepository refreshTokenRepository) {
+    public JwtAuthenticationFilter(JwtProvider jwtProvider, RefreshTokenRepository refreshTokenRepository, UserRepository userRepository) {
         this.jwtProvider = jwtProvider;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -32,6 +38,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if(token != null && jwtProvider.isTokenExpired(token)) {
             try {
                 UUID userId = jwtProvider.getSubject(token);
+
+                // 유효한 유저(soft deleted 여부)인지 확인
+                User user = userRepository.findById(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+                if(!user.isActive()) {
+                    throw new CustomException(ErrorCode.USER_DEACTIVATED);
+                }
+
                 String refreshToken = refreshTokenRepository.get(userId.toString());
 
                 if(refreshToken != null && jwtProvider.validateToken(refreshToken)) {
@@ -64,6 +78,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // AccessToken 유효
         } else if(token != null && jwtProvider.validateToken(token)) {
             UUID userId = jwtProvider.getSubject(token);
+
+            // 유효한 유저(soft deleted 여부)인지 확인
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            if(!user.isActive()) {
+                throw new CustomException(ErrorCode.USER_DEACTIVATED);
+            }
+
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userId, null, null);
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }

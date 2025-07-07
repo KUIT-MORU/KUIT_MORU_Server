@@ -1,5 +1,6 @@
 package com.moru.backend.global.config;
 
+import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.global.jwt.JwtProvider;
 import com.moru.backend.global.jwt.filter.JwtAuthenticationFilter;
 import com.moru.backend.global.redis.RefreshTokenRepository;
@@ -19,10 +20,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
     private final JwtProvider jwtProvider;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final UserRepository userRepository;
 
-    public SecurityConfig(JwtProvider jwtProvider, RefreshTokenRepository refreshTokenRepository) {
+    public SecurityConfig(JwtProvider jwtProvider, RefreshTokenRepository refreshTokenRepository, UserRepository userRepository) {
         this.jwtProvider = jwtProvider;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.userRepository = userRepository;
     }
 
     @Bean
@@ -34,6 +37,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers(
                             "/api/auth/**",
+                            "/api/user/nickname",
                             "/login",
                             "/",
                             "/error/**",
@@ -48,7 +52,7 @@ public class SecurityConfig {
                     .requestMatchers("/routines/**").authenticated() // 루틴 API는 인증 필요
                     .anyRequest().authenticated() // 그 외에는 인증 필요
             )
-                .addFilterBefore(new JwtAuthenticationFilter(jwtProvider, refreshTokenRepository),
+                .addFilterBefore(new JwtAuthenticationFilter(jwtProvider, refreshTokenRepository, userRepository),
                         UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
