@@ -1,10 +1,7 @@
 package com.moru.backend.domain.meta.application;
 
-import com.moru.backend.domain.meta.dao.AppRepository;
-import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.meta.dto.request.InstalledAppsRequest;
 import com.moru.backend.domain.meta.dto.request.SelectedAppsRequest;
-import com.moru.backend.domain.meta.dto.response.AppResponse;
 import com.moru.backend.domain.meta.dto.response.InstalledAppResponse;
 import com.moru.backend.domain.meta.dto.response.SelectedAppResponse;
 import com.moru.backend.domain.meta.dto.response.SelectedAppsResponse;
