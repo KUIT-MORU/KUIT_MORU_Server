@@ -49,6 +49,7 @@ public class SecurityConfig {
                             "/webjars/**",
                             "/api-docs"
                     ).permitAll()
+                    .requestMatchers("/routines/**").authenticated() // 루틴 API는 인증 필요
                     .anyRequest().authenticated() // 그 외에는 인증 필요
             )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtProvider, refreshTokenRepository, userRepository),

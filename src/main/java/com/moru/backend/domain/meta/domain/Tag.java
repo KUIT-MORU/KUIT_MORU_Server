@@ -1,4 +1,4 @@
-package com.moru.backend.domain.Tag.domain;
+package com.moru.backend.domain.meta.domain;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -6,11 +6,13 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "tag")
 @Getter
 @NoArgsConstructor

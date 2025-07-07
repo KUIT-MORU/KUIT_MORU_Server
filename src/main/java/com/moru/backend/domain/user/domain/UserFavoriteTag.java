@@ -1,6 +1,6 @@
 package com.moru.backend.domain.user.domain;
 
-import com.moru.backend.domain.Tag.domain.Tag;
+import com.moru.backend.domain.meta.domain.Tag;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

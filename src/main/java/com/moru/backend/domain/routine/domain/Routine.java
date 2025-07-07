@@ -8,12 +8,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "routine")
 @Getter
 @NoArgsConstructor
@@ -21,7 +23,6 @@ import java.util.UUID;
 @Builder
 public class Routine {
     @Id
-    @GeneratedValue
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -35,13 +36,16 @@ public class Routine {
     private boolean isSimple;
 
     @Column(columnDefinition = "tinyint(1)", nullable = false)
-    private boolean isPublic;
+    private boolean isUserVisible; // 사용자 생성 여부 표시 
 
     @Column(columnDefinition = "int unsigned default 0", nullable = false)
     private Integer likeCount;
 
-    @Column(nullable = false)
+    @Column
     private LocalTime requiredTime;
+
+    @Column(length = 500)
+    private String imageUrl;
 
     @Lob
     @Column(columnDefinition = "text", nullable = false)
@@ -55,6 +59,6 @@ public class Routine {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column(nullable = false)
+    @Builder.Default
     private Boolean status = true;
 }
