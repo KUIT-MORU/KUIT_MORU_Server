@@ -6,6 +6,7 @@ import com.moru.backend.domain.user.application.UserFavoriteTagService;
 import com.moru.backend.domain.user.application.UserProfileService;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.domain.user.dto.FavoriteTagRequest;
+import com.moru.backend.domain.user.dto.FavoriteTagResponse;
 import com.moru.backend.domain.user.dto.UserProfileRequest;
 import com.moru.backend.domain.user.dto.UserProfileResponse;
 import com.moru.backend.global.validator.annotation.CurrentUser;
@@ -15,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -75,5 +77,12 @@ public class UserController {
     ) {
         userFavoriteTagService.removeFavoriteTag(user, tagId);
         return ResponseEntity.ok().body("관심 태그가 삭제되었습니다.");
+    }
+
+    @Operation(summary = "관심 태그 조회")
+    @GetMapping("/favorite-tag")
+    public ResponseEntity<List<FavoriteTagResponse>> getFavoriteTags(@CurrentUser User user) {
+        List<FavoriteTagResponse> response = userFavoriteTagService.getFavoriteTags(user);
+        return ResponseEntity.ok(response);
     }
 }

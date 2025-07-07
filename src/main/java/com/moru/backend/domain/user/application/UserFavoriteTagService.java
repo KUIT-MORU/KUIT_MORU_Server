@@ -6,12 +6,14 @@ import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.domain.user.domain.UserFavoriteTag;
 import com.moru.backend.domain.user.dto.FavoriteTagRequest;
+import com.moru.backend.domain.user.dto.FavoriteTagResponse;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -47,4 +49,14 @@ public class UserFavoriteTagService {
                 .orElseThrow(() -> new CustomException(ErrorCode.TAG_NOT_FOUND));
         userFavoriteTagRepository.delete(userFavoriteTag);
     }
+
+    public List<FavoriteTagResponse> getFavoriteTags(User user) {
+        return userFavoriteTagRepository.findAllByUserId(user.getId()).stream()
+                .map(favoriteTag -> new FavoriteTagResponse(
+                        favoriteTag.getTag().getId(),
+                        favoriteTag.getTag().getName()
+                ))
+                .toList();
+    }
+
 }
