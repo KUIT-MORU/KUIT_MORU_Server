@@ -2,8 +2,10 @@ package com.moru.backend.domain.user.api;
 
 import com.moru.backend.domain.user.application.NicknameValidatorService;
 import com.moru.backend.domain.user.application.UserDeactivateService;
+import com.moru.backend.domain.user.application.UserFavoriteTagService;
 import com.moru.backend.domain.user.application.UserProfileService;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.domain.user.dto.FavoriteTagRequest;
 import com.moru.backend.domain.user.dto.UserProfileRequest;
 import com.moru.backend.domain.user.dto.UserProfileResponse;
 import com.moru.backend.global.validator.annotation.CurrentUser;
@@ -14,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/user")
@@ -22,6 +25,7 @@ public class UserController {
     private final UserProfileService userProfileService;
     private final NicknameValidatorService nicknameValidatorService;
     private final UserDeactivateService userDeactivateService;
+    private final UserFavoriteTagService userFavoriteTagService;
 
     @Operation(summary = "사용자 프로필 정보 조회")
     @GetMapping("/me")
@@ -31,8 +35,8 @@ public class UserController {
     }
 
     @Operation(summary = "닉네임 사용 가능 여부")
-    @GetMapping("/nickname")
-    public ResponseEntity<Map<String, Boolean>> checkNicknameDuplicate(@RequestParam("nickname") String nickname) {
+    @GetMapping("/nickname/{nickname}")
+    public ResponseEntity<Map<String, Boolean>> checkNicknameDuplicate(@PathVariable String nickname) {
         boolean available = nicknameValidatorService.isNicknameAvailable(nickname);
         return ResponseEntity.ok(Map.of("available", available));
     }
@@ -51,5 +55,25 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(@CurrentUser User user) {
         userDeactivateService.deactivateUser(user);
         return ResponseEntity.noContent().build(); // 204
+    }
+
+    @Operation(summary = "관심 태그 추가")
+    @PostMapping("/favorite-tag")
+    public ResponseEntity<?> addFavoriteTag(
+            @CurrentUser User user,
+            @RequestBody @Valid FavoriteTagRequest request
+    ) {
+        userFavoriteTagService.addFavoriteTag(user, request);
+        return ResponseEntity.ok().body("관심 태그가 성공적으로 추가되었습니다.");
+    }
+
+    @Operation(summary = "관심 태그 삭제")
+    @DeleteMapping("/favorite-tag/{tagId}")
+    public ResponseEntity<?> removeFavoriteTag(
+            @CurrentUser User user,
+            @PathVariable UUID tagId
+    ) {
+        userFavoriteTagService.removeFavoriteTag(user, tagId);
+        return ResponseEntity.ok().body("관심 태그가 삭제되었습니다.");
     }
 }
