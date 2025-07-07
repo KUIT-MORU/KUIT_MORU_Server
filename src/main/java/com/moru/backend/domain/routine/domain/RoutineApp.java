@@ -31,9 +31,8 @@ public class RoutineApp {
     @JoinColumn(name = "routine_id", nullable = false)
     private Routine routine;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "app_id", nullable = false)
-    private App app;
+    @Column(nullable = false)
+    private String packageName;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

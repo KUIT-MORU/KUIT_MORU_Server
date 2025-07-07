@@ -38,10 +38,10 @@ public class RoutineCreateRequest {
 
     @Schema(
         description = "실행시 제한되는 앱 목록(집중 루틴만 사용, 간편 루틴은 null 또는 빈 배열)",
-        example = "[\"550e8400-e29b-41d4-a716-446655440000\"]"
+            example = "[\"com.kakao.talk\", \"com.instagram.android\"]"
     )
     @Size(max = 4) // 연동된 앱 목록, 최대 4개 
-    private List<@NotNull UUID> appIds; // 앱 ID 리스트
+    private List<@NotNull String> selectedApps; // 앱 ID 리스트
 
     @Schema(description = "단순 루틴 여부(true: 간편 루틴, false: 집중 루틴)", example = "true")
     @NotNull

@@ -23,7 +23,7 @@ public class Tag {
     @GeneratedValue
     private UUID id;
 
-    @Column(nullable = false, length = 10)
+    @Column(nullable = false, length = 5)
     private String name;
 
     @CreatedDate
