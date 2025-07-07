@@ -1,5 +1,6 @@
 package com.moru.backend.domain.auth.application;
 
+import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.jwt.JwtProvider;
 import com.moru.backend.global.redis.RefreshTokenRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,12 +16,8 @@ public class LogoutService {
     private final JwtProvider jwtProvider;
     private final RefreshTokenRepository refreshTokenRepository;
 
-    public void logout(HttpServletRequest request) {
-        String accessToken = jwtProvider.extractAccessToken(request);
-        if(accessToken != null) {
-            UUID userId = jwtProvider.getSubject(accessToken);
-            refreshTokenRepository.delete(userId.toString());
-        }
+    public void logout(User user) {
+        refreshTokenRepository.delete(user.getId().toString());
         SecurityContextHolder.clearContext();
     }
 }
