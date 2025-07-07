@@ -3,8 +3,11 @@ package com.moru.backend.domain.meta.application;
 import com.moru.backend.domain.meta.dao.AppRepository;
 import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.meta.dto.request.InstalledAppsRequest;
+import com.moru.backend.domain.meta.dto.request.SelectedAppsRequest;
 import com.moru.backend.domain.meta.dto.response.AppResponse;
 import com.moru.backend.domain.meta.dto.response.InstalledAppResponse;
+import com.moru.backend.domain.meta.dto.response.SelectedAppResponse;
+import com.moru.backend.domain.meta.dto.response.SelectedAppsResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,5 +32,22 @@ public class AppService {
                         .iconUrl(appRequest.getIconBase64())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 선택된 앱들을 검증하고 응답.
+     */
+    public SelectedAppsResponse validateSelectedApps(SelectedAppsRequest request) {
+        List<SelectedAppResponse> appResponses = request.getSelectedAppIds().stream()
+                .map(packageName -> SelectedAppResponse.builder()
+                        .packageName(packageName)
+                        .build())
+                .collect(Collectors.toList());
+
+        return SelectedAppsResponse.builder()
+                .selectedApps(appResponses)
+                .selectedCount(appResponses.size())
+                .maxCount(4)
+                .build();
     }
 }

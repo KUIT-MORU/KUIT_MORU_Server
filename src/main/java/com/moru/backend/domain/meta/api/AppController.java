@@ -2,7 +2,9 @@ package com.moru.backend.domain.meta.api;
 
 import com.moru.backend.domain.meta.application.AppService;
 import com.moru.backend.domain.meta.dto.request.InstalledAppsRequest;
+import com.moru.backend.domain.meta.dto.request.SelectedAppsRequest;
 import com.moru.backend.domain.meta.dto.response.InstalledAppResponse;
+import com.moru.backend.domain.meta.dto.response.SelectedAppsResponse;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.annotation.CurrentUser;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,5 +34,19 @@ public class AppController {
             ) {
         List<InstalledAppResponse> apps = appService.processInstalledApps(request);
         return ResponseEntity.ok(apps);
+    }
+
+    @Operation(summary = "선택된 앱들 검증", description = "선택된 앱들을 검증하고 응답합니다.")
+    @PostMapping("/apps/selected")
+    public ResponseEntity<SelectedAppsResponse> validateSelectedApps(
+            @CurrentUser User user,
+            @Valid @RequestBody SelectedAppsRequest request) {
+        SelectedAppsResponse response = appService.validateSelectedApps(request);
+        return ResponseEntity.ok(response);
+    }
+
+    private boolean isValidPackageName(String packageName) {
+        return packageName != null &&
+                packageName.matches("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$");
     }
 }
