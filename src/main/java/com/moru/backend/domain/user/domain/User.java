@@ -1,10 +1,7 @@
 package com.moru.backend.domain.user.domain;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -30,19 +27,24 @@ public class User {
     @Column(nullable = false, length = 100)
     private String password;
 
+    @Setter
     @Column(nullable = false, unique = true, length = 50)
     private String nickname;
 
+    @Setter
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, columnDefinition = "ENUM('MALE','FEMALE')")
     private Gender gender;
 
+    @Setter
     @Column(name = "birthday", nullable = false)
     private LocalDate birthday;
 
+    @Setter
     @Column(columnDefinition = "TEXT")
     private String bio;
 
+    @Setter
     @Column(name = "profile_image_url", length = 2000)
     private String profileImageUrl;
 
@@ -56,4 +58,12 @@ public class User {
 
     @Column(columnDefinition = "tinyint default 1", nullable = false)
     private Boolean status = true;
+
+    public void deactivate() {
+        this.status = false;
+    }
+
+    public Boolean isActive() {
+        return status;
+    }
 }
