@@ -1,7 +1,7 @@
 package com.moru.backend.domain.routine.application;
 
-import com.moru.backend.domain.Tag.dao.TagRepository;
-import com.moru.backend.domain.Tag.domain.Tag;
+import com.moru.backend.domain.meta.dao.TagRepository;
+import com.moru.backend.domain.meta.domain.Tag;
 import com.moru.backend.domain.meta.dao.AppRepository;
 import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.routine.dao.RoutineAppRepository;

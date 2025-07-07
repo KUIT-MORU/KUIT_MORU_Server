@@ -1,8 +1,6 @@
-package com.moru.backend.domain.Tag.dao;
+package com.moru.backend.domain.meta.dao;
 
-import com.moru.backend.domain.Tag.domain.Tag;
-
-import jakarta.validation.constraints.Size;
+import com.moru.backend.domain.meta.domain.Tag;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

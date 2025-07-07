@@ -1,4 +1,4 @@
-package com.moru.backend.domain.Tag.domain;
+package com.moru.backend.domain.meta.domain;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
