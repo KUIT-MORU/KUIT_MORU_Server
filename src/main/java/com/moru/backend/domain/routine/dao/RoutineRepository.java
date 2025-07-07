@@ -11,5 +11,6 @@ import com.moru.backend.domain.user.domain.User;
 public interface RoutineRepository extends JpaRepository<Routine, UUID> {
 
     List<Routine> findAllByUser(User user);
+    int countByUserId(UUID userId);
     
 }

@@ -68,7 +68,7 @@ public class RoutineDetailResponse {
             .isSimple(routine.isSimple())
             .isUserVisible(routine.isUserVisible())
             .steps(steps.stream().map(RoutineStepDetailResponse::from).toList())
-            .apps(apps.stream().map(ra -> ra.getApp().getName()).toList())
+                .apps(apps.stream().map(RoutineApp::getPackageName).toList())
             .createdAt(routine.getCreatedAt())
             .updatedAt(routine.getUpdatedAt())
             .requiredTime(routine.getRequiredTime() != null ? routine.getRequiredTime().toString() : null)
