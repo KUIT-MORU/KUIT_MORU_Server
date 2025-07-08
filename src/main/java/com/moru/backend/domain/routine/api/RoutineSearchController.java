@@ -64,10 +64,9 @@ public class RoutineSearchController {
     @Operation(summary = "검색 기록 전체 삭제", description = "특정 타입의 검색 기록을 모두 삭제")
     @DeleteMapping("/history/all")
     public ResponseEntity<Void> deleteAllSearchHistory(
-            @CurrentUser User currentUser,
-            @RequestParam SearchType searchType
+            @CurrentUser User currentUser
     ) {
-        routineSearchService.deleteAllSearchHistory(currentUser, searchType);
+        routineSearchService.deleteAllSearchHistory(currentUser, SearchType.ROUTINE_NAME);
         return ResponseEntity.ok().build();
     }
 }
