@@ -1,6 +1,8 @@
 package com.moru.backend.domain.user.application;
 
-import com.moru.backend.domain.user.dao.UserFollowRepository;
+
+import com.moru.backend.domain.social.dao.UserFollowRepository;
+
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.domain.user.dto.UserProfileRequest;
