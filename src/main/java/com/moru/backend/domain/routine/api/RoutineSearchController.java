@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/routines/search")
@@ -29,7 +30,7 @@ public class RoutineSearchController {
             @CurrentUser User currentUser,
             @RequestBody RoutineSearchRequest request
     ) {
-         // 사용자가 request - titleKeyword로 검색했으면, 검색 기록 저장하기
+        // 사용자가 request - titleKeyword로 검색했으면, 검색 기록 저장하기
         if (request.getTitleKeyword() != null && !request.getTitleKeyword().trim().isEmpty()) {
             routineSearchService.saveSearchHistory(
                     request.getTitleKeyword(),
@@ -48,5 +49,15 @@ public class RoutineSearchController {
             @CurrentUser User currentUser) {
         List<SearchHistoryResponse> histories = routineSearchService.getRecentSearchHistory(currentUser, SearchType.ROUTINE_NAME);
         return ResponseEntity.ok(histories);
+    }
+
+    @Operation(summary = "검색 기록 삭제", description = "특정 검색 기록 삭제")
+    @DeleteMapping("/history/{historyId}")
+    public ResponseEntity<Void> deleteSearchHistory(
+            @CurrentUser User currentUser,
+            @PathVariable UUID historyId
+            ) {
+        routineSearchService.deleteSearchHistory(historyId, currentUser);
+        return ResponseEntity.ok().build();
     }
 }

@@ -14,6 +14,8 @@ import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineSearchResponse;
 import com.moru.backend.domain.routine.dto.response.SearchHistoryResponse;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.global.exception.CustomException;
+import com.moru.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -114,6 +117,18 @@ public class RoutineSearchService {
                         .createdAt(history.getCreatedAt())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void deleteSearchHistory(UUID historyId, User user) {
+        SearchHistory history = searchHistoryRepository.findById(historyId)
+                .orElseThrow(() -> new CustomException(ErrorCode.HISTORY_NOT_FOUND));
+
+        if (!history.getUserId().equals(user.getId())) {
+            throw new CustomException(ErrorCode.USER_NOT_MATCH);
+        }
+
+        searchHistoryRepository.delete(history);
     }
 
     }
