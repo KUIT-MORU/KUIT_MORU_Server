@@ -30,6 +30,15 @@ public enum ErrorCode {
     TAG_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 태그입니다."),
     TAG_ALREAEDY_EXISTS(HttpStatus.CONFLICT, "이미 등록된 태그입니다."),
 
+    // 소셜 관련 예외
+    LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 좋아요입니다."),
+    LIKE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 좋아요한 루틴입니다."),
+    SCRAP_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 스크랩입니다."),
+    SCRAP_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 스크랩한 루틴입니다."),
+    FOLLOW_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 팔로우입니다."),
+    FOLLOW_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 팔로우입니다."),
+    FOLLOW_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "자기 자신을 팔로우할 수 없습니다."),
+
     // 루틴 관련 예외
     ROUTINE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 루틴입니다."),
     TAG_OVERLOADED(HttpStatus.BAD_REQUEST, "루틴에는 최대 3개의 태그만 연결할 수 있습니다."),
