@@ -131,4 +131,11 @@ public class RoutineSearchService {
         searchHistoryRepository.delete(history);
     }
 
+    @Transactional
+    public void deleteAllSearchHistory(User user, SearchType searchType) {
+        List<SearchHistory> histories = searchHistoryRepository
+                .findByUserIdAndSearchTypeOrderByCreatedAtDesc(user.getId(), searchType);
+        searchHistoryRepository.deleteAll(histories);
+    }
+
     }
