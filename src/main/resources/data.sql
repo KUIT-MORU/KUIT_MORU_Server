@@ -239,6 +239,15 @@ INSERT INTO routine_schedule (id, routine_id, day_of_week, created_at) VALUES
 ('dd0e8400-e29b-41d4-a716-446655440042', '770e8400-e29b-41d4-a716-446655440010', 'SUNDAY', NOW());
 
 -- =====================================================
+-- App 더미데이터
+-- =====================================================
+INSERT INTO app (id, name, package_name) VALUES
+('a1b2c3d4-e5f6-7890-abcd-ef1234567890', '카카오톡', 'com.kakao.talk'),
+('b2c3d4e5-f678-90ab-cdef-2345678901ab', '인스타그램', 'com.instagram.android'),
+('c3d4e5f6-7890-abcd-ef12-345678901abc', '유튜브', 'com.google.android.youtube'),
+('d4e5f678-90ab-cdef-1234-5678901abcde', '네이버', 'com.naver.app');
+
+-- =====================================================
 -- 더미데이터 생성 완료
 -- =====================================================
 -- 
