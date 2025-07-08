@@ -8,11 +8,11 @@
 -- =====================================================
 INSERT INTO user (id, email, password, nickname, gender, birthday, bio, profile_image_url, created_at, updated_at, status) VALUES
 (UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440000', '-', '')), 'test@example.com', '$2a$10$wQJQwQJQwQJQwQJQwQJQwOQwQJQwQJQwQJQwQJQwQJQwQJQwQJQwQ', '테스트유저', 'MALE', '2000-01-01', '테스트 계정입니다.', 'https://example.com/profile0.jpg', NOW(), NOW(), 1),
-(UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440001', '-', '')), 'test1@example.com', '$2a$10$7QJQwQJQwQJQwQJQwQJQwOQwQJQwQJQwQJQwQJQwQJQwQJQwQJQwQ', '김철수', 'MALE', '1995-03-15', '안녕하세요! 운동을 좋아하는 김철수입니다.', 'https://example.com/profile1.jpg', NOW(), NOW(), 1),
-(UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440002', '-', '')), 'test2@example.com', '$2a$10$7QJQwQJQwQJQwQJQwQJQwOQwQJQwQJQwQJQwQJQwQJQwQJQwQJQwQ', '이영희', 'FEMALE', '1992-07-22', '요리와 독서를 즐기는 이영희입니다.', 'https://example.com/profile2.jpg', NOW(), NOW(), 1),
-(UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440003', '-', '')), 'test3@example.com', '$2a$10$7QJQwQJQwQJQwQJQwQJQwOQwQJQwQJQwQJQwQJQwQJQwQJQwQJQwQ', '박민수', 'MALE', '1988-11-08', '프로그래밍과 게임을 좋아합니다.', 'https://example.com/profile3.jpg', NOW(), NOW(), 1),
-(UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440004', '-', '')), 'test4@example.com', '$2a$10$7QJQwQJQwQJQwQJQwQJQwOQwQJQwQJQwQJQwQJQwQJQwQJQwQJQwQ', '최지영', 'FEMALE', '1990-05-30', '여행과 사진 촬영을 즐깁니다.', 'https://example.com/profile4.jpg', NOW(), NOW(), 1),
-(UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440005', '-', '')), 'test5@example.com', '$2a$10$7QJQwQJQwQJQwQJQwQJQwOQwQJQwQJQwQJQwQJQwQJQwQJQwQJQwQ', '정수민', 'MALE', '1993-09-12', '음악과 영화를 좋아하는 정수민입니다.', 'https://example.com/profile5.jpg', NOW(), NOW(), 1);
+(UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440001', '-', '')), 'test1@example.com', '$2a$10$Izb/hNfiGZ4YEmbP2E601ucRUTco9Kuc3pNl2kIb6.F/iaeoC/RuC', '김철수', 'MALE', '1995-03-15', '안녕하세요! 운동을 좋아하는 김철수입니다.', 'https://example.com/profile1.jpg', NOW(), NOW(), 1),
+(UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440002', '-', '')), 'test2@example.com', '$2a$10$Izb/hNfiGZ4YEmbP2E601ucRUTco9Kuc3pNl2kIb6.F/iaeoC/RuC', '이영희', 'FEMALE', '1992-07-22', '요리와 독서를 즐기는 이영희입니다.', 'https://example.com/profile2.jpg', NOW(), NOW(), 1),
+(UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440003', '-', '')), 'test3@example.com', '$2a$10$Izb/hNfiGZ4YEmbP2E601ucRUTco9Kuc3pNl2kIb6.F/iaeoC/RuC', '박민수', 'MALE', '1988-11-08', '프로그래밍과 게임을 좋아합니다.', 'https://example.com/profile3.jpg', NOW(), NOW(), 1),
+(UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440004', '-', '')), 'test4@example.com', '$2a$10$Izb/hNfiGZ4YEmbP2E601ucRUTco9Kuc3pNl2kIb6.F/iaeoC/RuC', '최지영', 'FEMALE', '1990-05-30', '여행과 사진 촬영을 즐깁니다.', 'https://example.com/profile4.jpg', NOW(), NOW(), 1),
+(UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440005', '-', '')), 'test5@example.com', '$2a$10$Izb/hNfiGZ4YEmbP2E601ucRUTco9Kuc3pNl2kIb6.F/iaeoC/RuC', '정수민', 'MALE', '1993-09-12', '음악과 영화를 좋아하는 정수민입니다.', 'https://example.com/profile5.jpg', NOW(), NOW(), 1);
 
 -- =====================================================
 -- 2. 태그 더미데이터
