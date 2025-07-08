@@ -1,5 +1,6 @@
 package com.moru.backend.domain.routine.domain;
 
+import com.moru.backend.domain.meta.domain.App;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,8 +31,9 @@ public class RoutineApp {
     @JoinColumn(name = "routine_id", nullable = false)
     private Routine routine;
 
-    @Column(nullable = false)
-    private String packageName;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "app_id", nullable = false)
+    private App app;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
