@@ -26,6 +26,10 @@ public enum ErrorCode {
     USER_DEACTIVATED(HttpStatus.FORBIDDEN, "탈퇴한 계정입니다. 로그인할 수 없습니다." ),
     USER_NOT_MATCH(HttpStatus.CONFLICT, "루틴을 생성한 유저와 매칭되지 않는 유저입니다."),
 
+    // 태그 관련 예외
+    TAG_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 태그입니다."),
+    TAG_ALREAEDY_EXISTS(HttpStatus.CONFLICT, "이미 등록된 태그입니다."),
+
     // 루틴 관련 예외
     ROUTINE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 루틴입니다."),
 
