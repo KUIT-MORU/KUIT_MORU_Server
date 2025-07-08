@@ -106,6 +106,7 @@ public class RoutineService {
                                 .orElseGet(() -> appRepository.save(
                                         App.builder()
                                                 .packageName(pkg)
+                                                .name(pkg) // name에도 packageName을 임시로 넣음
                                                 .build()
                                 ));
                         return RoutineApp.builder()
