@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
 
 @Schema(description = "회원가입 요청")
 public record SignupRequest (
@@ -25,5 +27,12 @@ public record SignupRequest (
         @NotNull @Past LocalDate birthday,
 
         @Schema(description = "자기소개", example = "나는 모루 유저입니다.")
-        @Size(max = 100) String bio
+        @Size(max = 100) String bio,
+
+        @Schema(description = "프로필 이미지", example = "https://your-cdn.com/profile.jpg")
+        String profileImageUrl,
+
+        @Schema(description = "관심 태그 ID 목록")
+        List<UUID> tagIds
+
 ) {}
