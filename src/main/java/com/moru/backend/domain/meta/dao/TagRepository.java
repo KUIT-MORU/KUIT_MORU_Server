@@ -20,5 +20,5 @@ public interface TagRepository extends JpaRepository<Tag, UUID> {
             "join t.routineTags rt " +
             "where t.name like %:keyword% " +
             "order by t.name")
-    List<String> findTagNameSuggestion(@Param("keyword") String keyword);
+    List<String> findTagNameSuggestions(@Param("keyword") String keyword);
 }

@@ -77,4 +77,12 @@ public class RoutineSearchController {
         List<String> suggestions = routineSearchService.getRoutineTitleSuggestions(keyword);
         return ResponseEntity.ok(suggestions);
     }
+
+    @Operation(summary = "태그명 자동완성", description = "입력한 키워드로 시작하는 태그명을 제안")
+    @GetMapping("/suggestions/tag-name")
+    public ResponseEntity<List<String>> getTagNameSuggestions(
+            @RequestParam String keyword) {
+        List<String> suggestions = routineSearchService.getTagNameSuggestions(keyword);
+        return ResponseEntity.ok(suggestions);
+    }
 }
