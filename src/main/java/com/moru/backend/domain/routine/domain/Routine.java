@@ -1,5 +1,6 @@
 package com.moru.backend.domain.routine.domain;
 
+import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import com.moru.backend.domain.user.domain.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -61,4 +63,7 @@ public class Routine {
 
     @Builder.Default
     private Boolean status = true;
+
+    @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL)
+    private List<RoutineTag> routineTags;
 }
