@@ -1,5 +1,7 @@
-package com.moru.backend.domain.routine.domain;
+package com.moru.backend.domain.social.domain;
 
+import com.moru.backend.domain.routine.domain.ActionType;
+import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.user.domain.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -10,16 +12,18 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "routine_log")
+@Table(
+        name = "routine_user_action",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "routine_id", "action_type"})
+)
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RoutineLog {
+public class RoutineUserAction {
     @Id
     @GeneratedValue
     private UUID id;
@@ -32,20 +36,14 @@ public class RoutineLog {
     @JoinColumn(name = "routine_id", nullable = false)
     private Routine routine;
 
-    @Column(nullable = false)
-    private LocalDateTime startedAt;
-
-    @Column(nullable = false)
-    private LocalDateTime endedAt;
-
-    @Column(nullable = false)
-    private LocalTime totalTime;
-
-    @Column(nullable = false)
-    private boolean isSimple;
-
-    @Column(nullable = false)
-    private boolean isCompleted;
+    @Enumerated(EnumType.STRING)
+    @Column(
+            name = "action_type",
+            nullable = false,
+            length = 10,
+            columnDefinition = "ENUM('LIKE','SCRAP')"
+    )
+    private ActionType actionType;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

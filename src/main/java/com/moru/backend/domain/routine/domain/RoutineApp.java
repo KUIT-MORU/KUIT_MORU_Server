@@ -1,6 +1,5 @@
 package com.moru.backend.domain.routine.domain;
 
-import com.moru.backend.domain.meta.domain.App;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
