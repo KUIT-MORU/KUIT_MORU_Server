@@ -42,7 +42,7 @@ public class RoutineDetailResponse {
     private List<RoutineStepDetailResponse> steps;
 
     @Schema(description = "연동된 앱 목록(집중 루틴만 값, 간편 루틴은 null 또는 빈 배열)")
-    private List<String> apps;
+    private List<RoutineAppResponse> apps;
 
     @Schema(description = "생성일시", example = "2024-01-01T09:00:00")
     private LocalDateTime createdAt;
@@ -68,7 +68,9 @@ public class RoutineDetailResponse {
             .isSimple(routine.isSimple())
             .isUserVisible(routine.isUserVisible())
             .steps(steps.stream().map(RoutineStepDetailResponse::from).toList())
-                .apps(apps.stream().map(RoutineApp::getPackageName).toList())
+            .apps(apps.stream()
+                    .map(routineApp -> RoutineAppResponse.from(routineApp.getApp()))
+                    .toList())
             .createdAt(routine.getCreatedAt())
             .updatedAt(routine.getUpdatedAt())
             .requiredTime(routine.getRequiredTime() != null ? routine.getRequiredTime().toString() : null)

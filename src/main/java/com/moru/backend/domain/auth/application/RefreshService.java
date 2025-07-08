@@ -21,6 +21,10 @@ public class RefreshService {
         String refreshToken = request.refreshToken();
         UUID userId = jwtProvider.getSubject(refreshToken);
 
+        if(userId == null) {
+            throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+        }
+
         String storedRefreshToken = refreshTokenRepository.get(userId.toString());
         if(storedRefreshToken == null) {
             throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);

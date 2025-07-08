@@ -1,6 +1,6 @@
-package com.moru.backend.domain.user.dao;
+package com.moru.backend.domain.social.dao;
 
-import com.moru.backend.domain.user.domain.UserFollow;
+import com.moru.backend.domain.social.domain.UserFollow;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.UUID;
