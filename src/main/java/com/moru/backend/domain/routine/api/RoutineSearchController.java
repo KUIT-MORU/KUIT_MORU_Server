@@ -30,13 +30,13 @@ public class RoutineSearchController {
             @RequestBody RoutineSearchRequest request
     ) {
         // 사용자가 request - titleKeyword로 검색했으면, 검색 기록 저장하기
-        if (request.getTitleKeyword() != null && !request.getTitleKeyword().trim().isEmpty()) {
-            routineSearchService.saveSearchHistory(
-                    request.getTitleKeyword(),
-                    SearchType.ROUTINE_NAME, // 루틴명 검색 기록 유형
-                    currentUser
-            );
-        }
+//        if (request.getTitleKeyword() != null && !request.getTitleKeyword().trim().isEmpty()) {
+//            routineSearchService.saveSearchHistory(
+//                    request.getTitleKeyword(),
+//                    SearchType.ROUTINE_NAME, // 루틴명 검색 기록 유형
+//                    currentUser
+//            );
+//        }
         // 실제 검색 로직 수행하고, 페이징된 결과 반환하기
         Page<RoutineSearchResponse> result = routineSearchService.searchRoutines(request);
         return ResponseEntity.ok(result);

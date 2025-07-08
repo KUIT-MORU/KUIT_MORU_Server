@@ -24,9 +24,8 @@ public class SearchHistory {
     @GeneratedValue
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private UUID userId;
 
     @Column(length = 100, nullable = false)
     private String searchKeyword;

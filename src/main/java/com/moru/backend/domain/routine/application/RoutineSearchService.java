@@ -75,11 +75,27 @@ public class RoutineSearchService {
      */
     @Transactional
     public void saveSearchHistory(String keyword, SearchType searchType, User user) {
+        // 디버깅을 위한 로그 추가
+        System.out.println("=== SearchHistory 저장 디버깅 ===");
+        System.out.println("User: " + user);
+        System.out.println("User ID: " + (user != null ? user.getId() : "null"));
+        System.out.println("Keyword: " + keyword);
+        System.out.println("SearchType: " + searchType);
+
+        if (user == null) {
+            throw new IllegalArgumentException("사용자 정보가 null입니다.");
+        }
+
+        if (user.getId() == null) {
+            throw new IllegalArgumentException("사용자 ID가 null입니다.");
+        }
         SearchHistory searchHistory = SearchHistory.builder()
-                .user(user)
+                .userId(user.getId())
                 .searchKeyword(keyword)
                 .searchType(searchType)
                 .build();
+        System.out.println("SearchHistory to save: " + searchHistory);
         searchHistoryRepository.save(searchHistory);
+        System.out.println("SearchHistory saved successfully");
     }
 }

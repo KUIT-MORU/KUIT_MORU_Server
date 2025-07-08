@@ -12,21 +12,21 @@ import java.util.UUID;
 
 public interface SearchHistoryRepository extends JpaRepository<SearchHistory, UUID> {
     @Query("select sh from SearchHistory sh " +
-            "where sh.user = :user and sh.searchType = :searchType "+
+            "where sh.userId = :userId and sh.searchType = :searchType "+
             "order by sh.createdAt DESC")
-    List<SearchHistory> findByUserAndSearchTypeOrderByCreatedAtDesc(
-            @Param("user") User user,
+    List<SearchHistory> findByUserIdAndSearchTypeOrderByCreatedAtDesc(
+            @Param("user") UUID userId,
             @Param("searchType") SearchType searchType
     );
 
     @Query("select distinct sh.searchKeyword from SearchHistory sh " +
-            "where sh.user = :user and sh.searchType = :searchType " +
+            "where sh.userId = :userId and sh.searchType = :searchType " +
             "order by sh.createdAt DESC"
     )
-    List<String> findDistinctKeywordsByUserAndSearchType(
-            @Param("user") User user,
+    List<String> findDistinctKeywordsByUserIdAndSearchType(
+            @Param("user") UUID userId,
             @Param("searchType") SearchType searchType
     );
 
-    void deleteByUserAndSearchKeyword(User user, String searchKeyword);
+    void deleteByUserIdAndSearchKeyword(UUID userId, String searchKeyword);
 }
