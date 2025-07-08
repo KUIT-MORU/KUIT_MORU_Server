@@ -24,7 +24,4 @@ public class App {
 
     @Column(nullable = false, unique = true)
     private String packageName;
-
-    @Column(nullable = false)
-    private String iconUrl;
 }

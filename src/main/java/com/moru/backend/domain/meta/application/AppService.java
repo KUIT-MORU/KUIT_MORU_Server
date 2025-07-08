@@ -12,13 +12,12 @@ public class AppService {
     private final AppRepository appRepository;
 
     @Transactional
-    public App findOrCreateByPackageName(String packageName, String name, String iconUrl) {
+    public App findOrCreateByPackageName(String packageName, String name) {
         return appRepository.findByPackageName(packageName)
                 .orElseGet(() -> {
                     App app = App.builder()
                             .name(name)
                             .packageName(packageName)
-                            .iconUrl(iconUrl)
                             .build();
                     return appRepository.save(app);
                 });

@@ -1,7 +1,6 @@
 package com.moru.backend.domain.routine.dto.request;
 
-public record RoutineAppDto(
+public record RoutineAppRequest(
    String name,
-   String packageName,
-   String iconUrl
+   String packageName
 ) {}

@@ -1,7 +1,6 @@
 package com.moru.backend.domain.routine.dto.request;
 
 import java.util.List;
-import java.util.UUID;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -38,7 +37,7 @@ public class RoutineCreateRequest {
 
     @Schema(description = "실행시 제한되는 앱 목록(집중 루틴만 사용, 간편 루틴은 null 또는 빈 배열)")
     @Size(max = 4, message = "앱은 최대 4개까지 선택할 수 있습니다.") // 연동된 앱 목록, 최대 4개
-    private List<RoutineAppDto> apps; // 패키지 이름 리스트
+    private List<RoutineAppRequest> apps; // 패키지 이름 리스트
 
     @Schema(description = "단순 루틴 여부(true: 간편 루틴, false: 집중 루틴)", example = "true")
     @NotNull
