@@ -1,12 +1,14 @@
-package com.moru.backend.domain.routine.domain;
+package com.moru.backend.domain.routine.domain.meta;
 
-import com.moru.backend.domain.meta.domain.App;
+import com.moru.backend.domain.meta.domain.Tag;
+import com.moru.backend.domain.routine.domain.Routine;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
@@ -15,14 +17,14 @@ import java.util.UUID;
 @Entity
 @EntityListeners(AuditingEntityListener.class)
 @Table(
-        name = "routine_app",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"routine_id", "app_id"})
+        name = "routine_tag",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"routine_id", "tag_id"})
 )
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RoutineApp {
+public class RoutineTag {
     @Id
     @GeneratedValue
     private UUID id;
@@ -32,10 +34,14 @@ public class RoutineApp {
     private Routine routine;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "app_id", nullable = false)
-    private App app;
+    @JoinColumn(name = "tag_id", nullable = false)
+    private Tag tag;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
 }

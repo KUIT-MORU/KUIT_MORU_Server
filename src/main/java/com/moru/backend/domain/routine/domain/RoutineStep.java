@@ -46,6 +46,18 @@ public class RoutineStep {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    /**
+     * 엔티티가 처음 영속화(Persist)되기 직전에 호출.
+     * id가 null일 경우에만 UUID를 생성해서 채워.
+     */
+    @PrePersist
+    public void assignIdIfNeeded() {
+        if (this.id == null) {
+            this.id = UUID.randomUUID();
+        }
+    }
+
+
     public void updateStepOrder(Integer stepOrder) {
         this.stepOrder = stepOrder;
     }

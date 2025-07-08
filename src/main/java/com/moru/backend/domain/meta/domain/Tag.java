@@ -1,5 +1,6 @@
 package com.moru.backend.domain.meta.domain;
 
+import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,6 +10,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -23,7 +25,7 @@ public class Tag {
     @GeneratedValue
     private UUID id;
 
-    @Column(nullable = false, length = 10)
+    @Column(nullable = false, length = 5)
     private String name;
 
     @CreatedDate
@@ -31,4 +33,7 @@ public class Tag {
             nullable = false,
             updatable = false)
     private LocalDateTime createdAt;
+
+    @OneToMany(mappedBy = "tag", cascade = CascadeType.ALL)
+    private List<RoutineTag> routineTags;
 }

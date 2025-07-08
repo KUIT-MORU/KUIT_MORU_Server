@@ -6,7 +6,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.moru.backend.domain.routine.domain.Routine;
-import com.moru.backend.domain.routine.domain.RoutineTag;
+import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
