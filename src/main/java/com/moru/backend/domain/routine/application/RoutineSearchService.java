@@ -12,6 +12,7 @@ import com.moru.backend.domain.routine.domain.search.SortType;
 import com.moru.backend.domain.routine.dto.request.RoutineSearchRequest;
 import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineSearchResponse;
+import com.moru.backend.domain.routine.dto.response.SearchHistoryResponse;
 import com.moru.backend.domain.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -75,12 +77,12 @@ public class RoutineSearchService {
      */
     @Transactional
     public void saveSearchHistory(String keyword, SearchType searchType, User user) {
-        // 디버깅을 위한 로그 추가
-        System.out.println("=== SearchHistory 저장 디버깅 ===");
-        System.out.println("User: " + user);
-        System.out.println("User ID: " + (user != null ? user.getId() : "null"));
-        System.out.println("Keyword: " + keyword);
-        System.out.println("SearchType: " + searchType);
+//        // 디버깅을 위한 로그 추가
+//        System.out.println("=== SearchHistory 저장 디버깅 ===");
+//        System.out.println("User: " + user);
+//        System.out.println("User ID: " + (user != null ? user.getId() : "null"));
+//        System.out.println("Keyword: " + keyword);
+//        System.out.println("SearchType: " + searchType);
 
         if (user == null) {
             throw new IllegalArgumentException("사용자 정보가 null입니다.");
@@ -98,4 +100,20 @@ public class RoutineSearchService {
         searchHistoryRepository.save(searchHistory);
         System.out.println("SearchHistory saved successfully");
     }
-}
+
+    @Transactional(readOnly = true)
+    public List<SearchHistoryResponse> getRecentSearchHistory(User user, SearchType searchType) {
+        List<SearchHistory> histories = searchHistoryRepository
+                .findByUserIdAndSearchTypeOrderByCreatedAtDesc(user.getId(), searchType);
+
+        return histories.stream()
+                .map(history -> SearchHistoryResponse.builder()
+                        .id(history.getId())
+                        .searchKeyword(history.getSearchKeyword())
+                        .searchType(history.getSearchType().name())
+                        .createdAt(history.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    }
