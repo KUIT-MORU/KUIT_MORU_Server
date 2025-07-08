@@ -37,6 +37,7 @@ public class RoutineSearchService {
 
     /**
      * 루틴 검색 비즈니스 로직 수행
+     *
      * @param request (검색 키워드, 태그 리스트, 페이징 정보)
      * @return 페이징 처리된 루틴 검색 결과
      */
@@ -74,9 +75,10 @@ public class RoutineSearchService {
 
     /**
      * 사용자의 검색 기록을 저장
-     * @param keyword 사용자가 검색한 키워드
+     *
+     * @param keyword    사용자가 검색한 키워드
      * @param searchType 검색 유형 (루틴명 검색 or 태그명 검색)
-     * @param user 검색을 수행한 사용자 엔티티
+     * @param user       검색을 수행한 사용자 엔티티
      */
     @Transactional
     public void saveSearchHistory(String keyword, SearchType searchType, User user) {
@@ -138,4 +140,10 @@ public class RoutineSearchService {
         searchHistoryRepository.deleteAll(histories);
     }
 
+    @Transactional(readOnly = true)
+    public List<String> getRoutineTitleSuggestions(String keyword) {
+        return routineRepository.findTitleSuggestions(keyword);
     }
+
+
+}

@@ -56,7 +56,7 @@ public class RoutineSearchController {
     public ResponseEntity<Void> deleteSearchHistory(
             @CurrentUser User currentUser,
             @PathVariable UUID historyId
-            ) {
+    ) {
         routineSearchService.deleteSearchHistory(historyId, currentUser);
         return ResponseEntity.ok().build();
     }
@@ -68,5 +68,13 @@ public class RoutineSearchController {
     ) {
         routineSearchService.deleteAllSearchHistory(currentUser, SearchType.ROUTINE_NAME);
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "루틴명 자동완성", description = "입력한 키워드로 시작하는 루틴명을 제안")
+    @GetMapping("/suggestions/routine-title")
+    public ResponseEntity<List<String>> getRoutineTitleSuggestions(
+            @RequestParam String keyword) {
+        List<String> suggestions = routineSearchService.getRoutineTitleSuggestions(keyword);
+        return ResponseEntity.ok(suggestions);
     }
 }
