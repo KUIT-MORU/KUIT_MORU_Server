@@ -9,6 +9,6 @@ public record LoginRequest (
         @Schema(description = "이메일", example = "test@example.com")
         @Email @NotBlank String email,
 
-        @Schema(description = "비밀번호", example = "1234abcde")
+        @Schema(description = "비밀번호", example = "1234abcde!@")
         @NotBlank @Size(min = 8, max = 20) String password
 ) {}
