@@ -30,4 +30,14 @@ public class RoutineSearchResponse {
     @Schema(description = "생성일시", example = "2024-01-01T09:00:00")
     private LocalDateTime createdAt;
 
+    public static RoutineSearchResponse of(RoutineListResponse routineListResponse) {
+        return RoutineSearchResponse.builder()
+                .id(routineListResponse.getId())
+                .title(routineListResponse.getTitle())
+                .imageUrl(routineListResponse.getImageUrl())
+                .tags(routineListResponse.getTags())
+                .likeCount(routineListResponse.getLikeCount())
+                .createdAt(routineListResponse.getCreatedAt())
+                .build();
+    }
 }

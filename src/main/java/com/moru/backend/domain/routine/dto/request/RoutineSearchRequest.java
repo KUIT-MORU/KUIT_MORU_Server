@@ -17,7 +17,7 @@ public class RoutineSearchRequest {
     private String titleKeyword;
 
     @Schema(description = "태그명 검색어 목록", example = "[\"운동\", \"건강\"]")
-    private List<String> keywords;
+    private List<String> tagNames;
 
     @Schema(description = "정렬 방식 (LATEST : 최신순, POPULAR : 인기순)", example = "LATEST")
     private SortType sortType = SortType.LATEST;

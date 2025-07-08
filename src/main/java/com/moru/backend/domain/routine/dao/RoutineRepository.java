@@ -37,7 +37,7 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
             "left join r.routineTags rt " +
             "where (:titleKeyword is null or r.title like %:titleKeyword%) " +
             "and (:tagNames is null or rt.tag.name in :tagNames) " +
-            "order by r.likeCount desc r.createdAt desc")
+            "order by r.likeCount desc, r.createdAt desc")
     Page<Routine> findBySearchCriteriaOrderByLikeCount(
             @Param("titleKeyword") String titleKeyword,
             @Param("tagNames") List<String> tagNames,
