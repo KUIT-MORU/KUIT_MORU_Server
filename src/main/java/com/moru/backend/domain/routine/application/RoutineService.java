@@ -1,6 +1,8 @@
 package com.moru.backend.domain.routine.application;
 
+import com.moru.backend.domain.meta.dao.AppRepository;
 import com.moru.backend.domain.meta.dao.TagRepository;
+import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.meta.domain.Tag;
 import com.moru.backend.domain.routine.dao.RoutineAppRepository;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
@@ -33,6 +35,7 @@ public class RoutineService {
     private final RoutineTagRepository routineTagRepository;
     private final RoutineAppRepository routineAppRepository;
     private final TagRepository tagRepository;
+    private final AppRepository appRepository;
     private final RoutineValidator routineValidator;
 
     @Transactional
@@ -95,10 +98,19 @@ public class RoutineService {
         List<RoutineApp> routineApps = List.of();
         if (request.getSelectedApps() != null && !request.getSelectedApps().isEmpty()) {
             routineApps = request.getSelectedApps().stream()
-                    .map(packageName -> RoutineApp.builder()
-                            .routine(savedRoutine)
-                            .packageName(packageName)
-                            .build())
+                    .map(pkg -> {
+                        // findOrCreateApp
+                        App app = appRepository.findByPackageName(pkg)
+                                .orElseGet(() -> appRepository.save(
+                                        App.builder()
+                                                .packageName(pkg)
+                                                .build()
+                                ));
+                        return RoutineApp.builder()
+                                .routine(savedRoutine)
+                                .app(app)
+                                .build();
+                    })
                     .toList();
             routineAppRepository.saveAll(routineApps);
         }

@@ -1,5 +1,6 @@
 package com.moru.backend.domain.routine.domain;
 
+import com.moru.backend.domain.routine.domain.meta.RoutineApp;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import com.moru.backend.domain.user.domain.User;
 import jakarta.persistence.*;
@@ -13,6 +14,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -66,4 +68,7 @@ public class Routine {
 
     @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL)
     private List<RoutineTag> routineTags;
+
+    @OneToMany(mappedBy = "routine")
+    private List<RoutineApp> routineApps = new ArrayList<>();
 }
