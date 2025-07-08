@@ -15,7 +15,7 @@ public interface SearchHistoryRepository extends JpaRepository<SearchHistory, UU
             "where sh.userId = :userId and sh.searchType = :searchType "+
             "order by sh.createdAt DESC")
     List<SearchHistory> findByUserIdAndSearchTypeOrderByCreatedAtDesc(
-            @Param("user") UUID userId,
+            @Param("userId") UUID userId,
             @Param("searchType") SearchType searchType
     );
 
@@ -24,7 +24,7 @@ public interface SearchHistoryRepository extends JpaRepository<SearchHistory, UU
             "order by sh.createdAt DESC"
     )
     List<String> findDistinctKeywordsByUserIdAndSearchType(
-            @Param("user") UUID userId,
+            @Param("userId") UUID userId,
             @Param("searchType") SearchType searchType
     );
 

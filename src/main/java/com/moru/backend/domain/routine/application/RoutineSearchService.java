@@ -12,7 +12,10 @@ import com.moru.backend.domain.routine.domain.search.SortType;
 import com.moru.backend.domain.routine.dto.request.RoutineSearchRequest;
 import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineSearchResponse;
+import com.moru.backend.domain.routine.dto.response.SearchHistoryResponse;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.global.exception.CustomException;
+import com.moru.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -21,6 +24,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +37,7 @@ public class RoutineSearchService {
 
     /**
      * 루틴 검색 비즈니스 로직 수행
+     *
      * @param request (검색 키워드, 태그 리스트, 페이징 정보)
      * @return 페이징 처리된 루틴 검색 결과
      */
@@ -69,18 +75,19 @@ public class RoutineSearchService {
 
     /**
      * 사용자의 검색 기록을 저장
-     * @param keyword 사용자가 검색한 키워드
+     *
+     * @param keyword    사용자가 검색한 키워드
      * @param searchType 검색 유형 (루틴명 검색 or 태그명 검색)
-     * @param user 검색을 수행한 사용자 엔티티
+     * @param user       검색을 수행한 사용자 엔티티
      */
     @Transactional
     public void saveSearchHistory(String keyword, SearchType searchType, User user) {
-        // 디버깅을 위한 로그 추가
-        System.out.println("=== SearchHistory 저장 디버깅 ===");
-        System.out.println("User: " + user);
-        System.out.println("User ID: " + (user != null ? user.getId() : "null"));
-        System.out.println("Keyword: " + keyword);
-        System.out.println("SearchType: " + searchType);
+//        // 디버깅을 위한 로그 추가
+//        System.out.println("=== SearchHistory 저장 디버깅 ===");
+//        System.out.println("User: " + user);
+//        System.out.println("User ID: " + (user != null ? user.getId() : "null"));
+//        System.out.println("Keyword: " + keyword);
+//        System.out.println("SearchType: " + searchType);
 
         if (user == null) {
             throw new IllegalArgumentException("사용자 정보가 null입니다.");
@@ -97,5 +104,44 @@ public class RoutineSearchService {
         System.out.println("SearchHistory to save: " + searchHistory);
         searchHistoryRepository.save(searchHistory);
         System.out.println("SearchHistory saved successfully");
+    }
+
+    @Transactional(readOnly = true)
+    public List<SearchHistoryResponse> getRecentSearchHistory(User user, SearchType searchType) {
+        List<SearchHistory> histories = searchHistoryRepository
+                .findByUserIdAndSearchTypeOrderByCreatedAtDesc(user.getId(), searchType);
+
+        return histories.stream()
+                .map(history -> SearchHistoryResponse.builder()
+                        .id(history.getId())
+                        .searchKeyword(history.getSearchKeyword())
+                        .searchType(history.getSearchType().name())
+                        .createdAt(history.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void deleteSearchHistory(UUID historyId, User user) {
+        SearchHistory history = searchHistoryRepository.findById(historyId)
+                .orElseThrow(() -> new CustomException(ErrorCode.HISTORY_NOT_FOUND));
+
+        if (!history.getUserId().equals(user.getId())) {
+            throw new CustomException(ErrorCode.USER_NOT_MATCH);
+        }
+
+        searchHistoryRepository.delete(history);
+    }
+
+    @Transactional
+    public void deleteAllSearchHistory(User user, SearchType searchType) {
+        List<SearchHistory> histories = searchHistoryRepository
+                .findByUserIdAndSearchTypeOrderByCreatedAtDesc(user.getId(), searchType);
+        searchHistoryRepository.deleteAll(histories);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getRoutineTitleSuggestions(String keyword) {
+        return routineRepository.findTitleSuggestions(keyword);
     }
 }

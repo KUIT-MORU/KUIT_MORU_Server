@@ -46,7 +46,10 @@ public enum ErrorCode {
     // 스텝 관련 예외
     STEP_OVERLOADED(HttpStatus.BAD_REQUEST, "루틴 당 스텝의 최대 개수는 6개입니다"),
     INVALID_STEP_ORDER(HttpStatus.BAD_REQUEST, "유효하지 않은 스텝 순서입니다."),
-    ROUTINE_STEP_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 아이디의 루틴 스텝이 존재하지 않습니다");
+    ROUTINE_STEP_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 아이디의 루틴 스텝이 존재하지 않습니다"),
+
+    // 검색 관련 예외
+    HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "검색 기록을 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String message;

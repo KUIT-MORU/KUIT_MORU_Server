@@ -3,7 +3,7 @@ package com.moru.backend.domain.routine.dto.response;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
-import org.hibernate.validator.constraints.UUID;
+import java.util.UUID;
 
 import java.time.LocalDateTime;
 

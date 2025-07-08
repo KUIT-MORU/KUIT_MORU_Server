@@ -1,6 +1,5 @@
 package com.moru.backend.domain.routine.domain.search;
 
-import com.moru.backend.domain.user.domain.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

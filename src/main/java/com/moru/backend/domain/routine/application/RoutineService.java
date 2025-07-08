@@ -1,6 +1,8 @@
 package com.moru.backend.domain.routine.application;
 
+import com.moru.backend.domain.meta.dao.AppRepository;
 import com.moru.backend.domain.meta.dao.TagRepository;
+import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.meta.domain.Tag;
 import com.moru.backend.domain.routine.dao.RoutineAppRepository;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
@@ -33,10 +35,13 @@ public class RoutineService {
     private final RoutineTagRepository routineTagRepository;
     private final RoutineAppRepository routineAppRepository;
     private final TagRepository tagRepository;
+    private final AppRepository appRepository;
     private final RoutineValidator routineValidator;
 
     @Transactional
     public RoutineCreateResponse createRoutine(RoutineCreateRequest request, User user) {
+        // 검증용 로그 추가
+        System.out.println("[DEBUG] Routine 생성 요청: user=" + user + ", userId=" + (user != null ? user.getId() : null));
         boolean isSimple = request.getIsSimple();
         LocalTime totalTime = null;
         if (!isSimple) {
@@ -95,10 +100,20 @@ public class RoutineService {
         List<RoutineApp> routineApps = List.of();
         if (request.getSelectedApps() != null && !request.getSelectedApps().isEmpty()) {
             routineApps = request.getSelectedApps().stream()
-                    .map(packageName -> RoutineApp.builder()
-                            .routine(savedRoutine)
-                            .packageName(packageName)
-                            .build())
+                    .map(pkg -> {
+                        // findOrCreateApp
+                        App app = appRepository.findByPackageName(pkg)
+                                .orElseGet(() -> appRepository.save(
+                                        App.builder()
+                                                .packageName(pkg)
+                                                .name(pkg) // name에도 packageName을 임시로 넣음
+                                                .build()
+                                ));
+                        return RoutineApp.builder()
+                                .routine(savedRoutine)
+                                .app(app)
+                                .build();
+                    })
                     .toList();
             routineAppRepository.saveAll(routineApps);
         }
