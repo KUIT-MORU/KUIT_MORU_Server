@@ -144,9 +144,4 @@ public class RoutineSearchService {
     public List<String> getRoutineTitleSuggestions(String keyword) {
         return routineRepository.findTitleSuggestions(keyword);
     }
-
-    @Transactional(readOnly = true)
-    public List<String> getTagNameSuggestions(String keyword) {
-        return tagRepository.findTagNameSuggestions(keyword);
-    }
 }

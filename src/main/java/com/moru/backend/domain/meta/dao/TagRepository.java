@@ -15,10 +15,4 @@ public interface TagRepository extends JpaRepository<Tag, UUID> {
 
     @Query("select t from Tag t where t.name like %:keyword% order by t.name")
     List<Tag> findByNameContainingOrderByName(@Param("keyword") String keyword);
-
-    @Query("select distinct t.name from Tag t " +
-            "join t.routineTags rt " +
-            "where t.name like %:keyword% " +
-            "order by t.name")
-    List<String> findTagNameSuggestions(@Param("keyword") String keyword);
 }
