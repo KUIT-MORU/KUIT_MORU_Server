@@ -40,6 +40,8 @@ public class RoutineService {
 
     @Transactional
     public RoutineCreateResponse createRoutine(RoutineCreateRequest request, User user) {
+        // 검증용 로그 추가
+        System.out.println("[DEBUG] Routine 생성 요청: user=" + user + ", userId=" + (user != null ? user.getId() : null));
         boolean isSimple = request.getIsSimple();
         LocalTime totalTime = null;
         if (!isSimple) {
