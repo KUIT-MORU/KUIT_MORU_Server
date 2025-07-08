@@ -6,7 +6,7 @@ import com.moru.backend.domain.meta.dto.response.TagResponse;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
 import com.moru.backend.domain.routine.dao.RoutineTagRepository;
 import com.moru.backend.domain.routine.domain.Routine;
-import com.moru.backend.domain.routine.domain.RoutineTag;
+import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;

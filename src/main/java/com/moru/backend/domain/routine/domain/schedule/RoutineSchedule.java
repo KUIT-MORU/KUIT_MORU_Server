@@ -1,5 +1,6 @@
-package com.moru.backend.domain.routine.domain;
+package com.moru.backend.domain.routine.domain.schedule;
 
+import com.moru.backend.domain.routine.domain.Routine;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
