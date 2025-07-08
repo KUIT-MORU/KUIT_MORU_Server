@@ -2,11 +2,13 @@ package com.moru.backend.domain.user.api;
 
 import com.moru.backend.domain.user.application.NicknameValidatorService;
 import com.moru.backend.domain.user.application.UserDeactivateService;
+
 import com.moru.backend.domain.user.application.UserFavoriteTagService;
 import com.moru.backend.domain.user.application.UserProfileService;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.domain.user.dto.FavoriteTagRequest;
 import com.moru.backend.domain.user.dto.FavoriteTagResponse;
+
 import com.moru.backend.domain.user.dto.UserProfileRequest;
 import com.moru.backend.domain.user.dto.UserProfileResponse;
 import com.moru.backend.global.validator.annotation.CurrentUser;
@@ -27,7 +29,9 @@ public class UserController {
     private final UserProfileService userProfileService;
     private final NicknameValidatorService nicknameValidatorService;
     private final UserDeactivateService userDeactivateService;
+
     private final UserFavoriteTagService userFavoriteTagService;
+
 
     @Operation(summary = "사용자 프로필 정보 조회")
     @GetMapping("/me")
@@ -37,6 +41,7 @@ public class UserController {
     }
 
     @Operation(summary = "닉네임 사용 가능 여부")
+
     @GetMapping("/nickname/{nickname}")
     public ResponseEntity<Map<String, Boolean>> checkNicknameDuplicate(@PathVariable String nickname) {
         boolean available = nicknameValidatorService.isNicknameAvailable(nickname);
