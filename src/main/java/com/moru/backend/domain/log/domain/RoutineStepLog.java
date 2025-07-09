@@ -1,6 +1,6 @@
 package com.moru.backend.domain.log.domain;
 
-import com.moru.backend.domain.routine.domain.RoutineStep;
+import com.moru.backend.domain.log.domain.snapshot.RoutineStepSnapshot;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,8 +27,8 @@ public class RoutineStepLog {
     private RoutineLog routineLog;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "routine_step_id", nullable = false)
-    private RoutineStep routineStep;
+    @JoinColumn(name = "routine_step_snapshot_id", nullable = false)
+    private RoutineStepSnapshot routineStep;
 
     @Column(nullable = false)
     private int stepOrder;
