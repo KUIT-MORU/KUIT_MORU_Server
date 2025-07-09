@@ -45,4 +45,13 @@ public class RoutineAppService {
                         routineApp.getApp()))
                 .collect(Collectors.toList());
     }
+
+    public List<RoutineAppResponse> getRoutineApps(UUID routineId, User currentUser) {
+        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
+        List<RoutineApp> routineApps = routineAppRepository.findByRoutine(routine);
+
+        return routineApps.stream()
+                .map(routineApp -> RoutineAppResponse.from(routineApp.getApp()))
+                .collect(Collectors.toList());
+    }
 }

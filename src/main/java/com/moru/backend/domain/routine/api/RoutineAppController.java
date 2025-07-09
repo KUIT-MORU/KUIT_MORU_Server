@@ -37,4 +37,12 @@ public class RoutineAppController {
         List<RoutineAppResponse> result = routineAppService.connectAppToRoutine(routineId, request, currentUser);
         return ResponseEntity.ok(result);
     }
+
+    @Operation(summary = "루틴에 연결된 앱 목록 조회", description = "루틴에 연결된 앱 목록을 조회합니다.")
+    @GetMapping
+    public ResponseEntity<List<RoutineAppResponse>> getRoutineApps(
+            @CurrentUser User currentUser,
+            @PathVariable UUID routineId) {
+        return ResponseEntity.ok(routineAppService.getRoutineApps(routineId, currentUser));
+    }
 }
