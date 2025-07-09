@@ -33,7 +33,7 @@ public class RoutineStepLog {
     @Column(nullable = false)
     private int stepOrder;
 
-    @Column(nullable = false)
+    @Column
     private String note;
 
     @Column(nullable = false)
