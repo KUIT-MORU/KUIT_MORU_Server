@@ -37,7 +37,7 @@ public class RoutineStepService {
         List<RoutineStep> existingSteps = routineStepValidator.validateStepCountLimit(routine);
 
         // stepOrder 검사 로직 추가
-        int newStepOrder = request.getStepOrder();
+        int newStepOrder = request.stepOrder();
 
         if (newStepOrder > existingSteps.size()) {
             newStepOrder = existingSteps.size() + 1;
@@ -53,10 +53,10 @@ public class RoutineStepService {
 
         RoutineStep newStep = RoutineStep.builder()
                 .routine(routine)
-                .name(request.getName())
-                .stepOrder(request.getStepOrder())
-                .estimatedTime(request.getEstimatedTime() != null
-                        ? LocalTime.parse(request.getEstimatedTime())
+                .name(request.name())
+                .stepOrder(request.stepOrder())
+                .estimatedTime(request.estimatedTime() != null
+                        ? LocalTime.parse(request.estimatedTime())
                         : null)
                 .build();
 
@@ -87,7 +87,7 @@ public class RoutineStepService {
         RoutineStep step = routineStepValidator.validateStepAndRoutineRelation(stepId, routineId);
 
         int oldStepOrder = step.getStepOrder();
-        int newStepOrder = request.getStepOrder();
+        int newStepOrder = request.stepOrder();
 
         // 순서가 변경된 경우에만 순서 조정
         if (oldStepOrder != newStepOrder) {
@@ -119,10 +119,10 @@ public class RoutineStepService {
         }
 
         // 스텝 정보 업데이트
-        step.updateName(request.getName());
+        step.updateName(request.name());
         step.updateStepOrder(newStepOrder);
-        if (request.getEstimatedTime() != null) {
-            step.updateEstimatedTime(LocalTime.parse(request.getEstimatedTime()));
+        if (request.estimatedTime() != null) {
+            step.updateEstimatedTime(LocalTime.parse(request.estimatedTime()));
         }
 
         routineStepRepository.save(step);

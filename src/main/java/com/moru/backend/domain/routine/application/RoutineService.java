@@ -46,7 +46,7 @@ public class RoutineService {
         LocalTime totalTime = null;
         if (!isSimple) {
             totalTime = request.steps().stream()
-                .map(step -> step.getEstimatedTime() != null ? LocalTime.parse(step.getEstimatedTime()) : LocalTime.of(0, 0))
+                .map(step -> step.estimatedTime() != null ? LocalTime.parse(step.estimatedTime()) : LocalTime.of(0, 0))
                 .reduce(LocalTime.of(0, 0), (time1, time2) -> 
                     time1.plusHours(time2.getHour())
                         .plusMinutes(time2.getMinute())
@@ -87,10 +87,10 @@ public class RoutineService {
             .map(stepReq -> {
                 RoutineStep.RoutineStepBuilder builder = RoutineStep.builder()
                         .routine(savedRoutine)
-                        .name(stepReq.getName())
-                        .stepOrder(stepReq.getStepOrder());
-                if (!isSimple && stepReq.getEstimatedTime() != null) {
-                    builder.estimatedTime(LocalTime.parse(stepReq.getEstimatedTime()));
+                        .name(stepReq.name())
+                        .stepOrder(stepReq.stepOrder());
+                if (!isSimple && stepReq.estimatedTime() != null) {
+                    builder.estimatedTime(LocalTime.parse(stepReq.estimatedTime()));
                 }
                 return builder.build();
             })

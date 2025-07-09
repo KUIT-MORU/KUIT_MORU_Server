@@ -4,20 +4,20 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Getter;
+import lombok.Builder;
 
-@Getter
+@Builder
 @Schema(description = "루틴 스텝 요청")
-public class RoutineStepRequest {
+public record RoutineStepRequest(
     @Schema(description = "스텝 이름", example = "물 마시기")
     @NotBlank
     @Size(max = 22)
-    private String name;
+    String name,
 
     @Schema(description = "스텝 순서", example = "1")
     @NotNull
-    private Integer stepOrder;
+    Integer stepOrder,
 
     @Schema(description = "소요시간(집중 루틴만 값, 간편 루틴은 null)", example = "00:05:00")
-    private String estimatedTime; // 집중 루틴만 값, 간편 루틴은 null (HH:MM:SS 형식)
-}
+    String estimatedTime // 집중 루틴만 값, 간편 루틴은 null (HH:MM:SS 형식)
+) {}
