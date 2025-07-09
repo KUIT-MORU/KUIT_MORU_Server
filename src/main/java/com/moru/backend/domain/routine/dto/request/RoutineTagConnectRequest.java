@@ -1,13 +1,13 @@
 package com.moru.backend.domain.routine.dto.request;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Builder;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+
 import java.util.List;
 import java.util.UUID;
 
-@Builder
-@Schema(description = "루틴에 태그 연결 요청")
 public record RoutineTagConnectRequest(
-    @Schema(description = "태그 아이디들")
-    List<UUID> tagIds
-) {}
+        @NotEmpty(message = "태그 ID 리스트는 필수입니다.")
+        List<@NotNull UUID> tagIds
+) {
+}
