@@ -1,6 +1,7 @@
 package com.moru.backend.global.validator;
 
 
+import com.moru.backend.domain.meta.application.AppService;
 import com.moru.backend.domain.meta.dao.AppRepository;
 import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.routine.dao.RoutineAppRepository;
@@ -19,6 +20,7 @@ import java.util.*;
 public class RoutineAppValidator {
     private final RoutineAppRepository routineAppRepository;
     private final AppRepository appRepository;
+    private final AppService appService;
 
     /**
      * 여러 개 앱의 중복, 존재 여부를 한 번에 검증하고 앱 엔티티 리스트 반환
@@ -42,14 +44,7 @@ public class RoutineAppValidator {
         // 앱 존재 여부 및 중복 연결 체크
         List<App> apps = appInfos.stream().map(appInfo -> {
             // 패키지명으로 기존 앱 검색
-            App app = appRepository.findByPackageName(appInfo.packageName())
-                    // 없으면 새로 생성하기 & 있으면 기존 앱 생성
-                    .orElseGet(() -> appRepository.save(
-                            App.builder()
-                                    .name(appInfo.appName())
-                                    .packageName(appInfo.packageName())
-                                    .build()
-                    ));
+            App app = appService.findOrCreateByPackageName(appInfo.packageName(), appInfo.appName());
 
             if (routineAppRepository.existsByRoutineAndApp_Id(routine, app.getId())) {
                 throw new CustomException(ErrorCode.ALREADY_CONNECTED_APP);
