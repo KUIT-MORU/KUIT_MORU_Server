@@ -46,6 +46,7 @@ public enum ErrorCode {
     ROUTINE_TAG_NOT_FOUND(HttpStatus.NOT_FOUND, "루틴에 연결된 태그를 찾을 수 없습니다."),
     APP_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 앱입니다."),
     ALREADY_CONNECTED_APP(HttpStatus.CONFLICT, "이미 연결된 앱입니다."),
+    ROUTINE_APP_NOT_FOUND(HttpStatus.NOT_FOUND, "루틴에 연결된 앱을 찾을 수 없습니다."),
 
     // 스텝 관련 예외
     STEP_OVERLOADED(HttpStatus.BAD_REQUEST, "루틴 당 스텝의 최대 개수는 6개입니다"),

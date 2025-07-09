@@ -45,4 +45,14 @@ public class RoutineAppController {
             @PathVariable UUID routineId) {
         return ResponseEntity.ok(routineAppService.getRoutineApps(routineId, currentUser));
     }
+
+    @Operation(summary = "루틴 - 앱 연결 해제", description = "루틴에서 앱 연결을 해제합니다.")
+    @DeleteMapping("/{appId}")
+    public ResponseEntity<Void> disconnectAppFromRoutine(
+            @CurrentUser User currentUser,
+            @PathVariable UUID routineId,
+            @PathVariable UUID appId) {
+        routineAppService.disconnectAppFromRoutine(routineId, appId, currentUser);
+        return ResponseEntity.ok().build();
+    }
 }

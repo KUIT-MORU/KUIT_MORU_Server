@@ -5,6 +5,7 @@ import com.moru.backend.domain.meta.dao.AppRepository;
 import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.routine.dao.RoutineAppRepository;
 import com.moru.backend.domain.routine.domain.Routine;
+import com.moru.backend.domain.routine.domain.meta.RoutineApp;
 import com.moru.backend.domain.routine.dto.request.AppInfo;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
@@ -58,5 +59,16 @@ public class RoutineAppValidator {
         }).toList();
 
         return apps;
+    }
+
+    /**
+     * 루틴에 연결된 앱이 존재하는지 검증
+     * @param routine 루틴 엔티티
+     * @param appId 앱 ID
+     * @return 검증된 RoutineApp 엔티티
+     */
+    public RoutineApp validateRoutineAppExists(Routine routine, UUID appId) {
+        return routineAppRepository.findByRoutineAndApp_Id(routine, appId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_APP_NOT_FOUND));
     }
 }

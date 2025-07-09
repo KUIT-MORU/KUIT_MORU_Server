@@ -54,4 +54,11 @@ public class RoutineAppService {
                 .map(routineApp -> RoutineAppResponse.from(routineApp.getApp()))
                 .collect(Collectors.toList());
     }
+
+    @Transactional
+    public void disconnectAppFromRoutine(UUID routineId, UUID appId, User currentUser) {
+        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
+        RoutineApp routineApp = routineAppValidator.validateRoutineAppExists(routine, appId);
+        routineAppRepository.delete(routineApp);
+    }
 }
