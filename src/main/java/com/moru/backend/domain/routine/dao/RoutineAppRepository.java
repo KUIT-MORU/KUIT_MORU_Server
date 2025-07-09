@@ -10,4 +10,5 @@ import java.util.UUID;
 public interface RoutineAppRepository extends JpaRepository<RoutineApp, UUID> {
 
     List<RoutineApp> findByRoutine(Routine routine);
+    boolean existsByRoutineAndApp_Id(Routine routine, UUID appId);
 } 
