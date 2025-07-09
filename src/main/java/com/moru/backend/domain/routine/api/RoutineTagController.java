@@ -25,7 +25,7 @@ public class RoutineTagController {
             @PathVariable UUID routineId,
             @RequestBody RoutineTagConnectRequest request
             ) {
-        List<TagResponse> tags = routineTagService.addTagsToRoutine(routineId, request.getTagIds());
+        List<TagResponse> tags = routineTagService.addTagsToRoutine(routineId, request.tagIds());
         return ResponseEntity.ok(tags);
     }
 }

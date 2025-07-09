@@ -42,11 +42,11 @@ public class RoutineService {
     public RoutineCreateResponse createRoutine(RoutineCreateRequest request, User user) {
         // 검증용 로그 추가
         System.out.println("[DEBUG] Routine 생성 요청: user=" + user + ", userId=" + (user != null ? user.getId() : null));
-        boolean isSimple = request.getIsSimple();
+        boolean isSimple = request.isSimple();
         LocalTime totalTime = null;
         if (!isSimple) {
-            totalTime = request.getSteps().stream()
-                .map(step -> step.getEstimatedTime() != null ? LocalTime.parse(step.getEstimatedTime()) : LocalTime.of(0, 0))
+            totalTime = request.steps().stream()
+                .map(step -> step.estimatedTime() != null ? LocalTime.parse(step.estimatedTime()) : LocalTime.of(0, 0))
                 .reduce(LocalTime.of(0, 0), (time1, time2) -> 
                     time1.plusHours(time2.getHour())
                         .plusMinutes(time2.getMinute())
@@ -58,18 +58,18 @@ public class RoutineService {
         Routine routine = Routine.builder()
             .id(UUID.randomUUID())
             .user(user)
-            .title(request.getTitle())
+            .title(request.title())
             .isSimple(isSimple)
-            .isUserVisible(request.getIsUserVisible())
+            .isUserVisible(request.isUserVisible())
             .likeCount(0)
-            .content(Optional.ofNullable(request.getDescription()).orElse(""))
+            .content(Optional.ofNullable(request.description()).orElse(""))
             .requiredTime(isSimple ? null : totalTime)
             .status(true)
             .build();
         Routine savedRoutine = routineRepository.save(routine);
 
         // 태그 저장 (최대 3개)
-        List<RoutineTag> routineTags = request.getTags().stream()
+        List<RoutineTag> routineTags = request.tags().stream()
                 .map(tagName -> {
                     // 기존 태그가 존재하면 재사용, 없으면 생성 
                     Tag tag = tagRepository.findByName(tagName)
@@ -83,14 +83,14 @@ public class RoutineService {
         routineTagRepository.saveAll(routineTags);
 
         // 스텝 저장 (최대 6개)
-        List<RoutineStep> routineSteps = request.getSteps().stream()
+        List<RoutineStep> routineSteps = request.steps().stream()
             .map(stepReq -> {
                 RoutineStep.RoutineStepBuilder builder = RoutineStep.builder()
                         .routine(savedRoutine)
-                        .name(stepReq.getName())
-                        .stepOrder(stepReq.getStepOrder());
-                if (!isSimple && stepReq.getEstimatedTime() != null) {
-                    builder.estimatedTime(LocalTime.parse(stepReq.getEstimatedTime()));
+                        .name(stepReq.name())
+                        .stepOrder(stepReq.stepOrder());
+                if (!isSimple && stepReq.estimatedTime() != null) {
+                    builder.estimatedTime(LocalTime.parse(stepReq.estimatedTime()));
                 }
                 return builder.build();
             })
@@ -98,8 +98,8 @@ public class RoutineService {
         routineStepRepository.saveAll(routineSteps);
         // 앱 저장 (최대 4개) - 해당 루틴 실행시 제한되는 앱 목록
         List<RoutineApp> routineApps = List.of();
-        if (request.getSelectedApps() != null && !request.getSelectedApps().isEmpty()) {
-            routineApps = request.getSelectedApps().stream()
+        if (request.selectedApps() != null && !request.selectedApps().isEmpty()) {
+            routineApps = request.selectedApps().stream()
                     .map(pkg -> {
                         // findOrCreateApp
                         App app = appRepository.findByPackageName(pkg)
@@ -118,11 +118,11 @@ public class RoutineService {
             routineAppRepository.saveAll(routineApps);
         }
         // 생성 응답은 최소 정보만 반환
-        return RoutineCreateResponse.builder()
-                .id(savedRoutine.getId())
-                .title(savedRoutine.getTitle())
-                .createdAt(savedRoutine.getCreatedAt())
-                .build();
+        return new RoutineCreateResponse(
+                savedRoutine.getId(),
+                savedRoutine.getTitle(),
+                savedRoutine.getCreatedAt()
+        );
     }
 
     @Transactional

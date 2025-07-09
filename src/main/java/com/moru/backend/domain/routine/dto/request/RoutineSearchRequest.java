@@ -13,7 +13,7 @@ import java.util.List;
 @Schema(description = "루틴 검색 요청")
 public class RoutineSearchRequest {
     @Schema(description = "루틴명 검색어", example = "아침")
-    @Size(max = 10, message = "검색어는 1자를 초과할 수 없습니다.")
+    @Size(max = 5, message = "검색어는 5자를 초과할 수 없습니다.")
     private String titleKeyword;
 
     @Schema(description = "태그명 검색어 목록", example = "[\"운동\", \"건강\"]")
