@@ -118,11 +118,11 @@ public class RoutineService {
             routineAppRepository.saveAll(routineApps);
         }
         // 생성 응답은 최소 정보만 반환
-        return RoutineCreateResponse.builder()
-                .id(savedRoutine.getId())
-                .title(savedRoutine.getTitle())
-                .createdAt(savedRoutine.getCreatedAt())
-                .build();
+        return new RoutineCreateResponse(
+                savedRoutine.getId(),
+                savedRoutine.getTitle(),
+                savedRoutine.getCreatedAt()
+        );
     }
 
     @Transactional
