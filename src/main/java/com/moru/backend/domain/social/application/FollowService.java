@@ -2,6 +2,7 @@ package com.moru.backend.domain.social.application;
 
 import com.moru.backend.domain.social.dao.UserFollowRepository;
 import com.moru.backend.domain.social.domain.UserFollow;
+import com.moru.backend.domain.social.dto.FollowCountResponse;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.exception.CustomException;
@@ -18,6 +19,17 @@ public class FollowService {
     private final UserRepository userRepository;
     private final UserFollowRepository userFollowRepository;
 
+    public FollowCountResponse countFollow(UUID userId) {
+        Long followingCount = userFollowRepository.countByFollowerId(userId);
+        Long followCount = userFollowRepository.countByFollowingId(userId);
+
+        return new FollowCountResponse(followingCount, followCount);
+    }
+
+    public boolean isAlreadyFollowing(UUID followerId, UUID followingId) {
+        return userFollowRepository.existsByFollowerIdAndFollowingId(followerId, followingId);
+    }
+
     @Transactional
     public void follow(User me, UUID targetUserId) {
         if(me.getId().equals(targetUserId)) {
@@ -27,8 +39,7 @@ public class FollowService {
         User target = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        boolean alreadyExists = userFollowRepository.existsByFollowerIdAndFollowingId(me.getId(), targetUserId);
-        if(alreadyExists) {
+        if(isAlreadyFollowing(me.getId(), targetUserId)) {
             throw new CustomException(ErrorCode.FOLLOW_ALREADY_EXISTS);
         }
 

@@ -14,4 +14,5 @@ public interface RoutineUserActionRepository extends JpaRepository<RoutineUserAc
     boolean existsByUserIdAndRoutineIdAndActionType(
             UUID userId, UUID routineId, ActionType actionType
     );
+    Long countByRoutineIdAndActionType(UUID routineId, ActionType actionType);
 }

@@ -21,6 +21,11 @@ public class LikeService {
     private final RoutineRepository routineRepository;
     private final RoutineUserActionRepository routineUserActionRepository;
 
+    public Long countLikes(UUID routineId) {
+        // 루틴 아이디가 유효(존재, 소유주 맞음)하다는 전제하에 이루어짐.
+        return routineUserActionRepository.countByRoutineIdAndActionType(routineId, ActionType.LIKE);
+    }
+
     @Transactional
     public void like(UUID routineId, User user) {
         Routine routine = routineRepository.findById(routineId)

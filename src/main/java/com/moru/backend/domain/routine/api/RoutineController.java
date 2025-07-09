@@ -1,7 +1,13 @@
 package com.moru.backend.domain.routine.api;
 
+import com.moru.backend.domain.meta.dto.response.TagResponse;
+import com.moru.backend.domain.routine.application.RoutineAppService;
 import com.moru.backend.domain.routine.application.RoutineService;
+import com.moru.backend.domain.routine.application.RoutineTagService;
+import com.moru.backend.domain.routine.dto.request.RoutineAppRequest;
 import com.moru.backend.domain.routine.dto.request.RoutineCreateRequest;
+import com.moru.backend.domain.routine.dto.request.RoutineTagConnectRequest;
+import com.moru.backend.domain.routine.dto.response.RoutineAppResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineDetailResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 import com.moru.backend.domain.user.dao.UserRepository;
@@ -23,6 +29,8 @@ import java.util.UUID;
 @Tag(name = "루틴", description = "루틴 관련 API")
 public class RoutineController {
     private final RoutineService routineService;
+    private final RoutineAppService routineAppService;
+    private final RoutineTagService routineTagService;
     private final UserRepository userRepository;
 
     @Operation(summary = "루틴 생성", description = "새로운 루틴을 생성합니다.")
@@ -47,5 +55,65 @@ public class RoutineController {
             @CurrentUser User currentUser,
             @PathVariable UUID routineId) {
         return ResponseEntity.ok(routineService.getRoutineDetail(routineId, currentUser));
+    }
+
+    @Operation(summary = "루틴에 앱 연결 추가", description = "루틴에 앱을 연결")
+    @PostMapping("/{routineId}/apps")
+    public ResponseEntity<List<RoutineAppResponse>> connectAppToRoutine(
+            @CurrentUser User currentUser,
+            @PathVariable UUID routineId,
+            @Valid @RequestBody RoutineAppRequest request
+    ) {
+        List<RoutineAppResponse> result = routineAppService.connectAppToRoutine(routineId, request, currentUser);
+        return ResponseEntity.ok(result);
+    }
+
+    @Operation(summary = "루틴에 연결된 앱 목록 조회", description = "루틴에 연결된 앱 목록을 조회합니다.")
+    @GetMapping("/{routineId}/apps")
+    public ResponseEntity<List<RoutineAppResponse>> getRoutineApps(
+            @CurrentUser User currentUser,
+            @PathVariable UUID routineId) {
+        return ResponseEntity.ok(routineAppService.getRoutineApps(routineId, currentUser));
+    }
+
+    @Operation(summary = "루틴 - 앱 연결 해제", description = "루틴에서 앱 연결을 해제합니다.")
+    @DeleteMapping("/{routineId}/apps/{appId}")
+    public ResponseEntity<Void> disconnectAppFromRoutine(
+            @CurrentUser User currentUser,
+            @PathVariable UUID routineId,
+            @PathVariable UUID appId) {
+        routineAppService.disconnectAppFromRoutine(routineId, appId, currentUser);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "루틴에 태그 연결 추가", description = "루틴에 여러 태그를 한 번에 연결. 최대 3개까지 연결 가능.")
+    @PostMapping("/{routineId}/tags")
+    public ResponseEntity<List<TagResponse>> addTagsToRoutine(
+            @CurrentUser User currentUser,
+            @PathVariable UUID routineId,
+            @Valid @RequestBody RoutineTagConnectRequest request
+    ) {
+        List<TagResponse> tags = routineTagService.addTagsToRoutine(routineId, request, currentUser);
+        return ResponseEntity.ok(tags);
+    }
+
+    @Operation(summary = "루틴에 연결된 태그 목록 조회", description = "루틴에 연결된 태그 목록을 조회")
+    @GetMapping("/{routineId}/tags")
+    public ResponseEntity<List<TagResponse>> getRoutineTags(
+            @CurrentUser User currentUser,
+            @PathVariable UUID routineId
+    ) {
+        return ResponseEntity.ok(routineTagService.getRoutineTags(routineId, currentUser));
+    }
+
+    @Operation(summary = "루틴에 연결된 태그 해제", description = "루틴에서 연결된 태그 연결을 해제함")
+    @DeleteMapping("/{routineId}/tags/{tagId}")
+    public ResponseEntity<Void> disconnectTagFromRoutine(
+            @CurrentUser User currentUser,
+            @PathVariable UUID routineId,
+            @PathVariable UUID tagId
+    ) {
+        routineTagService.disconnectTagFromRoutine(routineId, tagId, currentUser);
+        return ResponseEntity.ok().build();
     }
 } 
