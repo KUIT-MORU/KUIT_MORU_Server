@@ -32,4 +32,13 @@ public class RoutineTagController {
         List<TagResponse> tags = routineTagService.addTagsToRoutine(routineId, request, currentUser);
         return ResponseEntity.ok(tags);
     }
+
+    @Operation(summary = "루틴에 연결된 태그 목록 조회", description = "루틴에 연결된 태그 목록을 조회")
+    @GetMapping
+    public ResponseEntity<List<TagResponse>> getRoutineTags(
+            @CurrentUser User currentUser,
+            @PathVariable UUID routineId
+    ) {
+        return ResponseEntity.ok(routineTagService.getRoutineTags(routineId, currentUser));
+    }
 }

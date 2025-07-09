@@ -52,4 +52,13 @@ public class RoutineTagService {
                 .map(routineTag -> TagResponse.from(routineTag.getTag()))
                 .collect(Collectors.toList());
     }
+
+    public List<TagResponse> getRoutineTags(UUID routineId, User currentUser) {
+        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
+
+        List<RoutineTag> routineTags = routineTagRepository.findByRoutine(routine);
+        return routineTags.stream()
+                .map(routineTag -> TagResponse.from(routineTag.getTag()))
+                .collect(Collectors.toList());
+    }
 }
