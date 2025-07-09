@@ -2,6 +2,7 @@ package com.moru.backend.domain.social.application;
 
 import com.moru.backend.domain.social.dao.UserFollowRepository;
 import com.moru.backend.domain.social.domain.UserFollow;
+import com.moru.backend.domain.social.dto.FollowCountResponse;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.exception.CustomException;
@@ -17,6 +18,13 @@ import java.util.UUID;
 public class FollowService {
     private final UserRepository userRepository;
     private final UserFollowRepository userFollowRepository;
+
+    public FollowCountResponse countFollow(UUID userId) {
+        Long followingCount = userFollowRepository.countByFollowerId(userId);
+        Long followCount = userFollowRepository.countByFollowingId(userId);
+
+        return new FollowCountResponse(followingCount, followCount);
+    }
 
     @Transactional
     public void follow(User me, UUID targetUserId) {
