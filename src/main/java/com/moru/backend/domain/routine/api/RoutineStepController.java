@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,35 +25,35 @@ public class RoutineStepController {
     // @Valid : RoutineStepRequest에 붙인 @NotNull, @Size의 제약 조건을 검사 -> MethodArgumentNotValidException 예외 발생
     @Operation(summary = "루틴에 스텝 추가", description = "특정 루틴에 새로운 스텝 추가")
     @PostMapping
-    public Object addStepToRoutine(
+    public ResponseEntity<Object> addStepToRoutine(
             @PathVariable UUID routineId,
             @CurrentUser User currentUser,
             @Valid @RequestBody RoutineStepRequest request) {
-        return routineStepService.addStepToRoutine(routineId, request, currentUser);
+        return ResponseEntity.ok(routineStepService.addStepToRoutine(routineId, request, currentUser));
     }
 
     @Operation(summary = "루틴의 스텝 목록 조회", description = "특정 루틴의 모든 스텝을 조회")
     @GetMapping
-    public List<RoutineStepDetailResponse> getRoutineSteps(
+    public ResponseEntity<List<RoutineStepDetailResponse>> getRoutineSteps(
             @PathVariable UUID routineId,
             @CurrentUser User currentUser) {
-        return routineStepService.getRoutineSteps(routineId, currentUser);
+        return ResponseEntity.ok(routineStepService.getRoutineSteps(routineId, currentUser));
     }
 
     @Operation(summary = "특정 스텝 수정", description = "특정 루틴의 특정 스텝을 수정")
     @PatchMapping("/{stepId}")
-    public Object updateStep(@PathVariable UUID routineId,
+    public ResponseEntity<Object> updateStep(@PathVariable UUID routineId,
                              @PathVariable UUID stepId,
                              @CurrentUser User currentUser,
                              @Valid @RequestBody RoutineStepRequest request) {
-        return routineStepService.updateStep(routineId, stepId, request, currentUser);
+        return ResponseEntity.ok(routineStepService.updateStep(routineId, stepId, request, currentUser));
     }
 
     @Operation(summary = "특정 스텝 삭제", description = "특정 루틴의 특정 스텝을 삭제")
     @DeleteMapping("/{stepId}")
-    public Object deleteStep(@PathVariable UUID routineId,
+    public ResponseEntity<Object> deleteStep(@PathVariable UUID routineId,
                              @CurrentUser User currentUser,
                              @PathVariable UUID stepId) {
-        return routineStepService.deleteStep(routineId, stepId, currentUser);
+        return ResponseEntity.ok(routineStepService.deleteStep(routineId, stepId, currentUser));
     }
 }
