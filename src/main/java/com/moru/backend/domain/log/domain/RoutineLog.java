@@ -2,6 +2,7 @@ package com.moru.backend.domain.log.domain;
 
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.global.converter.DurationToLongConverter;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,8 +11,8 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
@@ -36,11 +37,12 @@ public class RoutineLog {
     @Column(nullable = false)
     private LocalDateTime startedAt;
 
-    @Column(nullable = false)
+    @Column()
     private LocalDateTime endedAt;
 
-    @Column(nullable = false)
-    private LocalTime totalTime;
+    @Convert(converter = DurationToLongConverter.class)
+    @Column()
+    private Duration totalTime;
 
     @Column(nullable = false)
     private boolean isSimple;
