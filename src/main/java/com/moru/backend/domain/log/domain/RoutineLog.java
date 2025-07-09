@@ -1,7 +1,6 @@
 package com.moru.backend.domain.log.domain;
 
 import com.moru.backend.domain.log.domain.snapshot.RoutineSnapshot;
-import com.moru.backend.domain.log.dto.RoutineLogDetailResponse;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.converter.DurationToLongConverter;
 import jakarta.persistence.*;
@@ -64,5 +63,5 @@ public class RoutineLog {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "routineLog", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<RoutineStepLog> stepLogs = new ArrayList<>();
+    private List<RoutineStepLog> routineStepLogs = new ArrayList<>();
 }
