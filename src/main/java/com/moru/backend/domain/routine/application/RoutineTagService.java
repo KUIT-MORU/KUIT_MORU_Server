@@ -61,4 +61,12 @@ public class RoutineTagService {
                 .map(routineTag -> TagResponse.from(routineTag.getTag()))
                 .collect(Collectors.toList());
     }
+
+    @Transactional
+    public void disconnectTagFromRoutine(UUID routineId, UUID tagId, User currentUser) {
+        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
+        // 현재 루틴에 해당 태그가 있는지 확인
+        RoutineTag routineTag = routineTagValidator.validateRoutineTagExists(routine, tagId);
+        routineTagRepository.delete(routineTag);
+    }
 }

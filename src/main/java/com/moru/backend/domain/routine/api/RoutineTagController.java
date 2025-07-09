@@ -28,7 +28,7 @@ public class RoutineTagController {
             @CurrentUser User currentUser,
             @PathVariable UUID routineId,
             @Valid @RequestBody RoutineTagConnectRequest request
-            ) {
+    ) {
         List<TagResponse> tags = routineTagService.addTagsToRoutine(routineId, request, currentUser);
         return ResponseEntity.ok(tags);
     }
@@ -40,5 +40,16 @@ public class RoutineTagController {
             @PathVariable UUID routineId
     ) {
         return ResponseEntity.ok(routineTagService.getRoutineTags(routineId, currentUser));
+    }
+
+    @Operation(summary = "루틴에 연결된 태그 해제", description = "루틴에서 연결된 태그 연결을 해제함")
+    @DeleteMapping("/{tagId}")
+    public ResponseEntity<Void> disconnectTagFromRoutine(
+            @CurrentUser User currentUser,
+            @PathVariable UUID routineId,
+            @PathVariable UUID tagId
+    ) {
+        routineTagService.disconnectTagFromRoutine(routineId, tagId, currentUser);
+        return ResponseEntity.ok().build();
     }
 }
