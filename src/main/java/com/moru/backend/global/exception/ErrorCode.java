@@ -29,6 +29,7 @@ public enum ErrorCode {
     // 태그 관련 예외
     TAG_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 태그입니다."),
     TAG_ALREAEDY_EXISTS(HttpStatus.CONFLICT, "이미 등록된 태그입니다."),
+    ALREADY_CONNECTED_TAG(HttpStatus.CONFLICT, "이미 연결된 태그입니다."),
 
     // 소셜 관련 예외
     LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 좋아요입니다."),

@@ -3,8 +3,11 @@ package com.moru.backend.domain.routine.api;
 import com.moru.backend.domain.meta.dto.response.TagResponse;
 import com.moru.backend.domain.routine.application.RoutineTagService;
 import com.moru.backend.domain.routine.dto.request.RoutineTagConnectRequest;
+import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.global.annotation.CurrentUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,10 +25,11 @@ public class RoutineTagController {
     @Operation(summary = "루틴에 태그 연결 추가", description = "루틴에 여러 태그를 한 번에 연결. 최대 3개까지 연결 가능.")
     @PostMapping
     public ResponseEntity<List<TagResponse>> addTagsToRoutine(
+            @CurrentUser User currentUser,
             @PathVariable UUID routineId,
-            @RequestBody RoutineTagConnectRequest request
+            @Valid @RequestBody RoutineTagConnectRequest request
             ) {
-        List<TagResponse> tags = routineTagService.addTagsToRoutine(routineId, request.tagIds());
+        List<TagResponse> tags = routineTagService.addTagsToRoutine(routineId, request, currentUser);
         return ResponseEntity.ok(tags);
     }
 }

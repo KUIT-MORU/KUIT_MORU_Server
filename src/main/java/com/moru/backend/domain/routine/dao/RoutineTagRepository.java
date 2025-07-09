@@ -10,4 +10,6 @@ import java.util.UUID;
 public interface RoutineTagRepository extends JpaRepository<RoutineTag, UUID> {
 
     List<RoutineTag> findByRoutine(Routine routine);
+
+    boolean existsByRoutineAndTag_Id(Routine routine, UUID tagId);
 } 
