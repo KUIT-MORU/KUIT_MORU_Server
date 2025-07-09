@@ -48,6 +48,9 @@ public enum ErrorCode {
     ALREADY_CONNECTED_APP(HttpStatus.CONFLICT, "이미 연결된 앱입니다."),
     ROUTINE_APP_NOT_FOUND(HttpStatus.NOT_FOUND, "루틴에 연결된 앱을 찾을 수 없습니다."),
 
+    // 루틴 로그 관련 예외
+    ROUTINE_LOG_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 루틴 로그입니다."),
+
     // 스텝 관련 예외
     STEP_OVERLOADED(HttpStatus.BAD_REQUEST, "루틴 당 스텝의 최대 개수는 6개입니다"),
     INVALID_STEP_ORDER(HttpStatus.BAD_REQUEST, "유효하지 않은 스텝 순서입니다."),
@@ -55,6 +58,7 @@ public enum ErrorCode {
 
     // 검색 관련 예외
     HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "검색 기록을 찾을 수 없습니다.");
+
 
     private final HttpStatus status;
     private final String message;

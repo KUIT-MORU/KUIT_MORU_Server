@@ -7,8 +7,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
@@ -33,11 +33,11 @@ public class RoutineStepLog {
     @Column(nullable = false)
     private int stepOrder;
 
-    @Column(nullable = false)
+    @Column
     private String note;
 
     @Column(nullable = false)
-    private LocalTime actualTime;
+    private Duration actualTime;
 
     @Column(nullable = false)
     private LocalDateTime startedAt;
