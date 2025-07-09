@@ -7,11 +7,14 @@ import com.moru.backend.domain.log.domain.snapshot.RoutineAppSnapshot;
 import com.moru.backend.domain.log.domain.snapshot.RoutineSnapshot;
 import com.moru.backend.domain.log.domain.snapshot.RoutineStepSnapshot;
 import com.moru.backend.domain.log.domain.snapshot.RoutineTagSnapshot;
+import com.moru.backend.domain.log.dto.RoutineLogDetailResponse;
+import com.moru.backend.domain.log.dto.RoutineStepLogDto;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.meta.RoutineApp;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
+import com.moru.backend.domain.routine.dto.response.RoutineAppResponse;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
@@ -19,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -94,5 +98,38 @@ public class RoutineLogService {
             snapshot.getAppSnapshots().add(appSnapshot);
         }
         return snapshot;
+    }
+
+    public RoutineLogDetailResponse getRoutineLogDetail(User user, UUID routineLogId) {
+        RoutineLog routineLog = routineLogRepository.findByRoutineLogIdWithSnapshotAndSteps(routineLogId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_LOG_NOT_FOUND));
+        if(!routineLog.getUser().getId().equals(user.getId())) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
+
+        RoutineSnapshot snapshot = routineLog.getRoutineSnapshot();
+
+        List<String> tagNames = snapshot.getTagSnapshots().stream()
+                .map(RoutineTagSnapshot::getTagName)
+                .toList();
+
+        List<RoutineAppResponse> apps = snapshot.getAppSnapshots().stream()
+                .map(app -> new RoutineAppResponse(app.getPackageName(), app.getName()))
+                .toList();
+
+        List<RoutineStepLogDto> steps = routineLog.getRoutineStepLogs().stream()
+                .map(stepLog -> {
+                    RoutineStepSnapshot stepSnapshot = stepLog.getRoutineStep();
+                    return new RoutineStepLogDto(
+                            stepLog.getStepOrder(),
+                            stepSnapshot.getName(),
+                            stepLog.getNote(),
+                            stepSnapshot.getEstimatedTime(),
+                            stepLog.getActualTime()
+                    );
+                })
+                .toList();
+
+        return RoutineLogDetailResponse.from(routineLog, snapshot, tagNames, steps, apps);
     }
 }
