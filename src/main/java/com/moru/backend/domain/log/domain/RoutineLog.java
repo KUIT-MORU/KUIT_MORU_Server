@@ -1,6 +1,6 @@
 package com.moru.backend.domain.log.domain;
 
-import com.moru.backend.domain.routine.domain.Routine;
+import com.moru.backend.domain.log.domain.snapshot.RoutineSnapshot;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.converter.DurationToLongConverter;
 import jakarta.persistence.*;
@@ -32,7 +32,7 @@ public class RoutineLog {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "routine_id", nullable = false)
-    private Routine routine;
+    private RoutineSnapshot routineSnapshot;
 
     @Column(nullable = false)
     private LocalDateTime startedAt;
