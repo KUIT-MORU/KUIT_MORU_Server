@@ -20,6 +20,10 @@ public class ScrapService {
     private final RoutineRepository routineRepository;
     private final RoutineUserActionRepository routineUserActionRepository;
 
+    public Long countScrap(UUID routineId) {
+        return routineUserActionRepository.countByRoutineIdAndActionType(routineId, ActionType.SCRAP);
+    }
+
     @Transactional
     public void scrap(UUID routineId, User user) {
         Routine routine = routineRepository.findById(routineId)

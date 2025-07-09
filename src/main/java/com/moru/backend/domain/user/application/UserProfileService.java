@@ -1,8 +1,11 @@
 package com.moru.backend.domain.user.application;
 
 
+import com.moru.backend.domain.routine.dao.RoutineRepository;
+import com.moru.backend.domain.social.application.FollowService;
 import com.moru.backend.domain.social.dao.UserFollowRepository;
 
+import com.moru.backend.domain.social.dto.FollowCountResponse;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.domain.user.dto.UserProfileRequest;
@@ -16,19 +19,23 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class UserProfileService {
-//    private final RoutineRepository routineRepository;
+    private final RoutineRepository routineRepository;
     private final UserFollowRepository userFollowRepository;
     private final UserRepository userRepository;
+    private final FollowService followService;
 
     public UserProfileResponse getProfile(User user) {
         if(!user.isActive()) {
             throw new CustomException(ErrorCode.USER_DEACTIVATED);
         }
-//        Long routineCount = routineRepository.countByUser(user);
-        Long routineCount = Long.parseLong("999"); // routineRepository 구현 후 연결.
-        Long followerCount = userFollowRepository.countByFollowingId(user.getId());
-        Long followingCount = userFollowRepository.countByFollowerId(user.getId());
-        return UserProfileResponse.from(user, routineCount, followerCount, followingCount);
+        Long routineCount = (long) routineRepository.countByUserId(user.getId());
+        FollowCountResponse followCount = followService.countFollow(user.getId());
+        return UserProfileResponse.from(
+                user,
+                routineCount,
+                followCount.followerCount(),
+                followCount.followingCount()
+        );
     }
 
     @Transactional
