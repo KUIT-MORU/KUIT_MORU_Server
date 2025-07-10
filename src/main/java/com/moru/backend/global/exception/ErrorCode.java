@@ -50,6 +50,7 @@ public enum ErrorCode {
 
     // 루틴 로그 관련 예외
     ROUTINE_LOG_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 루틴 로그입니다."),
+    ROUTINE_STEP_SNAPSHOT_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 루틴 스텝 스냅샷입니다."),
 
     // 스텝 관련 예외
     STEP_OVERLOADED(HttpStatus.BAD_REQUEST, "루틴 당 스텝의 최대 개수는 6개입니다"),
