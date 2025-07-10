@@ -71,6 +71,6 @@ public class Routine {
     @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL)
     private List<RoutineTag> routineTags;
 
-    @OneToMany(mappedBy = "routine")
+    @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL)
     private List<RoutineApp> routineApps = new ArrayList<>();
 }
