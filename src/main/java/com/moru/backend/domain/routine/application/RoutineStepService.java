@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalTime;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -51,14 +51,16 @@ public class RoutineStepService {
             }
         }
 
-        RoutineStep newStep = RoutineStep.builder()
+        RoutineStep.RoutineStepBuilder builder = RoutineStep.builder()
                 .routine(routine)
                 .name(request.name())
-                .stepOrder(request.stepOrder())
-                .estimatedTime(request.estimatedTime() != null
-                        ? LocalTime.parse(request.estimatedTime())
-                        : null)
-                .build();
+                .stepOrder(request.stepOrder());
+        
+        if (request.estimatedTime() != null) {
+            builder.estimatedTime(request.estimatedTime());
+        }
+        
+        RoutineStep newStep = builder.build();
 
         routineStepRepository.save(newStep);
         // response 응답용
@@ -122,7 +124,7 @@ public class RoutineStepService {
         step.updateName(request.name());
         step.updateStepOrder(newStepOrder);
         if (request.estimatedTime() != null) {
-            step.updateEstimatedTime(LocalTime.parse(request.estimatedTime()));
+            step.updateEstimatedTime(request.estimatedTime());
         }
 
         routineStepRepository.save(step);

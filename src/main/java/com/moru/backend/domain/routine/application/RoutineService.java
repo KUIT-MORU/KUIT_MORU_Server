@@ -22,7 +22,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalTime;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -43,15 +43,21 @@ public class RoutineService {
         // 검증용 로그 추가
         System.out.println("[DEBUG] Routine 생성 요청: user=" + user + ", userId=" + (user != null ? user.getId() : null));
         boolean isSimple = request.isSimple();
-        LocalTime totalTime = null;
+        Duration totalTime = null;
         if (!isSimple) {
+            System.out.println("[DEBUG] 시간 계산 시작:");
             totalTime = request.steps().stream()
-                .map(step -> step.estimatedTime() != null ? LocalTime.parse(step.estimatedTime()) : LocalTime.of(0, 0))
-                .reduce(LocalTime.of(0, 0), (time1, time2) -> 
-                    time1.plusHours(time2.getHour())
-                        .plusMinutes(time2.getMinute())
-                        .plusSeconds(time2.getSecond())
-                );
+                .map(step -> {
+                    Duration stepTime = step.estimatedTime() != null ? step.estimatedTime() : Duration.ZERO;
+                    System.out.println("[DEBUG] 스텝: " + step.name() + ", 시간: " + stepTime);
+                    return stepTime;
+                })
+                .reduce(Duration.ZERO, (acc, stepTime) -> {
+                    Duration result = acc.plus(stepTime);
+                    System.out.println("[DEBUG] 누적 시간: " + result);
+                    return result;
+                });
+            System.out.println("[DEBUG] 최종 총 시간: " + totalTime);
         }
         
         // 루틴 엔티티 생성 및 저장 
@@ -90,7 +96,7 @@ public class RoutineService {
                         .name(stepReq.name())
                         .stepOrder(stepReq.stepOrder());
                 if (!isSimple && stepReq.estimatedTime() != null) {
-                    builder.estimatedTime(LocalTime.parse(stepReq.estimatedTime()));
+                    builder.estimatedTime(stepReq.estimatedTime());
                 }
                 return builder.build();
             })

@@ -3,6 +3,7 @@ package com.moru.backend.domain.routine.dto.response;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -48,8 +49,8 @@ public record RoutineDetailResponse(
     @Schema(description = "수정일시", example = "2024-01-01T09:00:00")
     LocalDateTime updatedAt,
 
-    @Schema(description = "필요 시간(집중 루틴만 값, 간편 루틴은 null)", example = "00:50:00")
-    String requiredTime
+    @Schema(description = "필요 시간(집중 루틴만 값, 간편 루틴은 null)", example = "PT50M")
+    Duration requiredTime
 ) {
     public static RoutineDetailResponse of(
         Routine routine,
@@ -71,7 +72,7 @@ public record RoutineDetailResponse(
                     .toList(),
             routine.getCreatedAt(),
             routine.getUpdatedAt(),
-            routine.getRequiredTime() != null ? routine.getRequiredTime().toString() : null
+            routine.getRequiredTime()
         );
     }
 } 

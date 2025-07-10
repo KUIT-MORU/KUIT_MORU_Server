@@ -3,6 +3,7 @@ package com.moru.backend.domain.routine.domain;
 import com.moru.backend.domain.routine.domain.meta.RoutineApp;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.global.converter.DurationToLongConverter;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,8 +13,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -46,7 +47,8 @@ public class Routine {
     private Integer likeCount;
 
     @Column
-    private LocalTime requiredTime;
+    @Convert(converter = DurationToLongConverter.class)
+    private Duration requiredTime;
 
     @Column(length = 500)
     private String imageUrl;
