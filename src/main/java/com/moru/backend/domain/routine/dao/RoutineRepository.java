@@ -19,6 +19,16 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
     int countByUserId(UUID userId);
 
     /**
+     * 루틴 ID로 루틴과 관련된 스텝, 태그, 앱을 함께 조회
+     */
+    @Query("SELECT r FROM Routine r " +
+            "LEFT JOIN FETCH r.routineSteps " +
+            "LEFT JOIN FETCH r.routineTags t LEFT JOIN FETCH t.tag " +
+            "LEFT JOIN FETCH r.routineApps " +
+            "WHERE r.id = :id")
+    Optional<Routine> findByRoutineIdWithStepsTagsApps(@Param("id") UUID routineId);
+
+    /**
      * 루틴 ID로 루틴과 관련된 태그, 앱을 함께 조회
      */
     @Query("SELECT r FROM Routine r " +

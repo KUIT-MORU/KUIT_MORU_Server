@@ -73,4 +73,7 @@ public class Routine {
 
     @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL)
     private List<RoutineApp> routineApps = new ArrayList<>();
+
+    @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RoutineStep> routineSteps = new ArrayList<>();
 }
