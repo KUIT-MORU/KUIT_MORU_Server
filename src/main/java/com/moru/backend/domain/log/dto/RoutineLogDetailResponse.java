@@ -17,6 +17,7 @@ public record RoutineLogDetailResponse(
         LocalDateTime startedAt,
         LocalDateTime endedAt,
         Duration totalTime,
+        String imageUrl,
         List<String> tagNames,
         List<RoutineStepLogDto> steps,
         List<RoutineAppResponse> apps
@@ -36,6 +37,7 @@ public record RoutineLogDetailResponse(
                 routineLog.getStartedAt(),
                 routineLog.getEndedAt(),
                 routineLog.getTotalTime(),
+                snapshot.getImageUrl(),
                 tagNames,
                 steps,
                 apps
