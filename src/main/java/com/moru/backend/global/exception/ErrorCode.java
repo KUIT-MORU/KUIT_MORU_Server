@@ -44,9 +44,13 @@ public enum ErrorCode {
     ROUTINE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 루틴입니다."),
     TAG_OVERLOADED(HttpStatus.BAD_REQUEST, "루틴에는 최대 3개의 태그만 연결할 수 있습니다."),
     ROUTINE_TAG_NOT_FOUND(HttpStatus.NOT_FOUND, "루틴에 연결된 태그를 찾을 수 없습니다."),
+
     APP_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 앱입니다."),
     ALREADY_CONNECTED_APP(HttpStatus.CONFLICT, "이미 연결된 앱입니다."),
     ROUTINE_APP_NOT_FOUND(HttpStatus.NOT_FOUND, "루틴에 연결된 앱을 찾을 수 없습니다."),
+
+    INVALID_REPEAT_TYPE(HttpStatus.BAD_REQUEST, "반복되는 요일을 찾을 수 없습니다.."),
+    ALREADY_EXISTS_SCHEDULE(HttpStatus.CONFLICT, "이미 해당 시간대에 존재한느 루틴이 있습니다."),
 
     // 루틴 로그 관련 예외
     ROUTINE_LOG_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 루틴 로그입니다."),
