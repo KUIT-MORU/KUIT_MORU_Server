@@ -53,10 +53,33 @@ public class RoutineLogController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    @Operation(summary = "루틴 로그 목록 조회")
-    @GetMapping
-    public ResponseEntity<List<RoutineLogSummaryResponse>> getRoutineLogs(@CurrentUser User user) {
-        List<RoutineLogSummaryResponse> logs = routineLogService.getLogs(user);
-        return ResponseEntity.ok(logs);
+//    @Operation(summary = "루틴 로그 목록 조회")
+//    @GetMapping
+//    public ResponseEntity<List<RoutineLogSummaryResponse>> getRoutineLogs(@CurrentUser User user) {
+//        List<RoutineLogSummaryResponse> logs = routineLogService.getLogs(user);
+//        return ResponseEntity.ok(logs);
+//    }
+
+    @Operation(summary = "오늘 실행한 루틴 로그 조회")
+    @GetMapping("/today")
+    public ResponseEntity<List<RoutineLogSummaryResponse>> getTodayLogs(@CurrentUser User user) {
+        return ResponseEntity.ok(routineLogService.getTodayLogs(user));
     }
+
+    @Operation(summary = "최근 7일간 실행한 루틴 로그 조회")
+    @GetMapping("/recent")
+    public ResponseEntity<List<RoutineLogSummaryResponse>> getRecentLogs(@CurrentUser User user) {
+        return ResponseEntity.ok(routineLogService.getRecentLogs(user));
+    }
+
+    @Operation(summary = "무한 스크롤용 전체 로그(페이지 포함)")
+    @GetMapping
+    public ResponseEntity<List<RoutineLogSummaryResponse>> getRoutineLogs(
+            @CurrentUser User user,
+            @RequestParam(defaultValue = "0") Integer offset,
+            @RequestParam(defaultValue = "10") Integer limit
+    ) {
+        return ResponseEntity.ok(routineLogService.getLogs(user, offset, limit));
+    }
+
 }
