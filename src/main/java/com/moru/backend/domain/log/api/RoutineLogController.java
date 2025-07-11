@@ -6,6 +6,7 @@ import com.moru.backend.domain.log.dto.RoutineLogSummaryResponse;
 import com.moru.backend.domain.log.dto.RoutineStepLogCreateRequest;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.validator.annotation.CurrentUser;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,7 @@ import java.util.UUID;
 public class RoutineLogController {
     private final RoutineLogService routineLogService;
 
+    @Operation(summary = "루틴 로그 생성")
     @PostMapping("/{routineId}/logs")
     public ResponseEntity<UUID> startRoutine(
             @PathVariable UUID routineId,
@@ -30,6 +32,7 @@ public class RoutineLogController {
         return ResponseEntity.ok(routinelogId);
     }
 
+    @Operation(summary = "루틴 로그 상세 조회")
     @GetMapping("/{routineLogId}")
     public ResponseEntity<RoutineLogDetailResponse> getRoutineLogDetail(
             @PathVariable UUID routineLogId,
@@ -39,6 +42,7 @@ public class RoutineLogController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "루틴 스텝 로그 생성")
     @PostMapping("/{routineLogId}/steps")
     public ResponseEntity<Void> createStepLog(
             @PathVariable UUID routineLogId,
@@ -49,6 +53,7 @@ public class RoutineLogController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
+    @Operation(summary = "루틴 로그 목록 조회")
     @GetMapping
     public ResponseEntity<List<RoutineLogSummaryResponse>> getRoutineLogs(@CurrentUser User user) {
         List<RoutineLogSummaryResponse> logs = routineLogService.getLogs(user);
