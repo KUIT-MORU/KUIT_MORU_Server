@@ -30,7 +30,7 @@ public record RoutineCreateRequest(
 
     @Schema(
         description = "루틴 스텝 목록. 집중 루틴은 estimatedTime 필수, 간편 루틴은 null 또는 미포함",
-        example = "[{\"name\": \"물 마시기\", \"stepOrder\": 1, \"estimatedTime\": \"00:05:00\"}, {\"name\": \"아침 운동\", \"stepOrder\": 2, \"estimatedTime\": \"00:30:00\"}, {\"name\": \"아침 먹기\", \"stepOrder\": 3, \"estimatedTime\": \"00:15:00\"}]"
+        example = "[{\"name\": \"물 마시기\", \"stepOrder\": 1, \"estimatedTime\": \"PT5M\"}, {\"name\": \"아침 운동\", \"stepOrder\": 2, \"estimatedTime\": \"PT30M\"}, {\"name\": \"아침 먹기\", \"stepOrder\": 3, \"estimatedTime\": \"PT15M\"}]"
     )
     @NotNull
     @Size(min = 3, max = 6) //루틴 당 스텝 개수는 최소 3개, 최대 6개 

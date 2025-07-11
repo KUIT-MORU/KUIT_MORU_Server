@@ -2,14 +2,17 @@ package com.moru.backend.domain.routine.api;
 
 import com.moru.backend.domain.meta.dto.response.TagResponse;
 import com.moru.backend.domain.routine.application.RoutineAppService;
+import com.moru.backend.domain.routine.application.RoutineScheduleService;
 import com.moru.backend.domain.routine.application.RoutineService;
 import com.moru.backend.domain.routine.application.RoutineTagService;
 import com.moru.backend.domain.routine.dto.request.RoutineAppRequest;
 import com.moru.backend.domain.routine.dto.request.RoutineCreateRequest;
+import com.moru.backend.domain.routine.dto.request.RoutineScheduleRequest;
 import com.moru.backend.domain.routine.dto.request.RoutineTagConnectRequest;
 import com.moru.backend.domain.routine.dto.response.RoutineAppResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineDetailResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
+import com.moru.backend.domain.routine.dto.response.RoutineScheduleResponse;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.annotation.CurrentUser;
@@ -32,6 +35,7 @@ public class RoutineController {
     private final RoutineAppService routineAppService;
     private final RoutineTagService routineTagService;
     private final UserRepository userRepository;
+    private final RoutineScheduleService routineScheduleService;
 
     @Operation(summary = "루틴 생성", description = "새로운 루틴을 생성합니다.")
     @PostMapping
@@ -115,5 +119,15 @@ public class RoutineController {
     ) {
         routineTagService.disconnectTagFromRoutine(routineId, tagId, currentUser);
         return ResponseEntity.ok().build();
+    }
+
+    //====RoutineSchedule====//
+    @Operation(summary = "루틴에 스케쥴 추가", description = "이미 존재하는 루틴에 스케쥴(시간대)를 추가하기")
+    @PostMapping("/routineId/schedules")
+    public ResponseEntity<List<RoutineScheduleResponse>> createSchedule(
+        @PathVariable UUID routineId,
+        @Valid @RequestBody RoutineScheduleRequest request
+    ) {
+        return ResponseEntity.ok(routineScheduleService.createSchedule(routineId, request));
     }
 } 

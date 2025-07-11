@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
 
+import java.time.Duration;
+
 @Builder
 @Schema(description = "루틴 스텝 요청")
 public record RoutineStepRequest(
@@ -18,6 +20,6 @@ public record RoutineStepRequest(
     @NotNull
     Integer stepOrder,
 
-    @Schema(description = "소요시간(집중 루틴만 값, 간편 루틴은 null)", example = "00:05:00")
-    String estimatedTime // 집중 루틴만 값, 간편 루틴은 null (HH:MM:SS 형식)
+    @Schema(description = "소요시간(집중 루틴만 값, 간편 루틴은 null)", example = "PT5M")
+    Duration estimatedTime // 집중 루틴만 값, 간편 루틴은 null (ISO-8601 Duration 형식: PT5M = 5분, PT2H30M = 2시간 30분)
 ) {}
