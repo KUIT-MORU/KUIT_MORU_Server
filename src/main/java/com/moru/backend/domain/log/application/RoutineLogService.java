@@ -169,7 +169,6 @@ public class RoutineLogService {
                 .actualTime(request.actualTime())
                 .startedAt(request.startAt())
                 .endedAt(request.endedAt())
-                .pausedTime(request.pausedTime())
                 .isCompleted(request.isCompleted())
                 .build();
 

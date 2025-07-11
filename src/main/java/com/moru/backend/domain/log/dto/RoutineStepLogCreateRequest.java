@@ -10,7 +10,6 @@ public record RoutineStepLogCreateRequest (
     @NotNull Integer stepOrder, // 몇 번째 스텝인지
     String note,
     @NotNull Duration actualTime,
-    @NotNull Duration pausedTime,
     @NotNull LocalDateTime startAt,
     @NotNull LocalDateTime endedAt,
     @NotNull boolean isCompleted
