@@ -2,6 +2,7 @@ package com.moru.backend.domain.log.api;
 
 import com.moru.backend.domain.log.application.RoutineLogService;
 import com.moru.backend.domain.log.dto.RoutineLogDetailResponse;
+import com.moru.backend.domain.log.dto.RoutineLogSummaryResponse;
 import com.moru.backend.domain.log.dto.RoutineStepLogCreateRequest;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.validator.annotation.CurrentUser;
@@ -11,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -45,5 +47,11 @@ public class RoutineLogController {
     ) {
         routineLogService.saveStepLog(routineLogId, user, request);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @GetMapping
+    public ResponseEntity<List<RoutineLogSummaryResponse>> getRoutineLogs(@CurrentUser User user) {
+        List<RoutineLogSummaryResponse> logs = routineLogService.getLogs(user);
+        return ResponseEntity.ok(logs);
     }
 }

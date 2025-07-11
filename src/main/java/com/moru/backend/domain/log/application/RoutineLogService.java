@@ -11,6 +11,7 @@ import com.moru.backend.domain.log.domain.snapshot.RoutineSnapshot;
 import com.moru.backend.domain.log.domain.snapshot.RoutineStepSnapshot;
 import com.moru.backend.domain.log.domain.snapshot.RoutineTagSnapshot;
 import com.moru.backend.domain.log.dto.RoutineLogDetailResponse;
+import com.moru.backend.domain.log.dto.RoutineLogSummaryResponse;
 import com.moru.backend.domain.log.dto.RoutineStepLogCreateRequest;
 import com.moru.backend.domain.log.dto.RoutineStepLogDto;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
@@ -89,7 +90,7 @@ public class RoutineLogService {
             snapshot.getStepSnapshots().add(stepSnapshot);
         }
 
-        // 태그 스냅샷 생성
+        // 루틴 태그 스냅샷 생성
         for(RoutineTag tag : routine.getRoutineTags()) {
             RoutineTagSnapshot tagSnapshot = RoutineTagSnapshot.builder()
                     .routineSnapshot(snapshot)
@@ -174,5 +175,20 @@ public class RoutineLogService {
                 .build();
 
         routineStepLogRepository.save(stepLog);
+    }
+
+    public List<RoutineLogSummaryResponse> getLogs(User user) {
+        List<RoutineLog> logs = routineLogRepository.findAllByUserIdWithSnapshot(user.getId());
+
+        return logs.stream()
+                .map(log -> {
+                    RoutineSnapshot snapshot = log.getRoutineSnapshot();
+                    List<String> tags = snapshot.getTagSnapshots().stream()
+                            .map(RoutineTagSnapshot::getTagName)
+                            .toList();
+
+                    return RoutineLogSummaryResponse.from(snapshot, log, tags);
+                })
+                .toList();
     }
 }
