@@ -14,8 +14,6 @@ import com.moru.backend.domain.log.dto.RoutineLogDetailResponse;
 import com.moru.backend.domain.log.dto.RoutineLogSummaryResponse;
 import com.moru.backend.domain.log.dto.RoutineStepLogCreateRequest;
 import com.moru.backend.domain.log.dto.RoutineStepLogDto;
-import com.moru.backend.domain.routine.dao.RoutineRepository;
-import com.moru.backend.domain.routine.dao.RoutineStepRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.meta.RoutineApp;
@@ -35,17 +33,14 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class RoutineLogService {
-    private final RoutineRepository routineRepository;
     private final RoutineLogRepository routineLogRepository;
     private final RoutineSnapshotRepository routineSnapshotRepository;
-    private final RoutineStepRepository routineStepRepository;
     private final RoutineValidator routineValidator;
     private final RoutineStepSnapshotRepository routineStepSnapshotRepository;
     private final RoutineStepLogRepository routineStepLogRepository;
@@ -203,16 +198,7 @@ public class RoutineLogService {
         LocalDateTime start = today.atStartOfDay();
         LocalDateTime end = today.plusDays(1).atStartOfDay();
 
-        List<RoutineLog> logs = routineLogRepository.findByUserIdAndStartedAtBetween(user.getId(), start, end);
-        return logs.stream()
-                .map(log -> {
-                    RoutineSnapshot snapshot = log.getRoutineSnapshot();
-                    List<String> tagNames = snapshot.getTagSnapshots().stream()
-                            .map(RoutineTagSnapshot::getTagName)
-                            .toList();
-                    return RoutineLogSummaryResponse.from(snapshot, log, tagNames);
-                })
-                .toList();
+        return getRoutineLogSummaryResponses(user, start, end);
     }
 
     public List<RoutineLogSummaryResponse> getRecentLogs(User user) {
@@ -220,6 +206,10 @@ public class RoutineLogService {
         LocalDateTime start = today.minusDays(7).atStartOfDay();
         LocalDateTime end = today.atStartOfDay();
 
+        return getRoutineLogSummaryResponses(user, start, end);
+    }
+
+    private List<RoutineLogSummaryResponse> getRoutineLogSummaryResponses(User user, LocalDateTime start, LocalDateTime end) {
         List<RoutineLog> logs = routineLogRepository.findByUserIdAndStartedAtBetween(user.getId(), start, end);
         return logs.stream()
                 .map(log -> {
@@ -236,7 +226,7 @@ public class RoutineLogService {
         Pageable pageable = PageRequest.of(offset / limit, limit, Sort.by("startedAt").descending());
         Page<RoutineLog> page = routineLogRepository.findByUserId(user.getId(), pageable);
 
-        List<RoutineLogSummaryResponse> responses = page.getContent().stream()
+        return page.getContent().stream()
                 .map(log -> {
                     RoutineSnapshot snapshot = log.getRoutineSnapshot();
                     List<String> tagNames = snapshot.getTagSnapshots().stream()
@@ -245,6 +235,5 @@ public class RoutineLogService {
                     return RoutineLogSummaryResponse.from(snapshot, log, tagNames);
                 })
                 .toList();
-        return responses;
     }
 }
