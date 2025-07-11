@@ -2,6 +2,7 @@ package com.moru.backend.domain.log.api;
 
 import com.moru.backend.domain.log.application.RoutineLogService;
 import com.moru.backend.domain.log.dto.RoutineLogDetailResponse;
+import com.moru.backend.domain.log.dto.RoutineLogEndRequest;
 import com.moru.backend.domain.log.dto.RoutineLogSummaryResponse;
 import com.moru.backend.domain.log.dto.RoutineStepLogCreateRequest;
 import com.moru.backend.domain.user.domain.User;
@@ -18,7 +19,7 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/logs")
+@RequestMapping("/api/logs")
 public class RoutineLogController {
     private final RoutineLogService routineLogService;
 
@@ -51,6 +52,17 @@ public class RoutineLogController {
     ) {
         routineLogService.saveStepLog(routineLogId, user, request);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @Operation(summary = "루틴 로그 종료")
+    @PostMapping("/{routineLogId}/end")
+    public ResponseEntity<Void> endRoutine(
+            @PathVariable UUID routineLogId,
+            @RequestBody RoutineLogEndRequest request,
+            @CurrentUser User user
+    ) {
+        routineLogService.endRoutine(routineLogId, request, user);
+        return ResponseEntity.ok().build();
     }
 
 //    @Operation(summary = "루틴 로그 목록 조회")

@@ -10,10 +10,7 @@ import com.moru.backend.domain.log.domain.snapshot.RoutineAppSnapshot;
 import com.moru.backend.domain.log.domain.snapshot.RoutineSnapshot;
 import com.moru.backend.domain.log.domain.snapshot.RoutineStepSnapshot;
 import com.moru.backend.domain.log.domain.snapshot.RoutineTagSnapshot;
-import com.moru.backend.domain.log.dto.RoutineLogDetailResponse;
-import com.moru.backend.domain.log.dto.RoutineLogSummaryResponse;
-import com.moru.backend.domain.log.dto.RoutineStepLogCreateRequest;
-import com.moru.backend.domain.log.dto.RoutineStepLogDto;
+import com.moru.backend.domain.log.dto.*;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.meta.RoutineApp;
@@ -156,7 +153,7 @@ public class RoutineLogService {
 
         // 접근 권한 확인
         if(!log.getUser().getId().equals(user.getId())) {
-            throw new  CustomException(ErrorCode.FORBIDDEN);
+            throw new CustomException(ErrorCode.FORBIDDEN);
         }
 
         // 루틴 스텝 스냅샷 조회
@@ -173,6 +170,7 @@ public class RoutineLogService {
                 .startedAt(request.startAt())
                 .endedAt(request.endedAt())
                 .pausedTime(request.pausedTime())
+                .isCompleted(request.isCompleted())
                 .build();
 
         routineStepLogRepository.save(stepLog);
@@ -235,5 +233,32 @@ public class RoutineLogService {
                     return RoutineLogSummaryResponse.from(snapshot, log, tagNames);
                 })
                 .toList();
+    }
+
+    @Transactional
+    public void endRoutine(UUID routineLogId, RoutineLogEndRequest request, User user) {
+        // 루틴 로그 조회
+        RoutineLog log = routineLogRepository.findById(routineLogId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_LOG_NOT_FOUND));
+
+        // 접근 권한 확인
+        if(!log.getUser().getId().equals(user.getId())) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
+
+        // 이미 종료된 로그인지
+        if(log.getEndedAt() != null) {
+            throw new CustomException(ErrorCode.AlREADY_ENDED_ROUTINE_LOG);
+        }
+
+        // 종료 시각이 시작 시간보다 빠른지
+        if(request.endedAt().isBefore(log.getStartedAt())) {
+            throw new CustomException(ErrorCode.INVALID_END_TIME);
+        }
+
+        boolean isCompleted = routineStepLogRepository
+                .countByRoutineLogIdAndIsCompletedFalse(routineLogId) == 0;
+
+        log.endLog(request.endedAt(), request.totalTime(), isCompleted);
     }
 }

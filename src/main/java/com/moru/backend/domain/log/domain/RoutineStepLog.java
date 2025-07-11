@@ -47,6 +47,9 @@ public class RoutineStepLog {
     @Column(nullable = false)
     private LocalDateTime endedAt;
 
+    @Column(nullable = false)
+    private boolean isCompleted = false;
+
     @Convert(converter = DurationToLongConverter.class)
     @Column
     private Duration pausedTime;

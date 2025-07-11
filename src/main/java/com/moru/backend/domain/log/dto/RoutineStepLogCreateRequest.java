@@ -12,5 +12,6 @@ public record RoutineStepLogCreateRequest (
     @NotNull Duration actualTime,
     @NotNull Duration pausedTime,
     @NotNull LocalDateTime startAt,
-    @NotNull LocalDateTime endedAt
+    @NotNull LocalDateTime endedAt,
+    @NotNull boolean isCompleted
 ) {}
