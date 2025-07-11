@@ -35,4 +35,7 @@ public class RoutineSchedule {
 
     @Column(nullable = false)
     private LocalTime time;
+
+    @Column(nullable = false)
+    private boolean alarmEnabled;
 }

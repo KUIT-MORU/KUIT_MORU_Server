@@ -1,5 +1,6 @@
 package com.moru.backend.domain.routine.dto.response;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -32,8 +33,8 @@ public record RoutineListResponse(
     @Schema(description = "생성일시", example = "2024-01-01T09:00:00") // 최신순으로 정렬할때 
     LocalDateTime createdAt,
     
-    @Schema(description = "필요 시간(집중루틴만)", example = "00:50:00") // 시간순으로 정렬할 때 
-    String requiredTime
+    @Schema(description = "필요 시간(집중루틴만)", example = "PT50M") // 시간순으로 정렬할 때 
+    Duration requiredTime
 ) {
     public static RoutineListResponse of(Routine routine, List<RoutineTag> tags) {
         return new RoutineListResponse(
@@ -45,7 +46,7 @@ public record RoutineListResponse(
                         .collect(Collectors.toList()),
                 routine.getLikeCount(), // TODO: 실제 좋아요 수 반영 로직 구현 필요
                 routine.getCreatedAt(),
-                routine.getRequiredTime() != null ? routine.getRequiredTime().toString() : null
+                routine.getRequiredTime()
         );
     }
 } 

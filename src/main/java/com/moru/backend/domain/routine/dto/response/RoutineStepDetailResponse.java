@@ -5,6 +5,7 @@ import com.moru.backend.domain.routine.domain.RoutineStep;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
+import java.time.Duration;
 import java.util.UUID;
 
 @Builder
@@ -19,15 +20,15 @@ public record RoutineStepDetailResponse(
     @Schema(description = "스텝 이름", example = "물 마시기")
     String name,
     
-    @Schema(description = "소요시간(집중 루틴만, 간편 루틴은 null)", example = "00:05:00")
-    String estimatedTime
+    @Schema(description = "소요시간(집중 루틴만, 간편 루틴은 null)", example = "PT5M")
+    Duration estimatedTime
 ) {
     public static RoutineStepDetailResponse from(RoutineStep step) {
         return new RoutineStepDetailResponse(
                 step.getId(),
                 step.getStepOrder(),
                 step.getName(),
-                step.getEstimatedTime() != null ? step.getEstimatedTime().toString() : null
+                step.getEstimatedTime()
         );
     }
 }

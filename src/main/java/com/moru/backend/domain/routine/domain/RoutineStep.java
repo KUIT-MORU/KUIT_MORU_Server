@@ -1,5 +1,6 @@
 package com.moru.backend.domain.routine.domain;
 
+import com.moru.backend.global.converter.DurationToLongConverter;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,8 +10,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
@@ -36,7 +37,8 @@ public class RoutineStep {
     private Integer stepOrder;
 
     @Column
-    private LocalTime estimatedTime;
+    @Convert(converter = DurationToLongConverter.class)
+    private Duration estimatedTime;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
@@ -66,7 +68,7 @@ public class RoutineStep {
         this.name = name;
     }
 
-    public void updateEstimatedTime(LocalTime estimatedTime) {
+    public void updateEstimatedTime(Duration estimatedTime) {
         this.estimatedTime = estimatedTime;
     }
 }
