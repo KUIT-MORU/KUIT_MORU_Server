@@ -4,6 +4,7 @@ import com.moru.backend.domain.social.application.FollowService;
 import com.moru.backend.domain.social.application.LikeService;
 import com.moru.backend.domain.social.application.ScrapService;
 import com.moru.backend.domain.social.dto.FollowUserSummaryResponse;
+import com.moru.backend.domain.social.dto.RoutineImportRequest;
 import com.moru.backend.domain.social.dto.ScrappedRoutineSummaryResponse;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.validator.annotation.CurrentUser;
@@ -67,6 +68,16 @@ public class SocialController {
     @GetMapping("/scraps")
     public ResponseEntity<List<ScrappedRoutineSummaryResponse>> getScraps(@CurrentUser User user) {
         return ResponseEntity.ok(scrapService.getScrappedRoutine(user));
+    }
+
+    @Operation(summary = "스크랩한 루틴을 내 루틴으로 불러오기")
+    @PostMapping("/import")
+    public ResponseEntity<Void> importSocial(
+            @RequestBody RoutineImportRequest request,
+            @CurrentUser User user
+    ) {
+        scrapService.importScrappedRoutines(user, request);
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "팔로우")

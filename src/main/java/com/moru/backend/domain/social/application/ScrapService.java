@@ -3,8 +3,10 @@ package com.moru.backend.domain.social.application;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
 import com.moru.backend.domain.routine.domain.ActionType;
 import com.moru.backend.domain.routine.domain.Routine;
+import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import com.moru.backend.domain.social.dao.RoutineUserActionRepository;
 import com.moru.backend.domain.social.domain.RoutineUserAction;
+import com.moru.backend.domain.social.dto.RoutineImportRequest;
 import com.moru.backend.domain.social.dto.ScrappedRoutineSummaryResponse;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.exception.CustomException;
@@ -67,5 +69,10 @@ public class ScrapService {
                 .map(scrap -> ScrappedRoutineSummaryResponse.from(scrap.getRoutine()))
                 .toList();
 
+    }
+
+    public void importScrappedRoutines(User user, RoutineImportRequest request) {
+        // TODO: 루틴 서비스 쪽에서 루틴을 복사하여 추가한다.
+        // 반환값 없음.
     }
 }
