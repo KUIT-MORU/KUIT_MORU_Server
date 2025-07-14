@@ -3,13 +3,16 @@ package com.moru.backend.domain.social.api;
 import com.moru.backend.domain.social.application.FollowService;
 import com.moru.backend.domain.social.application.LikeService;
 import com.moru.backend.domain.social.application.ScrapService;
+import com.moru.backend.domain.social.dto.ScrappedRoutineSummaryResponse;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.validator.annotation.CurrentUser;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -58,6 +61,12 @@ public class SocialController {
     ) {
         scrapService.unscrap(routineId, user);
         return ResponseEntity.noContent().build(); // 204
+    }
+
+    @Operation(summary = "스크랩 조회")
+    @GetMapping("/scraps")
+    public ResponseEntity<List<ScrappedRoutineSummaryResponse>> getScraps(@CurrentUser User user) {
+        return ResponseEntity.ok(scrapService.getScrappedRoutine(user));
     }
 
     @Operation(summary = "팔로우")

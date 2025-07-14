@@ -5,6 +5,7 @@ import com.moru.backend.domain.routine.domain.ActionType;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.social.dao.RoutineUserActionRepository;
 import com.moru.backend.domain.social.domain.RoutineUserAction;
+import com.moru.backend.domain.social.dto.ScrappedRoutineSummaryResponse;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
@@ -12,6 +13,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -55,5 +57,15 @@ public class ScrapService {
                 .orElseThrow(() -> new CustomException(ErrorCode.SCRAP_NOT_FOUND));
 
         routineUserActionRepository.delete(action);
+    }
+
+    public List<ScrappedRoutineSummaryResponse> getScrappedRoutine(User user) {
+        List<RoutineUserAction> scraps = routineUserActionRepository
+                .findAllByUserIdAndActionType(user.getId(), ActionType.SCRAP);
+
+        return scraps.stream()
+                .map(scrap -> ScrappedRoutineSummaryResponse.from(scrap.getRoutine()))
+                .toList();
+
     }
 }
