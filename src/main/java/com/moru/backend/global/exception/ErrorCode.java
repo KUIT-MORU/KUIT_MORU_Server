@@ -36,6 +36,7 @@ public enum ErrorCode {
     LIKE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 좋아요한 루틴입니다."),
     SCRAP_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 스크랩입니다."),
     SCRAP_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 스크랩한 루틴입니다."),
+    SCRAP_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "자기 자신의 루틴을 스크랩할 수 없습니다."),
     FOLLOW_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 팔로우입니다."),
     FOLLOW_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 팔로우입니다."),
     FOLLOW_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "자기 자신을 팔로우할 수 없습니다."),

@@ -3,7 +3,6 @@ package com.moru.backend.domain.social.application;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
 import com.moru.backend.domain.routine.domain.ActionType;
 import com.moru.backend.domain.routine.domain.Routine;
-import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import com.moru.backend.domain.social.dao.RoutineUserActionRepository;
 import com.moru.backend.domain.social.domain.RoutineUserAction;
 import com.moru.backend.domain.social.dto.RoutineImportRequest;
@@ -32,6 +31,10 @@ public class ScrapService {
     public void scrap(UUID routineId, User user) {
         Routine routine = routineRepository.findById(routineId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
+
+        if(routine.getUser().getId().equals(user.getId())) {
+            throw new CustomException(ErrorCode.SCRAP_SELF_NOT_ALLOWED);
+        }
 
         boolean alreadyExists = routineUserActionRepository.existsByUserIdAndRoutineIdAndActionType(
                 routineId, user.getId(), ActionType.SCRAP
