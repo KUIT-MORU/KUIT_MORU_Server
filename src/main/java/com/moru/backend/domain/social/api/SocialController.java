@@ -3,6 +3,7 @@ package com.moru.backend.domain.social.api;
 import com.moru.backend.domain.social.application.FollowService;
 import com.moru.backend.domain.social.application.LikeService;
 import com.moru.backend.domain.social.application.ScrapService;
+import com.moru.backend.domain.social.dto.FollowUserSummaryResponse;
 import com.moru.backend.domain.social.dto.ScrappedRoutineSummaryResponse;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.validator.annotation.CurrentUser;
@@ -87,5 +88,17 @@ public class SocialController {
     ) {
         followService.unfollow(user, userId);
         return ResponseEntity.noContent().build(); // 204
+    }
+
+    @Operation(summary = "팔로잉 조회")
+    @GetMapping("/{userId}/following")
+    public ResponseEntity<List<FollowUserSummaryResponse>> getFollowing(@PathVariable UUID userId) {
+        return ResponseEntity.ok(followService.getFollowingList(userId));
+    }
+
+    @Operation(summary = "팔로워 조회")
+    @GetMapping("/{userId}/follower")
+    public ResponseEntity<List<FollowUserSummaryResponse>> getFollower(@PathVariable UUID userId){
+        return ResponseEntity.ok(followService.getFollowerList(userId));
     }
 }

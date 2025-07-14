@@ -3,6 +3,7 @@ package com.moru.backend.domain.social.application;
 import com.moru.backend.domain.social.dao.UserFollowRepository;
 import com.moru.backend.domain.social.domain.UserFollow;
 import com.moru.backend.domain.social.dto.FollowCountResponse;
+import com.moru.backend.domain.social.dto.FollowUserSummaryResponse;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.exception.CustomException;
@@ -11,6 +12,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -60,5 +62,32 @@ public class FollowService {
                 .orElseThrow(() -> new CustomException(ErrorCode.FOLLOW_NOT_FOUND));
 
         userFollowRepository.delete(follow);
+    }
+
+    public List<FollowUserSummaryResponse> getFollowingList(UUID userId) {
+        List<UserFollow> followings = userFollowRepository.findAllByFollowerId(userId);
+
+        return followings.stream()
+                .map(relation -> {
+                    User following = relation.getFollowing();
+                    return FollowUserSummaryResponse.from(following, true);
+                })
+                .toList();
+    }
+
+    public List<FollowUserSummaryResponse> getFollowerList(UUID userId) {
+        List<UserFollow> followers = userFollowRepository.findAllByFollowingId(userId);
+
+        return followers.stream()
+                .map(relation -> {
+                    User follower = relation.getFollower();
+                    boolean isFollow = userFollowRepository
+                            .existsByFollowerIdAndFollowingId(
+                                    userId,
+                                    follower.getId()
+                            );
+                    return FollowUserSummaryResponse.from(follower, isFollow);
+                })
+                .toList();
     }
 }
