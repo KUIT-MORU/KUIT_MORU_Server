@@ -5,12 +5,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "user_insight")
 @Getter
 @NoArgsConstructor
@@ -21,26 +23,23 @@ public class UserInsight {
     @GeneratedValue
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false)
-    private LocalDateTime insightDate;
+    private Double userCompletionRate;
+    private Double globalAverageCompletionRate;
 
-    @Column(nullable = false)
-    private Integer totalRoutineCount;
+    @Lob
+    private String completionDistributionJson;
 
-    @Column(nullable = false)
-    private Integer completedRoutineCount;
+    @Lob
+    private String averageRoutineCountByDayJson;
 
-    @Column(columnDefinition = "json", nullable = false)
-    private String routineTimeSlotCounts;
+    @Lob
+    private String routineCountByTimeSlotJson;
 
+    @LastModifiedDate
     @Column(nullable = false)
-    private float adherenceRate;
-
-    @CreatedDate
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
