@@ -22,6 +22,7 @@ import java.util.UUID;
 public class ScrapService {
     private final RoutineRepository routineRepository;
     private final RoutineUserActionRepository routineUserActionRepository;
+    private final RoutineCloner routineCloner;
 
     public Long countScrap(UUID routineId) {
         return routineUserActionRepository.countByRoutineIdAndActionType(routineId, ActionType.SCRAP);
@@ -74,8 +75,17 @@ public class ScrapService {
 
     }
 
+    @Transactional
     public void importScrappedRoutines(User user, RoutineImportRequest request) {
-        // TODO: 루틴 서비스 쪽에서 루틴을 복사하여 추가한다.
-        // 반환값 없음.
+        for(UUID routineId : request.routineIds()) {
+            Routine origin = routineRepository.findById(routineId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
+
+            if(origin.getUser().getId().equals(user.getId())) {
+                throw new CustomException(ErrorCode.IMPORT_SELF_NOT_ALLOWED);
+            }
+
+            routineCloner.cloneRoutine(origin, user);
+        }
     }
 }
