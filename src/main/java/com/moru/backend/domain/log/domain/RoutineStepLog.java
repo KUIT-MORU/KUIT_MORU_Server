@@ -1,6 +1,7 @@
 package com.moru.backend.domain.log.domain;
 
-import com.moru.backend.domain.routine.domain.RoutineStep;
+import com.moru.backend.domain.log.domain.snapshot.RoutineStepSnapshot;
+import com.moru.backend.global.converter.DurationToLongConverter;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,8 +28,8 @@ public class RoutineStepLog {
     private RoutineLog routineLog;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "routine_step_id", nullable = false)
-    private RoutineStep routineStep;
+    @JoinColumn(name = "routine_step_snapshot_id", nullable = false)
+    private RoutineStepSnapshot routineStep;
 
     @Column(nullable = false)
     private int stepOrder;
@@ -36,6 +37,7 @@ public class RoutineStepLog {
     @Column
     private String note;
 
+    @Convert(converter = DurationToLongConverter.class)
     @Column(nullable = false)
     private Duration actualTime;
 
@@ -45,6 +47,10 @@ public class RoutineStepLog {
     @Column(nullable = false)
     private LocalDateTime endedAt;
 
-    @Column(columnDefinition = "json")
-    private String pausedDurations; // JSON으로 저장
+    @Column(nullable = false)
+    private boolean isCompleted = false;
+
+    @Convert(converter = DurationToLongConverter.class)
+    @Column
+    private Duration pausedTime;
 }

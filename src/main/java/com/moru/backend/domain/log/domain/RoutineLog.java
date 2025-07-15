@@ -1,6 +1,6 @@
 package com.moru.backend.domain.log.domain;
 
-import com.moru.backend.domain.routine.domain.Routine;
+import com.moru.backend.domain.log.domain.snapshot.RoutineSnapshot;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.converter.DurationToLongConverter;
 import jakarta.persistence.*;
@@ -10,12 +10,16 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "routine_log")
 @Getter
 @NoArgsConstructor
@@ -31,8 +35,8 @@ public class RoutineLog {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "routine_id", nullable = false)
-    private Routine routine;
+    @JoinColumn(name = "routine_snapshot_id", nullable = false)
+    private RoutineSnapshot routineSnapshot;
 
     @Column(nullable = false)
     private LocalDateTime startedAt;
@@ -57,4 +61,13 @@ public class RoutineLog {
     @LastModifiedDate
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "routineLog", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RoutineStepLog> routineStepLogs = new ArrayList<>();
+
+    public void endLog(LocalDateTime endedAt, Duration totalTime, boolean isCompleted) {
+        this.endedAt = endedAt;
+        this.totalTime = totalTime;
+        this.isCompleted = isCompleted;
+    }
 }

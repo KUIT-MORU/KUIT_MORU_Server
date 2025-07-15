@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/social")
+@RequestMapping("/api/social")
 public class SocialController {
     private final LikeService likeService;
     private final ScrapService scrapService;

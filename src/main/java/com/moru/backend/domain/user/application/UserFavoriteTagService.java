@@ -31,7 +31,7 @@ public class UserFavoriteTagService {
 
             boolean alreadyExists = userFavoriteTagRepository.existsByUserIdAndTagId(user.getId(), tagId);
             if(alreadyExists) {
-                throw new CustomException(ErrorCode.TAG_ALREAEDY_EXISTS);
+                throw new CustomException(ErrorCode.TAG_ALREADY_EXISTS);
             }
 
             UserFavoriteTag favoriteTag = UserFavoriteTag.builder()
