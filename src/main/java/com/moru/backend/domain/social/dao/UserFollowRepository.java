@@ -3,6 +3,7 @@ package com.moru.backend.domain.social.dao;
 import com.moru.backend.domain.social.domain.UserFollow;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -12,4 +13,8 @@ public interface UserFollowRepository extends JpaRepository<UserFollow, UUID> {
 
     boolean existsByFollowerIdAndFollowingId(UUID followerId, UUID followingId);
     Optional<UserFollow> findByFollowerIdAndFollowingId(UUID followerId, UUID followingId);
+
+    List<UserFollow> findAllByFollowerId(UUID userId);
+
+    List<UserFollow> findAllByFollowingId(UUID userId);
 }
