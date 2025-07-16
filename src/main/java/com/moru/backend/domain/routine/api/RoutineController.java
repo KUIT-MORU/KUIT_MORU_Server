@@ -138,4 +138,14 @@ public class RoutineController {
     ) {
         return ResponseEntity.ok(routineScheduleService.getRoutineSchedules(routineId));
     }
+
+    @Operation(summary = "특정 루틴 스케쥴 수정", description = "특정 루틴의 스케쥴(시간대)를 수정합니다. 요일 선택, 매일, 주중, 주말 등 반복 방식도 변경 가능.")
+    @PatchMapping("/{routineId}/schedules/{schId}")
+    public ResponseEntity<List<RoutineScheduleResponse>> updateSchedule(
+        @PathVariable UUID routineId,
+        @PathVariable UUID schId,
+        @Valid @RequestBody RoutineScheduleRequest request
+    ) {
+        return ResponseEntity.ok(routineScheduleService.updateSchedule(routineId, schId, request));
+    }
 } 

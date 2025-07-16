@@ -75,5 +75,30 @@ public class RoutineScheduleService {
                 .map(schedule -> RoutineScheduleResponse.from(schedule, null, null))
                 .toList();
     }
+
+    /**
+     * 루틴 스케줄 수정
+     */
+    @Transactional
+    public List<RoutineScheduleResponse> updateSchedule(UUID routineId, UUID schId, RoutineScheduleRequest request) {
+        Routine routine = routineRepository.findById(routineId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
+        RoutineSchedule targetSchedule = routineScheduleRepository.findById(schId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ALREADY_EXISTS_SCHEDULE));
+
+        // repeatType이 있으면 기존 스케줄(해당 루틴의 모든 스케줄) 삭제 후 새로 생성
+        if (request.repeatType() != null) {
+            List<RoutineSchedule> existing = routineScheduleRepository.findAllByRoutineId(routineId);
+            routineScheduleRepository.deleteAll(existing);
+            return createSchedule(routineId, request);
+        } else {
+            // 단일 스케줄 수정
+            targetSchedule.setDayOfWeek(request.dayOfWeek());
+            targetSchedule.setTime(request.time());
+            targetSchedule.setAlarmEnabled(Boolean.TRUE.equals(request.alarmEnabled()));
+            routineScheduleRepository.save(targetSchedule);
+            return List.of(RoutineScheduleResponse.from(targetSchedule, null, null));
+        }
+    }
 }
 

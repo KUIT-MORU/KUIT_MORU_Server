@@ -38,4 +38,14 @@ public class RoutineSchedule {
 
     @Column(nullable = false)
     private boolean alarmEnabled;
+
+    public void setDayOfWeek(DayOfWeek dayOfWeek) {
+        this.dayOfWeek = dayOfWeek;
+    }
+    public void setTime(LocalTime time) {
+        this.time = time;
+    }
+    public void setAlarmEnabled(boolean alarmEnabled) {
+        this.alarmEnabled = alarmEnabled;
+    }
 }
