@@ -6,21 +6,28 @@ import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.meta.domain.Tag;
 import com.moru.backend.domain.routine.dao.RoutineAppRepository;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
+import com.moru.backend.domain.routine.dao.RoutineScheduleRepository;
 import com.moru.backend.domain.routine.dao.RoutineStepRepository;
 import com.moru.backend.domain.routine.dao.RoutineTagRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.meta.RoutineApp;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
+import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
+import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
 import com.moru.backend.domain.routine.dto.request.RoutineCreateRequest;
 import com.moru.backend.domain.routine.dto.response.RoutineCreateResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineDetailResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.validator.RoutineValidator;
+import com.moru.backend.domain.social.dao.RoutineUserActionRepository;
+import com.moru.backend.domain.routine.domain.ActionType;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.time.Duration;
 import java.util.List;
@@ -34,9 +41,11 @@ public class RoutineService {
     private final RoutineStepRepository routineStepRepository;
     private final RoutineTagRepository routineTagRepository;
     private final RoutineAppRepository routineAppRepository;
+    private final RoutineScheduleRepository routineScheduleRepository;
     private final TagRepository tagRepository;
     private final AppRepository appRepository;
     private final RoutineValidator routineValidator;
+    private final RoutineUserActionRepository routineUserActionRepository;
 
     @Transactional
     public RoutineCreateResponse createRoutine(RoutineCreateRequest request, User user) {
@@ -132,14 +141,30 @@ public class RoutineService {
     }
 
     @Transactional
-    public List<RoutineListResponse> getRoutineList(User user) {
-        List<Routine> routines = routineRepository.findAllByUser(user);
-        return routines.stream()
-        .map(routine -> {
-            List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
-            return RoutineListResponse.of(routine, tags);
-        })
-        .toList();
+    public Page<RoutineListResponse> getRoutineList(User user, String sortType, DayOfWeek dayOfWeek, Pageable pageable) {
+        Page<Routine> routines;
+        if ("TIME".equals(sortType) && dayOfWeek != null) {
+            routines = routineRepository.findByUserIdAndDayOfWeekOrderByScheduleTimeAsc(user.getId(), dayOfWeek, pageable);
+        } else if ("POPULAR".equals(sortType)) {
+            routines = routineRepository.findByUserOrderByLikeCountDescCreatedAtDesc(user, pageable);
+        } else {
+            routines = routineRepository.findByUserOrderByCreatedAtDesc(user, pageable);
+        }
+        return routines.map(this::toRoutineListResponse);
+    }
+
+    private RoutineListResponse toRoutineListResponse(Routine routine) {
+        List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
+        Long likeCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.LIKE);
+        return new RoutineListResponse(
+                routine.getId(),
+                routine.getTitle(),
+                routine.getImageUrl(),
+                tags.stream().map(rt -> rt.getTag().getName()).toList(),
+                likeCount.intValue(),
+                routine.getCreatedAt(),
+                routine.getRequiredTime()
+        );
     }
 
     @Transactional

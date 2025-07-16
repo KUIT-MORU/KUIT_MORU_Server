@@ -23,8 +23,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 @RestController
 @RequestMapping("/routines")
@@ -45,12 +48,16 @@ public class RoutineController {
         return ResponseEntity.ok(routineService.createRoutine(request, currentUser));
     }
 
-    @Operation(summary = "내 루틴 목록 조회", description = "현재 로그인된 사용자의 루틴 목록을 조회합니다.")
+    @Operation(summary = "내 루틴 목록 조회", description = "현재 로그인된 사용자의 루틴 목록을 조회합니다. sortType: LATEST(최신순), POPULAR(인기순), TIME(시간순, dayOfWeek 필요)")
     @GetMapping
-    public ResponseEntity<List<RoutineListResponse>> getRoutineList(
-            @CurrentUser User currentUser
+    public ResponseEntity<Page<RoutineListResponse>> getRoutineList(
+            @CurrentUser User currentUser,
+            @RequestParam(value = "sortType", defaultValue = "TIME") String sortType,
+            @RequestParam(value = "dayOfWeek", required = false) DayOfWeek dayOfWeek,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size
     ) {
-        return ResponseEntity.ok(routineService.getRoutineList(currentUser));
+        return ResponseEntity.ok(routineService.getRoutineList(currentUser, sortType, dayOfWeek, PageRequest.of(page, size)));
     }
 
     @Operation(summary = "루틴 상세 조회", description = "특정 루틴의 상세 정보를 조회합니다.")

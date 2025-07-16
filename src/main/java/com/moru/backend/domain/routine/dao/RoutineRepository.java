@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.moru.backend.domain.routine.domain.Routine;
+import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 import com.moru.backend.domain.user.domain.User;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -63,10 +64,28 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
             @Param("tagNames") List<String> tagNames,
             Pageable pageable
     );
+ 
 
     // 루틴명 자동완성
     @Query("select distinct r.title from Routine r " +
             "where r.title like %:keyword% " +
             "order by r.title")
     List<String> findTitleSuggestions(@Param("keyword") String keyword);
+
+    /**
+     * 내 루틴 정렬
+     * @param userId
+     * @param dayOfWeek
+     * @param pageable
+     * @return
+     */
+    // 시간순으로 정렬된
+    @Query("SELECT r FROM Routine r JOIN r.routineSchedules s WHERE r.user.id = :userId AND s.dayOfWeek = :dayOfWeek ORDER BY s.time ASC")
+    Page<Routine> findByUserIdAndDayOfWeekOrderByScheduleTimeAsc(@Param("userId") UUID userId, @Param("dayOfWeek") DayOfWeek dayOfWeek, Pageable pageable);
+
+    @Query("select distinct r from Routine r left join r.routineTags rt where r.user = :user order by r.likeCount desc, r.createdAt desc")
+    Page<Routine> findByUserOrderByLikeCountDescCreatedAtDesc(@Param("user") User user, Pageable pageable);
+
+    @Query("select distinct r from Routine r left join r.routineTags rt where r.user = :user order by r.createdAt desc")
+    Page<Routine> findByUserOrderByCreatedAtDesc(@Param("user") User user, Pageable pageable);
 }
