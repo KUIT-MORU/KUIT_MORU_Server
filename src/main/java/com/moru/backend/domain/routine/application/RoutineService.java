@@ -173,7 +173,9 @@ public class RoutineService {
         List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
         List<RoutineStep> steps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
         List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
-        return RoutineDetailResponse.of(routine, tags, steps, apps, currentUser);
+        int likeCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.LIKE).intValue();
+        int scrapCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.SCRAP).intValue();
+        return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser);
     }
 
 }

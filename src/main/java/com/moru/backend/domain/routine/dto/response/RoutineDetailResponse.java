@@ -53,6 +53,10 @@ public record RoutineDetailResponse(
     @Schema(description = "필요 시간(집중 루틴만 값, 간편 루틴은 null)", example = "PT50M")
     Duration requiredTime,
 
+    @Schema(description = "좋아요 수", example = "16")
+    int likeCount,
+    @Schema(description = "스크랩 수", example = "5")
+    int scrapCount,
     @Schema(description = "루틴 소유자 여부", example = "true")
     boolean isOwner
 ) {
@@ -61,6 +65,8 @@ public record RoutineDetailResponse(
         List<RoutineTag> tags,
         List<RoutineStep> steps,
         List<RoutineApp> apps,
+        int likeCount,
+        int scrapCount,
         User currentUser
     ) {
         boolean isOwner = routine.getUser().getId().equals(currentUser.getId());
@@ -73,12 +79,12 @@ public record RoutineDetailResponse(
             routine.isSimple(),
             routine.isUserVisible(),
             steps.stream().map(RoutineStepDetailResponse::from).toList(),
-            apps.stream()
-                    .map(routineApp -> RoutineAppResponse.from(routineApp.getApp()))
-                    .toList(),
+            apps.stream().map(a -> RoutineAppResponse.from(a.getApp())).toList(),
             routine.getCreatedAt(),
             routine.getUpdatedAt(),
             routine.getRequiredTime(),
+            likeCount,
+            scrapCount,
             isOwner
         );
     }
