@@ -5,17 +5,8 @@ import com.moru.backend.domain.routine.application.RoutineAppService;
 import com.moru.backend.domain.routine.application.RoutineScheduleService;
 import com.moru.backend.domain.routine.application.RoutineService;
 import com.moru.backend.domain.routine.application.RoutineTagService;
-import com.moru.backend.domain.routine.dto.request.RoutineAppRequest;
-import com.moru.backend.domain.routine.dto.request.RoutineCreateRequest;
-import com.moru.backend.domain.routine.dto.request.RoutineScheduleRequest;
-import com.moru.backend.domain.routine.dto.request.RoutineTagConnectRequest;
-import com.moru.backend.domain.routine.dto.request.RoutineUpdateRequest;
-import com.moru.backend.domain.routine.dto.response.RoutineAppResponse;
-import com.moru.backend.domain.routine.dto.response.RoutineDetailResponse;
-import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
-import com.moru.backend.domain.routine.dto.response.RoutineScheduleResponse;
-import com.moru.backend.domain.routine.dto.response.RecommendFeedResponse;
-import com.moru.backend.domain.user.dao.UserRepository;
+import com.moru.backend.domain.routine.dto.request.*;
+import com.moru.backend.domain.routine.dto.response.*;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.annotation.CurrentUser;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,7 +15,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 import java.util.List;
 import java.util.UUID;
@@ -39,12 +29,11 @@ public class RoutineController {
     private final RoutineService routineService;
     private final RoutineAppService routineAppService;
     private final RoutineTagService routineTagService;
-    private final UserRepository userRepository;
     private final RoutineScheduleService routineScheduleService;
 
     @Operation(summary = "루틴 생성", description = "새로운 루틴을 생성합니다.")
     @PostMapping
-    public ResponseEntity<Object> createRoutine(
+    public ResponseEntity<RoutineCreateResponse> createRoutine(
             @CurrentUser User currentUser,
             @Valid @RequestBody RoutineCreateRequest request) {
         return ResponseEntity.ok(routineService.createRoutine(request, currentUser));
@@ -198,8 +187,10 @@ public class RoutineController {
     }
 
     //==== 루틴 피드 추천 API ====
+    @Operation(summary = "루틴 피드 추천", description = "루틴 피드 추천을 받습니다.")
     @GetMapping("/recommend/feed")
     public ResponseEntity<RecommendFeedResponse> getRecommendFeed(@CurrentUser User currentUser) {
-        return ResponseEntity.ok(routineService.getRecommendFeed(currentUser));
+        RecommendFeedResponse response = routineService.getRecommendFeed(currentUser);
+        return ResponseEntity.ok(response);
     }
 } 
