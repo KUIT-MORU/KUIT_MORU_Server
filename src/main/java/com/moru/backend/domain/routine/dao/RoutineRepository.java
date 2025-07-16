@@ -88,4 +88,7 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
 
     @Query("select distinct r from Routine r left join r.routineTags rt where r.user = :user order by r.createdAt desc")
     Page<Routine> findByUserOrderByCreatedAtDesc(@Param("user") User user, Pageable pageable);
+
+    @Query("SELECT r FROM Routine r WHERE r.createdAt >= :weekAgo ORDER BY (r.viewCount * 0.5 + r.likeCount * 0.5) DESC, r.createdAt DESC")
+    List<Routine> findHotRoutines(@Param("weekAgo") java.time.LocalDateTime weekAgo, org.springframework.data.domain.Pageable pageable);
 }

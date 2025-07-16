@@ -33,6 +33,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import java.time.LocalDateTime;
 
 import java.time.Duration;
 import java.util.List;
@@ -212,6 +214,15 @@ public class RoutineService {
     @Transactional(readOnly = true)
     public RecommendFeedResponse getRecommendFeed(User user) {
 
+    }
+
+    @Transactional
+    public List<RoutineListResponse> getHotRoutines(int limit) {
+        LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
+        List<Routine> routines = routineRepository.findHotRoutines(weekAgo, PageRequest.of(0, limit));
+        return routines.stream()
+            .map(this::toRoutineListResponse)
+            .toList();
     }
 
     private void updateSimpleFields(Routine routine, RoutineUpdateRequest request) {
