@@ -70,10 +70,8 @@ public class RoutineSearchService {
             List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
             // RoutineListResponse 생성 (routine & tag entity 포함)
             RoutineListResponse routineListResponse = RoutineListResponse.of(routine, tags);
-            // 최종적으로 API 응답 DTO로 변환
-            boolean isRunning = routineLogRepository.existsByUserIdAndRoutineSnapshot_RoutineIdAndStartedAtIsNotNullAndEndedAtIsNull(
-                user.getId(), routine.getId());
-            return RoutineSearchResponse.of(routineListResponse, isRunning);
+            // 실행중 여부는 더 이상 포함하지 않음
+            return RoutineSearchResponse.of(routineListResponse);
         });
     }
 

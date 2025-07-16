@@ -14,4 +14,5 @@ public interface RoutineStepRepository extends JpaRepository<RoutineStep, UUID> 
     // stepOrder 순서대로 정렬된 스텝 목록 조회
     List<RoutineStep> findByRoutineOrderByStepOrder(Routine routine);
 
+    void deleteByRoutine(Routine routine);
 } 

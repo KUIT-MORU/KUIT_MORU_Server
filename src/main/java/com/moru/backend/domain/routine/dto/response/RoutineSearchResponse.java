@@ -26,10 +26,8 @@ public record RoutineSearchResponse(
     Integer likeCount,
 
     @Schema(description = "생성일시", example = "2024-01-01T09:00:00")
-    LocalDateTime createdAt,
+    LocalDateTime createdAt
 
-    @Schema(description = "실행중 여부", example = "false")
-    boolean isRunning
 ) {
     public static RoutineSearchResponse of(RoutineListResponse routineListResponse) {
         return new RoutineSearchResponse(
@@ -49,8 +47,7 @@ public record RoutineSearchResponse(
             routineListResponse.imageUrl(),
             routineListResponse.tags(),
             routineListResponse.likeCount(),
-            routineListResponse.createdAt(),
-            isRunning
+            routineListResponse.createdAt()
         );
     }
 }
