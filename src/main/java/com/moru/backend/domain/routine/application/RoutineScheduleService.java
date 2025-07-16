@@ -105,5 +105,32 @@ public class RoutineScheduleService {
         }
         throw new CustomException(ErrorCode.INVALID_REPEAT_TYPE);
     }
+
+    /**
+     * 특정 스케줄 삭제 - 루틴에 할당된 스케쥴 초기화할때
+     */
+    @Transactional
+    public void deleteSchedule(UUID routineId, UUID schId) {
+        Routine routine = routineRepository.findById(routineId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
+        RoutineSchedule schedule = routineScheduleRepository.findById(schId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ALREADY_EXISTS_SCHEDULE));
+        // 해당 루틴에 속한 스케줄인지 검증
+        if (!schedule.getRoutine().getId().equals(routine.getId())) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        routineScheduleRepository.delete(schedule);
+    }
+
+    /**
+     * 루틴에 할당된 모든 스케줄 삭제(초기화)
+     */
+    @Transactional
+    public void deleteAllSchedules(UUID routineId) {
+        Routine routine = routineRepository.findById(routineId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
+        List<RoutineSchedule> schedules = routineScheduleRepository.findAllByRoutineId(routineId);
+        routineScheduleRepository.deleteAll(schedules);
+    }
 }
 

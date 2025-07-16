@@ -155,4 +155,23 @@ public class RoutineController {
     ) {
         return ResponseEntity.ok(routineScheduleService.updateSchedule(routineId, schId, request));
     }
+
+    @Operation(summary = "특정 루틴 스케쥴 삭제", description = "특정 루틴의 스케쥴(시간대)를 삭제합니다.")
+    @DeleteMapping("/{routineId}/schedules/{schId}")
+    public ResponseEntity<Void> deleteSchedule(
+        @PathVariable UUID routineId,
+        @PathVariable UUID schId
+    ) {
+        routineScheduleService.deleteSchedule(routineId, schId);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "루틴 스케쥴 전체 초기화", description = "특정 루틴에 할당된 모든 스케쥴(시간대)를 삭제합니다.")
+    @DeleteMapping("/{routineId}/schedules")
+    public ResponseEntity<Void> deleteAllSchedules(
+        @PathVariable UUID routineId
+    ) {
+        routineScheduleService.deleteAllSchedules(routineId);
+        return ResponseEntity.ok().build();
+    }
 } 
