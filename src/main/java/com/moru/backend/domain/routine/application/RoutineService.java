@@ -37,9 +37,18 @@ import org.springframework.data.domain.PageRequest;
 import java.time.LocalDateTime;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
+import com.moru.backend.domain.user.domain.UserFavoriteTag;
+import com.moru.backend.domain.social.dao.RoutineUserActionRepository;
+import com.moru.backend.domain.social.domain.RoutineUserAction;
+import com.moru.backend.domain.routine.domain.ActionType;
+import org.springframework.data.domain.PageRequest;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -56,6 +65,7 @@ public class RoutineService {
     // 추가: ScrapService, LikeService DI
     private final ScrapService scrapService;
     private final LikeService likeService;
+    private final UserFavoriteTagRepository userFavoriteTagRepository;
 
     @Transactional
     public RoutineCreateResponse createRoutine(RoutineCreateRequest request, User user) {
@@ -218,6 +228,8 @@ public class RoutineService {
     @Transactional
     public RecommendFeedResponse getRecommendFeed(User user) {
         List<RoutineListResponse> hotRoutines = getHotRoutines(10);
+        List<RoutineListResponse> personalRoutines = getPersonalRoutines(user, 10);
+        return new RecommendFeedResponse(hotRoutines, personalRoutines, null, null);
     }
 
     @Transactional
@@ -227,6 +239,58 @@ public class RoutineService {
         return routines.stream()
             .map(this::toRoutineListResponse)
             .toList();
+    }
+
+    @Transactional
+    public List<RoutineListResponse> getPersonalRoutines(User user, int limit) {
+        // 1. 관심태그
+        List<UserFavoriteTag> favoriteTags = userFavoriteTagRepository.findAllByUserId(user.getId());
+        List<String> tagNames = new ArrayList<>();
+        tagNames.addAll(favoriteTags.stream().map(f -> f.getTag().getName()).toList());
+
+        // 2. 내 루틴 태그
+        List<Routine> myRoutines = routineRepository.findAllByUser(user);
+        for (Routine r : myRoutines) {
+            List<RoutineTag> tags = routineTagRepository.findByRoutine(r);
+            tagNames.addAll(tags.stream().map(rt -> rt.getTag().getName()).toList());
+        }
+
+        // 3. 태그 count 집계
+        Map<String, Long> tagCount = tagNames.stream()
+            .collect(Collectors.groupingBy(t -> t, Collectors.counting()));
+
+        // 4. count 높은 순 정렬
+        List<String> sortedTags = tagCount.entrySet().stream()
+            .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+            .map(Map.Entry::getKey)
+            .toList();
+
+        // 5. 태그가 많이 포함된 루틴 추천
+        if (!sortedTags.isEmpty()) {
+            List<Routine> routines = routineRepository.findRoutinesByTagsOrderByTagCount(sortedTags, PageRequest.of(0, limit));
+            return routines.stream().map(this::toRoutineListResponse).toList();
+        }
+
+        // 6. 관심태그+내루틴이 없으면 → 스크랩한 루틴의 태그로 재시도
+        List<RoutineUserAction> scraps = routineUserActionRepository.findAllByUserIdAndActionType(user.getId(), ActionType.SCRAP);
+        List<String> scrapTagNames = new java.util.ArrayList<>();
+        for (RoutineUserAction scrap : scraps) {
+            List<RoutineTag> tags = routineTagRepository.findByRoutine(scrap.getRoutine());
+            scrapTagNames.addAll(tags.stream().map(rt -> rt.getTag().getName()).toList());
+        }
+        if (!scrapTagNames.isEmpty()) {
+            Map<String, Long> scrapTagCount = scrapTagNames.stream()
+                .collect(Collectors.groupingBy(t -> t, Collectors.counting()));
+            List<String> sortedScrapTags = scrapTagCount.entrySet().stream()
+                .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                .map(Map.Entry::getKey)
+                .toList();
+            List<Routine> routines = routineRepository.findRoutinesByTagsOrderByTagCount(sortedScrapTags, PageRequest.of(0, limit));
+            return routines.stream().map(this::toRoutineListResponse).toList();
+        }
+
+        // 7. 그래도 없으면 → 핫한 루틴
+        return getHotRoutines(limit);
     }
 
     private void updateSimpleFields(Routine routine, RoutineUpdateRequest request) {
