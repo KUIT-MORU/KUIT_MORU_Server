@@ -123,7 +123,7 @@ public class RoutineController {
 
     //====RoutineSchedule====//
     @Operation(summary = "루틴에 스케쥴 추가", description = "이미 존재하는 루틴에 스케쥴(시간대)를 추가하기")
-    @PostMapping("/routineId/schedules")
+    @PostMapping("/{routineId}/schedules")
     public ResponseEntity<List<RoutineScheduleResponse>> createSchedule(
         @PathVariable UUID routineId,
         @Valid @RequestBody RoutineScheduleRequest request
