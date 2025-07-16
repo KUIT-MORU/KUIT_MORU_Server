@@ -90,10 +90,23 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
     @Query("select distinct r from Routine r left join r.routineTags rt where r.user = :user order by r.createdAt desc")
     Page<Routine> findByUserOrderByCreatedAtDesc(@Param("user") User user, Pageable pageable);
 
-    // 지금 가장 핫한 루틴틴
+    //====루틴 추천 정렬 기능====// 
+    // 지금 가장 핫한 루틴 
     @Query("SELECT r FROM Routine r WHERE r.createdAt >= :weekAgo ORDER BY (r.viewCount * 0.5 + r.likeCount * 0.5) DESC, r.createdAt DESC")
     List<Routine> findHotRoutines(@Param("weekAgo") LocalDateTime weekAgo, Pageable pageable);
-
+    
+    // xx님에게 맞는 루틴 
     @Query("SELECT r FROM Routine r JOIN r.routineTags rt WHERE rt.tag.name IN :tags GROUP BY r.id ORDER BY COUNT(rt.tag.name) DESC, r.createdAt DESC")
     List<Routine> findRoutinesByTagsOrderByTagCount(@Param("tags") List<String> tags, Pageable pageable);
+
+    // 태그 쌍 조회
+    @Query("""
+        SELECT r FROM Routine r
+        JOIN r.routineTags rt1
+        JOIN r.routineTags rt2
+        WHERE rt1.tag.id = :tag1 AND rt2.tag.id = :tag2
+        GROUP BY r.id
+        ORDER BY (r.viewCount * 0.5 + r.likeCount * 0.5) DESC, r.createdAt DESC
+    """)
+    List<Routine> findRoutinesByTagPair(@Param("tag1") UUID tag1, @Param("tag2") UUID tag2, Pageable pageable);
 }

@@ -40,6 +40,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
 import com.moru.backend.domain.user.domain.UserFavoriteTag;
@@ -49,6 +50,8 @@ import com.moru.backend.domain.routine.domain.ActionType;
 import org.springframework.data.domain.PageRequest;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.moru.backend.domain.routine.dto.response.TagPairSection;
+import com.moru.backend.domain.routine.dao.TagPairCount;
 
 @Service
 @RequiredArgsConstructor
@@ -229,7 +232,11 @@ public class RoutineService {
     public RecommendFeedResponse getRecommendFeed(User user) {
         List<RoutineListResponse> hotRoutines = getHotRoutines(10);
         List<RoutineListResponse> personalRoutines = getPersonalRoutines(user, 10);
-        return new RecommendFeedResponse(hotRoutines, personalRoutines, null, null);
+        // 전체 루틴에서 가장 많이 함께 쓰인 태그쌍 추천 
+        TagPairSection tagPairSection1 = getTopTagPairSection(10);
+        // 관심태그와 함께 쓰인 태그쌍 추천
+        TagPairSection tagPairSection2 = getInterestTagPairSection(user, 10);
+        return new RecommendFeedResponse(hotRoutines, personalRoutines, tagPairSection1, tagPairSection2);
     }
 
     @Transactional
@@ -291,6 +298,35 @@ public class RoutineService {
 
         // 7. 그래도 없으면 → 핫한 루틴
         return getHotRoutines(limit);
+    }
+
+    @Transactional
+    public TagPairSection getTopTagPairSection(int limit) {
+        List<TagPairCount> topPairs = routineTagRepository.findTopTagPairs();
+        if (topPairs.isEmpty()) return null;
+        TagPairCount pair = topPairs.get(0);
+        List<Routine> routines = routineRepository.findRoutinesByTagPair(
+            UUID.fromString(pair.getTag1()), UUID.fromString(pair.getTag2()), PageRequest.of(0, limit));
+        String tagName1 = tagRepository.findById(UUID.fromString(pair.getTag1())).map(Tag::getName).orElse("");
+        String tagName2 = tagRepository.findById(UUID.fromString(pair.getTag2())).map(Tag::getName).orElse("");
+        return new TagPairSection(tagName1, tagName2, routines.stream().map(this::toRoutineListResponse).toList());
+    }
+
+    @Transactional
+    public TagPairSection getInterestTagPairSection(User user, int limit) {
+        List<UserFavoriteTag> favoriteTags = userFavoriteTagRepository.findAllByUserId(user.getId());
+        Set<String> interestTagIds = favoriteTags.stream().map(f -> f.getTag().getId().toString()).collect(Collectors.toSet());
+        List<TagPairCount> topPairs = routineTagRepository.findTopTagPairs();
+        for (TagPairCount pair : topPairs) {
+            if (interestTagIds.contains(pair.getTag1()) || interestTagIds.contains(pair.getTag2())) {
+                List<Routine> routines = routineRepository.findRoutinesByTagPair(
+                    UUID.fromString(pair.getTag1()), UUID.fromString(pair.getTag2()), PageRequest.of(0, limit));
+                String tagName1 = tagRepository.findById(UUID.fromString(pair.getTag1())).map(Tag::getName).orElse("");
+                String tagName2 = tagRepository.findById(UUID.fromString(pair.getTag2())).map(Tag::getName).orElse("");
+                return new TagPairSection(tagName1, tagName2, routines.stream().map(this::toRoutineListResponse).toList());
+            }
+        }
+        return null;
     }
 
     private void updateSimpleFields(Routine routine, RoutineUpdateRequest request) {
