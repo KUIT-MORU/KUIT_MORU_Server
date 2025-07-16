@@ -24,7 +24,7 @@ import java.util.UUID;
 public class RoutineSearchController {
     private final RoutineSearchService routineSearchService;
 
-    @Operation(summary = "루틴 검색", description = "루틴명과 태그명을 기반으로 루틴을 검색")
+    @Operation(summary = "루틴 검색", description = "루틴명과 태그명으로 루틴을 검색")
     @PostMapping
     public ResponseEntity<Page<RoutineSearchResponse>> searchRoutines(
             @CurrentUser User currentUser,
@@ -39,7 +39,7 @@ public class RoutineSearchController {
             );
         }
         // 실제 검색 로직 수행하고, 페이징된 결과 반환하기
-        Page<RoutineSearchResponse> result = routineSearchService.searchRoutines(request);
+        Page<RoutineSearchResponse> result = routineSearchService.searchRoutines(request, currentUser);
         return ResponseEntity.ok(result);
     }
 

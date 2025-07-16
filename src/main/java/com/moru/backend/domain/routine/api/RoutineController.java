@@ -9,6 +9,7 @@ import com.moru.backend.domain.routine.dto.request.RoutineAppRequest;
 import com.moru.backend.domain.routine.dto.request.RoutineCreateRequest;
 import com.moru.backend.domain.routine.dto.request.RoutineScheduleRequest;
 import com.moru.backend.domain.routine.dto.request.RoutineTagConnectRequest;
+import com.moru.backend.domain.routine.dto.request.RoutineUpdateRequest;
 import com.moru.backend.domain.routine.dto.response.RoutineAppResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineDetailResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
@@ -172,6 +173,26 @@ public class RoutineController {
         @PathVariable UUID routineId
     ) {
         routineScheduleService.deleteAllSchedules(routineId);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "루틴 수정", description = "특정 루틴의 정보를 수정합니다.")
+    @PatchMapping("/{routineId}")
+    public ResponseEntity<RoutineDetailResponse> updateRoutine(
+        @CurrentUser User currentUser,
+        @PathVariable UUID routineId,
+        @Valid @RequestBody RoutineUpdateRequest request
+    ) {
+        return ResponseEntity.ok(routineService.updateRoutine(routineId, request, currentUser));
+    }
+
+    @Operation(summary = "루틴 삭제", description = "특정 루틴을 삭제합니다.")
+    @DeleteMapping("/{routineId}")
+    public ResponseEntity<Void> deleteRoutine(
+        @CurrentUser User currentUser,
+        @PathVariable UUID routineId
+    ) {
+        routineService.deleteRoutine(routineId, currentUser);
         return ResponseEntity.ok().build();
     }
 } 

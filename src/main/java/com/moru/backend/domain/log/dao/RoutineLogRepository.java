@@ -36,6 +36,7 @@ public interface RoutineLogRepository extends JpaRepository<RoutineLog, UUID> {
 
     List<RoutineLog> findByUserIdAndStartedAtBetween(UUID userId, LocalDateTime start, LocalDateTime end);
 
+
     @EntityGraph(attributePaths = {
             "routineSnapshot",
             "routineSnapshot.tagSnapshots"

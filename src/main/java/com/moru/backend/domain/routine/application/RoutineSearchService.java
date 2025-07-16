@@ -14,6 +14,7 @@ import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineSearchResponse;
 import com.moru.backend.domain.routine.dto.response.SearchHistoryResponse;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.domain.log.dao.RoutineLogRepository;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class RoutineSearchService {
     private final RoutineTagRepository routineTagRepository;
     private final SearchHistoryRepository searchHistoryRepository;
     private final TagRepository tagRepository;
+    private final RoutineLogRepository routineLogRepository;
 
     /**
      * 루틴 검색 비즈니스 로직 수행
@@ -42,7 +44,7 @@ public class RoutineSearchService {
      * @return 페이징 처리된 루틴 검색 결과
      */
     @Transactional(readOnly = true)
-    public Page<RoutineSearchResponse> searchRoutines(RoutineSearchRequest request) {
+    public Page<RoutineSearchResponse> searchRoutines(RoutineSearchRequest request, User user) {
         // 페이징 정보 생성 (# page, size)
         Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
 
@@ -68,7 +70,7 @@ public class RoutineSearchService {
             List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
             // RoutineListResponse 생성 (routine & tag entity 포함)
             RoutineListResponse routineListResponse = RoutineListResponse.of(routine, tags);
-            // 최종적으로 API 응답 DTO로 변환
+            // 실행중 여부는 더 이상 포함하지 않음
             return RoutineSearchResponse.of(routineListResponse);
         });
     }
@@ -110,8 +112,8 @@ public class RoutineSearchService {
     public List<SearchHistoryResponse> getRecentSearchHistory(User user, SearchType searchType) {
         List<SearchHistory> histories = searchHistoryRepository
                 .findByUserIdAndSearchTypeOrderByCreatedAtDesc(user.getId(), searchType);
-
         return histories.stream()
+                .limit(12) // todo : 검색기록 개수 제한 몇개인지 check 
                 .map(history -> SearchHistoryResponse.builder()
                         .id(history.getId())
                         .searchKeyword(history.getSearchKeyword())
