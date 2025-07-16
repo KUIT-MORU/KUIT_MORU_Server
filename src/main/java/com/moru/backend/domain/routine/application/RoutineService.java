@@ -181,6 +181,7 @@ public class RoutineService {
         List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
         List<RoutineStep> steps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
         List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
+
         // 서비스 사용하도록 변경
         int likeCount = likeService.countLikes(routine.getId()).intValue();
         int scrapCount = scrapService.countScrap(routine.getId()).intValue();
@@ -214,7 +215,7 @@ public class RoutineService {
         routineRepository.delete(routine);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public RecommendFeedResponse getRecommendFeed(User user) {
         List<RoutineListResponse> hotRoutines = getHotRoutines(10);
     }
