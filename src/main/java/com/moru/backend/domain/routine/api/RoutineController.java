@@ -14,6 +14,7 @@ import com.moru.backend.domain.routine.dto.response.RoutineAppResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineDetailResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineScheduleResponse;
+import com.moru.backend.domain.routine.dto.response.RecommendFeedResponse;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.annotation.CurrentUser;
@@ -194,5 +195,11 @@ public class RoutineController {
     ) {
         routineService.deleteRoutine(routineId, currentUser);
         return ResponseEntity.ok().build();
+    }
+
+    //==== 루틴 피드 추천 API ====
+    @GetMapping("/recommend/feed")
+    public ResponseEntity<RecommendFeedResponse> getRecommendFeed(@CurrentUser User currentUser) {
+        return ResponseEntity.ok(routineService.getRecommendFeed(currentUser));
     }
 } 

@@ -16,11 +16,14 @@ import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
 import com.moru.backend.domain.routine.dto.request.RoutineCreateRequest;
+import com.moru.backend.domain.routine.dto.response.RecommendFeedResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineCreateResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineDetailResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.validator.RoutineValidator;
+import com.moru.backend.domain.social.application.LikeService;
+import com.moru.backend.domain.social.application.ScrapService;
 import com.moru.backend.domain.social.dao.RoutineUserActionRepository;
 import com.moru.backend.domain.routine.domain.ActionType;
 import com.moru.backend.domain.routine.dto.request.RoutineUpdateRequest;
@@ -49,8 +52,8 @@ public class RoutineService {
     private final RoutineValidator routineValidator;
     private final RoutineUserActionRepository routineUserActionRepository;
     // 추가: ScrapService, LikeService DI
-    private final com.moru.backend.domain.social.application.ScrapService scrapService;
-    private final com.moru.backend.domain.social.application.LikeService likeService;
+    private final ScrapService scrapService;
+    private final LikeService likeService;
 
     @Transactional
     public RoutineCreateResponse createRoutine(RoutineCreateRequest request, User user) {
@@ -204,6 +207,11 @@ public class RoutineService {
     public void deleteRoutine(UUID routineId, User currentUser) {
         Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
         routineRepository.delete(routine);
+    }
+
+    @Transactional(readOnly = true)
+    public RecommendFeedResponse getRecommendFeed(User user) {
+
     }
 
     private void updateSimpleFields(Routine routine, RoutineUpdateRequest request) {
