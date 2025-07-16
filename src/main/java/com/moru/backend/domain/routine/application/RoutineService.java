@@ -196,6 +196,12 @@ public class RoutineService {
         return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser);
     }
 
+    @Transactional
+    public void deleteRoutine(UUID routineId, User currentUser) {
+        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
+        routineRepository.delete(routine);
+    }
+
     private void updateSimpleFields(Routine routine, RoutineUpdateRequest request) {
         if (request.title() != null) routine.setTitle(request.title());
         if (request.description() != null) routine.setContent(request.description());

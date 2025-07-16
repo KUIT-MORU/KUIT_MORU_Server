@@ -185,4 +185,14 @@ public class RoutineController {
     ) {
         return ResponseEntity.ok(routineService.updateRoutine(routineId, request, currentUser));
     }
+
+    @Operation(summary = "루틴 삭제", description = "특정 루틴을 삭제합니다.")
+    @DeleteMapping("/{routineId}")
+    public ResponseEntity<Void> deleteRoutine(
+        @CurrentUser User currentUser,
+        @PathVariable UUID routineId
+    ) {
+        routineService.deleteRoutine(routineId, currentUser);
+        return ResponseEntity.ok().build();
+    }
 } 
