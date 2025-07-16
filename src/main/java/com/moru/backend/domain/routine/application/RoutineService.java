@@ -175,6 +175,9 @@ public class RoutineService {
     @Transactional
     public RoutineDetailResponse getRoutineDetail(UUID routineId, User currentUser) {
         Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
+        // 조회수 증가
+        routine.setViewCount(routine.getViewCount() + 1);
+        routineRepository.save(routine);
         List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
         List<RoutineStep> steps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
         List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
@@ -213,7 +216,7 @@ public class RoutineService {
 
     @Transactional(readOnly = true)
     public RecommendFeedResponse getRecommendFeed(User user) {
-
+        List<RoutineListResponse> hotRoutines = getHotRoutines(10);
     }
 
     @Transactional

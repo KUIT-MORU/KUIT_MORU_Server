@@ -1,5 +1,6 @@
 package com.moru.backend.domain.routine.dao;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -89,6 +90,7 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
     @Query("select distinct r from Routine r left join r.routineTags rt where r.user = :user order by r.createdAt desc")
     Page<Routine> findByUserOrderByCreatedAtDesc(@Param("user") User user, Pageable pageable);
 
+    // 지금 가장 핫한 루틴틴
     @Query("SELECT r FROM Routine r WHERE r.createdAt >= :weekAgo ORDER BY (r.viewCount * 0.5 + r.likeCount * 0.5) DESC, r.createdAt DESC")
-    List<Routine> findHotRoutines(@Param("weekAgo") java.time.LocalDateTime weekAgo, org.springframework.data.domain.Pageable pageable);
+    List<Routine> findHotRoutines(@Param("weekAgo") LocalDateTime weekAgo, Pageable pageable);
 }
