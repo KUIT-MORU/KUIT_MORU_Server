@@ -64,5 +64,16 @@ public class RoutineScheduleService {
         return responses;
     }
 
+    /**
+     * 루틴 스케줄 목록 조회
+     */
+    public List<RoutineScheduleResponse> getRoutineSchedules(UUID routineId) {
+        Routine routine = routineRepository.findById(routineId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
+        List<RoutineSchedule> schedules = routineScheduleRepository.findAllByRoutineId(routineId);
+        return schedules.stream()
+                .map(schedule -> RoutineScheduleResponse.from(schedule, null, null))
+                .toList();
+    }
 }
 

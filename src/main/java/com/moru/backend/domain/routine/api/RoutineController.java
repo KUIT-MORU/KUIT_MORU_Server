@@ -130,4 +130,12 @@ public class RoutineController {
     ) {
         return ResponseEntity.ok(routineScheduleService.createSchedule(routineId, request));
     }
+
+    @Operation(summary = "루틴 스케쥴 목록 조회", description = "특정 루틴의 스케쥴(시간대) 목록을 조회합니다.")
+    @GetMapping("/{routineId}/schedules")
+    public ResponseEntity<List<RoutineScheduleResponse>> getRoutineSchedules(
+        @PathVariable UUID routineId
+    ) {
+        return ResponseEntity.ok(routineScheduleService.getRoutineSchedules(routineId));
+    }
 } 
