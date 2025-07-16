@@ -12,6 +12,7 @@ import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.meta.RoutineApp;
 import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
+import com.moru.backend.domain.user.domain.User;
 
 @Builder
 @Schema(description = "루틴 상세 응답")
@@ -50,14 +51,19 @@ public record RoutineDetailResponse(
     LocalDateTime updatedAt,
 
     @Schema(description = "필요 시간(집중 루틴만 값, 간편 루틴은 null)", example = "PT50M")
-    Duration requiredTime
+    Duration requiredTime,
+
+    @Schema(description = "루틴 소유자 여부", example = "true")
+    boolean isOwner
 ) {
     public static RoutineDetailResponse of(
         Routine routine,
         List<RoutineTag> tags,
         List<RoutineStep> steps,
-        List<RoutineApp> apps
+        List<RoutineApp> apps,
+        User currentUser
     ) {
+        boolean isOwner = routine.getUser().getId().equals(currentUser.getId());
         return new RoutineDetailResponse(
             routine.getId(),
             routine.getTitle(),
@@ -72,7 +78,8 @@ public record RoutineDetailResponse(
                     .toList(),
             routine.getCreatedAt(),
             routine.getUpdatedAt(),
-            routine.getRequiredTime()
+            routine.getRequiredTime(),
+            isOwner
         );
     }
 } 

@@ -23,8 +23,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 @RestController
 @RequestMapping("/routines")
@@ -45,12 +48,16 @@ public class RoutineController {
         return ResponseEntity.ok(routineService.createRoutine(request, currentUser));
     }
 
-    @Operation(summary = "내 루틴 목록 조회", description = "현재 로그인된 사용자의 루틴 목록을 조회합니다.")
+    @Operation(summary = "내 루틴 목록 조회", description = "현재 로그인된 사용자의 루틴 목록을 조회합니다. sortType: LATEST(최신순), POPULAR(인기순), TIME(시간순, dayOfWeek 필요)")
     @GetMapping
-    public ResponseEntity<List<RoutineListResponse>> getRoutineList(
-            @CurrentUser User currentUser
+    public ResponseEntity<Page<RoutineListResponse>> getRoutineList(
+            @CurrentUser User currentUser,
+            @RequestParam(value = "sortType", defaultValue = "TIME") String sortType,
+            @RequestParam(value = "dayOfWeek", required = false) DayOfWeek dayOfWeek,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size
     ) {
-        return ResponseEntity.ok(routineService.getRoutineList(currentUser));
+        return ResponseEntity.ok(routineService.getRoutineList(currentUser, sortType, dayOfWeek, PageRequest.of(page, size)));
     }
 
     @Operation(summary = "루틴 상세 조회", description = "특정 루틴의 상세 정보를 조회합니다.")
@@ -123,11 +130,48 @@ public class RoutineController {
 
     //====RoutineSchedule====//
     @Operation(summary = "루틴에 스케쥴 추가", description = "이미 존재하는 루틴에 스케쥴(시간대)를 추가하기")
-    @PostMapping("/routineId/schedules")
+    @PostMapping("/{routineId}/schedules")
     public ResponseEntity<List<RoutineScheduleResponse>> createSchedule(
         @PathVariable UUID routineId,
         @Valid @RequestBody RoutineScheduleRequest request
     ) {
         return ResponseEntity.ok(routineScheduleService.createSchedule(routineId, request));
+    }
+
+    @Operation(summary = "루틴 스케쥴 목록 조회", description = "특정 루틴의 스케쥴(시간대) 목록을 조회합니다.")
+    @GetMapping("/{routineId}/schedules")
+    public ResponseEntity<List<RoutineScheduleResponse>> getRoutineSchedules(
+        @PathVariable UUID routineId
+    ) {
+        return ResponseEntity.ok(routineScheduleService.getRoutineSchedules(routineId));
+    }
+
+    @Operation(summary = "특정 루틴 스케쥴 수정", description = "특정 루틴의 스케쥴(시간대)를 수정합니다. 요일 선택, 매일, 주중, 주말 등 반복 방식도 변경 가능.")
+    @PatchMapping("/{routineId}/schedules/{schId}")
+    public ResponseEntity<List<RoutineScheduleResponse>> updateSchedule(
+        @PathVariable UUID routineId,
+        @PathVariable UUID schId,
+        @Valid @RequestBody RoutineScheduleRequest request
+    ) {
+        return ResponseEntity.ok(routineScheduleService.updateSchedule(routineId, schId, request));
+    }
+
+    @Operation(summary = "특정 루틴 스케쥴 삭제", description = "특정 루틴의 스케쥴(시간대)를 삭제합니다.")
+    @DeleteMapping("/{routineId}/schedules/{schId}")
+    public ResponseEntity<Void> deleteSchedule(
+        @PathVariable UUID routineId,
+        @PathVariable UUID schId
+    ) {
+        routineScheduleService.deleteSchedule(routineId, schId);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "루틴 스케쥴 전체 초기화", description = "특정 루틴에 할당된 모든 스케쥴(시간대)를 삭제합니다.")
+    @DeleteMapping("/{routineId}/schedules")
+    public ResponseEntity<Void> deleteAllSchedules(
+        @PathVariable UUID routineId
+    ) {
+        routineScheduleService.deleteAllSchedules(routineId);
+        return ResponseEntity.ok().build();
     }
 } 

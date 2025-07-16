@@ -1,6 +1,7 @@
 package com.moru.backend.domain.routine.domain.schedule;
 
 import com.moru.backend.domain.routine.domain.Routine;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,6 +23,7 @@ public class RoutineSchedule {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonBackReference
     @JoinColumn(name = "routine_id", nullable = false)
     private Routine routine;
 
@@ -38,4 +40,14 @@ public class RoutineSchedule {
 
     @Column(nullable = false)
     private boolean alarmEnabled;
+
+    public void setDayOfWeek(DayOfWeek dayOfWeek) {
+        this.dayOfWeek = dayOfWeek;
+    }
+    public void setTime(LocalTime time) {
+        this.time = time;
+    }
+    public void setAlarmEnabled(boolean alarmEnabled) {
+        this.alarmEnabled = alarmEnabled;
+    }
 }
