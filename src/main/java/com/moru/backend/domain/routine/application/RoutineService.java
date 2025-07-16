@@ -48,6 +48,9 @@ public class RoutineService {
     private final AppRepository appRepository;
     private final RoutineValidator routineValidator;
     private final RoutineUserActionRepository routineUserActionRepository;
+    // 추가: ScrapService, LikeService DI
+    private final com.moru.backend.domain.social.application.ScrapService scrapService;
+    private final com.moru.backend.domain.social.application.LikeService likeService;
 
     @Transactional
     public RoutineCreateResponse createRoutine(RoutineCreateRequest request, User user) {
@@ -170,8 +173,9 @@ public class RoutineService {
         List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
         List<RoutineStep> steps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
         List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
-        int likeCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.LIKE).intValue();
-        int scrapCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.SCRAP).intValue();
+        // 서비스 사용하도록 변경
+        int likeCount = likeService.countLikes(routine.getId()).intValue();
+        int scrapCount = scrapService.countScrap(routine.getId()).intValue();
         return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser);
     }
 
