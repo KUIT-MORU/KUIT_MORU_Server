@@ -92,8 +92,8 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
 
     //====루틴 추천 정렬 기능====// 
     // 지금 가장 핫한 루틴 
-    @Query("SELECT r FROM Routine r WHERE r.createdAt >= :weekAgo ORDER BY (r.viewCount * 0.5 + r.likeCount * 0.5) DESC, r.createdAt DESC")
-    List<Routine> findHotRoutines(@Param("weekAgo") LocalDateTime weekAgo, Pageable pageable);
+    @Query("SELECT r FROM Routine r WHERE r.createdAt >= :weekAgo ORDER BY (r.viewCount * :viewWeight + r.likeCount * :likeWeight) DESC, r.createdAt DESC")
+    List<Routine> findHotRoutines(@Param("weekAgo") LocalDateTime weekAgo, @Param("viewWeight") double viewWeight, @Param("likeWeight") double likeWeight, Pageable pageable);
     
     // xx님에게 맞는 루틴 
     @Query("SELECT r FROM Routine r JOIN r.routineTags rt WHERE rt.tag.name IN :tags GROUP BY r.id ORDER BY COUNT(rt.tag.name) DESC, r.createdAt DESC")

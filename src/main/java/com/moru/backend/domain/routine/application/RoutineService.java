@@ -128,7 +128,9 @@ public class RoutineService {
     @Transactional
     public List<RoutineListResponse> getHotRoutines(int limit) {
         LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
-        return routineRepository.findHotRoutines(weekAgo, PageRequest.of(0, limit)).stream()
+        double viewWeight = 0.5; // 기본값, 추후 외부에서 주입 가능
+        double likeWeight = 0.5; // 기본값, 추후 외부에서 주입 가능
+        return routineRepository.findHotRoutines(weekAgo, viewWeight, likeWeight, PageRequest.of(0, limit)).stream()
                 .map(this::toRoutineListResponse)
                 .toList();
     }
