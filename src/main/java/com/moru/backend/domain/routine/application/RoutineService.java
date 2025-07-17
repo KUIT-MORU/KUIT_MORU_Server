@@ -20,6 +20,7 @@ import com.moru.backend.domain.social.application.ScrapService;
 import com.moru.backend.domain.social.dao.RoutineUserActionRepository;
 import com.moru.backend.domain.social.domain.RoutineUserAction;
 import com.moru.backend.global.validator.RoutineValidator;
+import com.moru.backend.global.util.RedisKeyUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -86,7 +87,7 @@ public class RoutineService {
         // 1. 자신의 루틴이면 조회수 증가 X
         if (!routine.getUser().getId().equals(currentUser.getId())) {
             // 2, 3. 1분 내 중복 조회 방지 (Redis 사용)
-            String redisKey = "routine:view:" + routineId + ":user:" + currentUser.getId();
+            String redisKey = RedisKeyUtil.routineViewKey(routineId, currentUser.getId());
             Boolean isFirst = redisTemplate.opsForValue().setIfAbsent(redisKey, "1", Duration.ofMinutes(1));
             if (Boolean.TRUE.equals(isFirst)) {
                 // 4. 동시성 안전하게 DB에서 직접 증가
