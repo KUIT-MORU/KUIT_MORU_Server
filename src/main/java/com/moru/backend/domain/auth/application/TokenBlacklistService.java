@@ -1,6 +1,7 @@
 package com.moru.backend.domain.auth.application;
 
 import io.jsonwebtoken.Claims;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.moru.backend.global.jwt.JwtProvider;
@@ -9,14 +10,10 @@ import com.moru.backend.global.redis.TokenBlacklistRepository;
 import java.util.Date;
 
 @Service
+@RequiredArgsConstructor
 public class TokenBlacklistService {
     private final JwtProvider jwtProvider;
     private final TokenBlacklistRepository tokenBlacklistRepository;
-
-    public TokenBlacklistService(JwtProvider jwtProvider, TokenBlacklistRepository tokenBlacklistRepository) {
-        this.jwtProvider = jwtProvider;
-        this.tokenBlacklistRepository = tokenBlacklistRepository;
-    }
 
     public void addBlacklist(String token) {
         Claims claims = jwtProvider.parseClaims(token);
