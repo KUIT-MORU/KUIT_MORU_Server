@@ -49,6 +49,9 @@ public class Routine {
     @Column(columnDefinition = "int unsigned default 0", nullable = false)
     private Integer likeCount;
 
+    @Column(columnDefinition = "int unsigned default 0", nullable = false)
+    private Integer viewCount = 0;
+
     @Column
     @Convert(converter = DurationToLongConverter.class)
     private Duration requiredTime;
