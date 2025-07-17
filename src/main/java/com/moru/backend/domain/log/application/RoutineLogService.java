@@ -218,6 +218,7 @@ public class RoutineLogService {
     private List<RoutineLogSummaryResponse> getRoutineLogSummaryResponses(User user, LocalDateTime start, LocalDateTime end) {
         List<RoutineLog> logs = routineLogRepository.findByUserIdAndStartedAtBetween(user.getId(), start, end);
         return logs.stream()
+                .filter(log -> !log.getRoutineSnapshot().isSimple())
                 .map(log -> {
                     RoutineSnapshot snapshot = log.getRoutineSnapshot();
                     List<String> tagNames = snapshot.getTagSnapshots().stream()
@@ -230,7 +231,7 @@ public class RoutineLogService {
 
     public List<RoutineLogSummaryResponse> getLogs(User user, Integer offset, Integer limit) {
         Pageable pageable = PageRequest.of(offset / limit, limit, Sort.by("startedAt").descending());
-        Page<RoutineLog> page = routineLogRepository.findByUserId(user.getId(), pageable);
+        Page<RoutineLog> page = routineLogRepository.findByUserIdAndIsSimpleFalse(user.getId(), pageable);
 
         return page.getContent().stream()
                 .map(log -> {

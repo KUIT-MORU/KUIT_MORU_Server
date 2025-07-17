@@ -41,5 +41,5 @@ public interface RoutineLogRepository extends JpaRepository<RoutineLog, UUID> {
             "routineSnapshot",
             "routineSnapshot.tagSnapshots"
     })
-    Page<RoutineLog> findByUserId(UUID userId, Pageable pageable);
+    Page<RoutineLog> findByUserIdAndIsSimpleFalse(UUID userId, Pageable pageable);
 }
