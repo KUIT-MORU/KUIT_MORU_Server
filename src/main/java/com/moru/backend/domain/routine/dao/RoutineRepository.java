@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
@@ -92,7 +93,7 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
 
     //====루틴 추천 정렬 기능====// 
     // 지금 가장 핫한 루틴 
-    @Query("SELECT r FROM Routine r WHERE r.createdAt >= :weekAgo ORDER BY (r.viewCount * :viewWeight + r.likeCount * :likeWeight) DESC, r.createdAt DESC")
+    @Query(value = "SELECT * FROM routine r WHERE r.created_at >= :weekAgo ORDER BY (r.view_count * :viewWeight + r.like_count * :likeWeight) DESC, r.created_at DESC", nativeQuery = true)
     List<Routine> findHotRoutines(@Param("weekAgo") LocalDateTime weekAgo, @Param("viewWeight") double viewWeight, @Param("likeWeight") double likeWeight, Pageable pageable);
     
     // xx님에게 맞는 루틴 
@@ -109,4 +110,9 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
         ORDER BY (r.viewCount * 0.5 + r.likeCount * 0.5) DESC, r.createdAt DESC
     """)
     List<Routine> findRoutinesByTagPair(@Param("tag1") UUID tag1, @Param("tag2") UUID tag2, Pageable pageable);
+
+    // 조회수 증가 
+    @Modifying
+    @Query("update Routine r set r.viewCount = r.viewCount + 1 where r.id = :id")
+    void incrementViewCount(@Param("id") UUID id);
 }

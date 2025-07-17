@@ -26,6 +26,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -47,6 +48,7 @@ public class RoutineService {
     private final ScrapService scrapService;
     private final LikeService likeService;
     private final UserFavoriteTagRepository userFavoriteTagRepository;
+    private final RedisTemplate<String, String> redisTemplate;
 
     // ========================= 루틴 생성/수정/삭제 =========================
 
@@ -80,8 +82,17 @@ public class RoutineService {
     @Transactional
     public RoutineDetailResponse getRoutineDetail(UUID routineId, User currentUser) {
         Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
-        routine.setViewCount(routine.getViewCount() + 1);
-        routineRepository.save(routine);
+
+        // 1. 자신의 루틴이면 조회수 증가 X
+        if (!routine.getUser().getId().equals(currentUser.getId())) {
+            // 2, 3. 1분 내 중복 조회 방지 (Redis 사용)
+            String redisKey = "routine:view:" + routineId + ":user:" + currentUser.getId();
+            Boolean isFirst = redisTemplate.opsForValue().setIfAbsent(redisKey, "1", Duration.ofMinutes(1));
+            if (Boolean.TRUE.equals(isFirst)) {
+                // 4. 동시성 안전하게 DB에서 직접 증가
+                routineRepository.incrementViewCount(routineId);
+            }
+        }
 
         List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
         List<RoutineStep> steps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
