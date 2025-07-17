@@ -1,5 +1,6 @@
 package com.moru.backend.domain.log.domain.snapshot;
 
+import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -43,6 +44,15 @@ public class RoutineSnapshot {
 
     @Column
     private Duration requiredTime;
+
+    @ElementCollection(targetClass = DayOfWeek.class)
+    @CollectionTable(
+            name = "routine_snapshot_days",
+            joinColumns = @JoinColumn(name = "routine_snapshot_id")
+    )
+    @Column(name = "day_of_week")
+    @Enumerated(EnumType.STRING)
+    private List<DayOfWeek> scheduledDays;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
