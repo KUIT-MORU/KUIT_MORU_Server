@@ -27,6 +27,7 @@ public record RoutineSearchResponse(
 
     @Schema(description = "생성일시", example = "2024-01-01T09:00:00")
     LocalDateTime createdAt
+
 ) {
     public static RoutineSearchResponse of(RoutineListResponse routineListResponse) {
         return new RoutineSearchResponse(
@@ -36,6 +37,17 @@ public record RoutineSearchResponse(
                 routineListResponse.tags(),
                 routineListResponse.likeCount(),
                 routineListResponse.createdAt()
+        );
+    }
+
+    public static RoutineSearchResponse of(RoutineListResponse routineListResponse, boolean isRunning) {
+        return new RoutineSearchResponse(
+            routineListResponse.id(),
+            routineListResponse.title(),
+            routineListResponse.imageUrl(),
+            routineListResponse.tags(),
+            routineListResponse.likeCount(),
+            routineListResponse.createdAt()
         );
     }
 }

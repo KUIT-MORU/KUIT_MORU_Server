@@ -36,6 +36,8 @@ public enum ErrorCode {
     LIKE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 좋아요한 루틴입니다."),
     SCRAP_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 스크랩입니다."),
     SCRAP_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 스크랩한 루틴입니다."),
+    SCRAP_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "자기 자신의 루틴을 스크랩할 수 없습니다."),
+    IMPORT_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "자기 자신의 루틴을 복사해 가져올 수 없습니다."),
     FOLLOW_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 팔로우입니다."),
     FOLLOW_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 팔로우입니다."),
     FOLLOW_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "자기 자신을 팔로우할 수 없습니다."),
@@ -49,8 +51,9 @@ public enum ErrorCode {
     ALREADY_CONNECTED_APP(HttpStatus.CONFLICT, "이미 연결된 앱입니다."),
     ROUTINE_APP_NOT_FOUND(HttpStatus.NOT_FOUND, "루틴에 연결된 앱을 찾을 수 없습니다."),
 
-    INVALID_REPEAT_TYPE(HttpStatus.BAD_REQUEST, "반복되는 요일을 찾을 수 없습니다.."),
-    ALREADY_EXISTS_SCHEDULE(HttpStatus.CONFLICT, "이미 해당 시간대에 존재한느 루틴이 있습니다."),
+    INVALID_REPEAT_TYPE(HttpStatus.BAD_REQUEST, "유효하지 않은 반복 타입입니다."),
+    INVALID_SCHEDULE_DAY(HttpStatus.BAD_REQUEST, "반복 요일이 필요합니다."),
+    ALREADY_EXISTS_SCHEDULE(HttpStatus.CONFLICT, "이미 해당 시간대에 존재하는 루틴이 있습니다."),
 
     // 루틴 로그 관련 예외
     ROUTINE_LOG_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 루틴 로그입니다."),

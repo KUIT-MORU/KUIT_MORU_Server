@@ -12,6 +12,7 @@ import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.meta.RoutineApp;
 import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
+import com.moru.backend.domain.user.domain.User;
 
 @Builder
 @Schema(description = "루틴 상세 응답")
@@ -50,14 +51,25 @@ public record RoutineDetailResponse(
     LocalDateTime updatedAt,
 
     @Schema(description = "필요 시간(집중 루틴만 값, 간편 루틴은 null)", example = "PT50M")
-    Duration requiredTime
+    Duration requiredTime,
+
+    @Schema(description = "좋아요 수", example = "16")
+    int likeCount,
+    @Schema(description = "스크랩 수", example = "5")
+    int scrapCount,
+    @Schema(description = "루틴 소유자 여부", example = "true")
+    boolean isOwner
 ) {
     public static RoutineDetailResponse of(
         Routine routine,
         List<RoutineTag> tags,
         List<RoutineStep> steps,
-        List<RoutineApp> apps
+        List<RoutineApp> apps,
+        int likeCount,
+        int scrapCount,
+        User currentUser
     ) {
+        boolean isOwner = routine.getUser().getId().equals(currentUser.getId());
         return new RoutineDetailResponse(
             routine.getId(),
             routine.getTitle(),
@@ -67,12 +79,13 @@ public record RoutineDetailResponse(
             routine.isSimple(),
             routine.isUserVisible(),
             steps.stream().map(RoutineStepDetailResponse::from).toList(),
-            apps.stream()
-                    .map(routineApp -> RoutineAppResponse.from(routineApp.getApp()))
-                    .toList(),
+            apps.stream().map(a -> RoutineAppResponse.from(a.getApp())).toList(),
             routine.getCreatedAt(),
             routine.getUpdatedAt(),
-            routine.getRequiredTime()
+            routine.getRequiredTime(),
+            likeCount,
+            scrapCount,
+            isOwner
         );
     }
 } 

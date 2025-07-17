@@ -13,4 +13,5 @@ public interface RoutineAppRepository extends JpaRepository<RoutineApp, UUID> {
     List<RoutineApp> findByRoutine(Routine routine);
     boolean existsByRoutineAndApp_Id(Routine routine, UUID appId);
     Optional<RoutineApp> findByRoutineAndApp_Id(Routine routine, UUID appId);
+    void deleteByRoutine(Routine routine);
 } 

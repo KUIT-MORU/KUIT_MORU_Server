@@ -11,17 +11,17 @@ public record RoutineScheduleResponse(
         DayOfWeek dayOfWeek,
         LocalTime time,
         Boolean alarmEnabled,
-        String repeatType, // 주말마다, 평일만, 매일
-        List<DayOfWeek> customDays // 임의로 설정할때
+        String repeatType,
+        List<DayOfWeek> daysToCreate
 ) {
-    public static RoutineScheduleResponse from(RoutineSchedule routineSchedule, String repeatType, List<DayOfWeek> customDays) {
+    public static RoutineScheduleResponse from(RoutineSchedule routineSchedule, String repeatType, List<DayOfWeek> daysToCreate) {
         return new RoutineScheduleResponse(
                 routineSchedule.getId(),
                 routineSchedule.getDayOfWeek(),
                 routineSchedule.getTime(),
                 routineSchedule.isAlarmEnabled(),
                 repeatType,
-                customDays
+                daysToCreate
         );
     }
 }

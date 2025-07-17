@@ -13,5 +13,5 @@ public interface RoutineTagRepository extends JpaRepository<RoutineTag, UUID> {
     List<RoutineTag> findByRoutine(Routine routine);
     Optional<RoutineTag> findByRoutineAndTag_Id(Routine routine, UUID tagId);
     boolean existsByRoutineAndTag_Id(Routine routine, UUID tagId);
-
+    void deleteByRoutine(Routine routine);
 } 
