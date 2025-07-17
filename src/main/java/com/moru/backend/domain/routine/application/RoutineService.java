@@ -275,8 +275,14 @@ public class RoutineService {
         try {
             UUID tagId1 = UUID.fromString(pair.getTag1());
             UUID tagId2 = UUID.fromString(pair.getTag2());
-            String tagName1 = tagRepository.findById(tagId1).map(Tag::getName).orElse("");
-            String tagName2 = tagRepository.findById(tagId2).map(Tag::getName).orElse("");
+            // 두 태그를 한 번에 batch 조회
+            List<Tag> tags = tagRepository.findAllById(List.of(tagId1, tagId2));
+            String tagName1 = "";
+            String tagName2 = "";
+            for (Tag tag : tags) {
+                if (tag.getId().equals(tagId1)) tagName1 = tag.getName();
+                if (tag.getId().equals(tagId2)) tagName2 = tag.getName();
+            }
             List<Routine> routines = routineRepository.findRoutinesByTagPair(tagId1, tagId2, PageRequest.of(0, limit));
             List<RoutineListResponse> routineList = routines.stream().map(this::toRoutineListResponse).toList();
             return new TagPairSection(tagName1, tagName2, routineList);
