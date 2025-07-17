@@ -1,5 +1,6 @@
 package com.moru.backend.domain.auth.application;
 
+import com.moru.backend.domain.auth.application.TokenBlacklistService;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.jwt.JwtProvider;
 import com.moru.backend.global.redis.RefreshTokenRepository;
@@ -13,11 +14,13 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class LogoutService {
-    private final JwtProvider jwtProvider;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    public void logout(User user) {
-        refreshTokenRepository.delete(user.getId().toString());
-        SecurityContextHolder.clearContext();
+    public void logout(User user, String accessToken) {
+        // 저장된 refresh Token 삭제
+        refreshTokenRepository.delete(user.getId().toString()); 
+        // access token 블랙리스트에 저장
+        tokenBlacklistService.addBlacklist(accessToken);
     }
 }

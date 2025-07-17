@@ -12,6 +12,7 @@ import jakarta.annotation.PostConstruct;
 import java.security.Key;
 import java.util.Date;
 import java.util.UUID;
+import io.jsonwebtoken.Claims;
 
 @Component
 public class JwtProvider {
@@ -64,6 +65,18 @@ public class JwtProvider {
             return UUID.fromString(subject);
         } catch (Exception e) {
             // 유효하지 않은 토큰
+            return null;
+        }
+    }
+
+    public Claims parseClaims(String token) {
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (Exception e) {
             return null;
         }
     }
