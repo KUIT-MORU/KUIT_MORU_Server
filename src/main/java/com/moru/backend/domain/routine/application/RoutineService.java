@@ -135,24 +135,57 @@ public class RoutineService {
 
     @Transactional
     public List<RoutineListResponse> getPersonalRoutines(User user, int limit) {
+        // 추천 루틴 중복 방지를 위한 Set
+        Set<UUID> routineIds = new HashSet<>();
+        List<RoutineListResponse> result = new ArrayList<>();
+
+        // 1. 관심 태그 + 내 루틴 태그 기반 추천
         List<String> tagNames = new ArrayList<>();
-        tagNames.addAll(getFavoriteTagNames(user));
-        tagNames.addAll(getMyRoutineTagNames(user));
+        tagNames.addAll(getFavoriteTagNames(user)); // 관심 태그
+        tagNames.addAll(getMyRoutineTagNames(user)); // 내 루틴 태그
 
         List<String> sortedTags = sortTagsByCount(tagNames);
         if (!sortedTags.isEmpty()) {
-            return routineRepository.findRoutinesByTagsOrderByTagCount(sortedTags, PageRequest.of(0, limit))
-                    .stream().map(this::toRoutineListResponse).toList();
+            List<Routine> routines = routineRepository.findRoutinesByTagsOrderByTagCount(sortedTags, PageRequest.of(0, limit));
+            for (Routine routine : routines) {
+                // Set으로 중복 방지
+                if (routineIds.add(routine.getId())) {
+                    result.add(toRoutineListResponse(routine));
+                    if (result.size() >= limit) break;
+                }
+            }
         }
 
-        List<String> scrapTagNames = getScrapRoutineTagNames(user);
-        List<String> sortedScrapTags = sortTagsByCount(scrapTagNames);
-        if (!sortedScrapTags.isEmpty()) {
-            return routineRepository.findRoutinesByTagsOrderByTagCount(sortedScrapTags, PageRequest.of(0, limit))
-                    .stream().map(this::toRoutineListResponse).toList();
+        // 2. scrap 루틴 태그 기반 추천 (위에서 limit 못 채웠을 때)
+        if (result.size() < limit) {
+            List<String> scrapTagNames = getScrapRoutineTagNames(user); // scrap 루틴 태그
+            List<String> sortedScrapTags = sortTagsByCount(scrapTagNames);
+            if (!sortedScrapTags.isEmpty()) {
+                List<Routine> routines = routineRepository.findRoutinesByTagsOrderByTagCount(sortedScrapTags, PageRequest.of(0, limit));
+                for (Routine routine : routines) {
+                    // Set으로 중복 방지
+                    if (routineIds.add(routine.getId())) {
+                        result.add(toRoutineListResponse(routine));
+                        if (result.size() >= limit) break;
+                    }
+                }
+            }
         }
 
-        return getHotRoutines(limit);
+        // 3. 인기 루틴으로 채우기 (위에서 limit 못 채웠을 때)
+        if (result.size() < limit) {
+            List<RoutineListResponse> hotRoutines = getHotRoutines(limit);
+            for (RoutineListResponse routine : hotRoutines) {
+                // Set으로 중복 방지
+                if (routineIds.add(routine.id())) {
+                    result.add(routine);
+                    if (result.size() >= limit) break;
+                }
+            }
+        }
+
+        // 최종적으로 limit 개수만큼 반환
+        return result.stream().limit(limit).toList();
     }
 
     @Transactional
