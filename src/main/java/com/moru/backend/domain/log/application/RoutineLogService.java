@@ -15,6 +15,8 @@ import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.meta.RoutineApp;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
+import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
+import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
 import com.moru.backend.domain.routine.dto.response.RoutineAppResponse;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.exception.CustomException;
@@ -67,6 +69,12 @@ public class RoutineLogService {
 
     private RoutineSnapshot createSnapshotFromRoutine(Routine routine) {
         // 스냅샷 생성
+        // scheduledDays 계산
+        List<DayOfWeek> days = routine.getRoutineSchedules().stream()
+                .map(RoutineSchedule::getDayOfWeek)
+                .distinct()
+                .toList();
+
         // 루틴 스냅샷 생성
         RoutineSnapshot snapshot = RoutineSnapshot.builder()
                 .title(routine.getTitle())
@@ -75,6 +83,7 @@ public class RoutineLogService {
                 .isSimple(routine.isSimple())
                 .isUserVisible(routine.isUserVisible())
                 .requiredTime(routine.getRequiredTime())
+                .scheduledDays(days)
                 .build();
 
         // 루틴 스탭 스냅샷 생성
@@ -209,6 +218,7 @@ public class RoutineLogService {
     private List<RoutineLogSummaryResponse> getRoutineLogSummaryResponses(User user, LocalDateTime start, LocalDateTime end) {
         List<RoutineLog> logs = routineLogRepository.findByUserIdAndStartedAtBetween(user.getId(), start, end);
         return logs.stream()
+                .filter(log -> !log.getRoutineSnapshot().isSimple())
                 .map(log -> {
                     RoutineSnapshot snapshot = log.getRoutineSnapshot();
                     List<String> tagNames = snapshot.getTagSnapshots().stream()
@@ -221,7 +231,7 @@ public class RoutineLogService {
 
     public List<RoutineLogSummaryResponse> getLogs(User user, Integer offset, Integer limit) {
         Pageable pageable = PageRequest.of(offset / limit, limit, Sort.by("startedAt").descending());
-        Page<RoutineLog> page = routineLogRepository.findByUserId(user.getId(), pageable);
+        Page<RoutineLog> page = routineLogRepository.findByUserIdAndIsSimpleFalse(user.getId(), pageable);
 
         return page.getContent().stream()
                 .map(log -> {

@@ -38,7 +38,7 @@ public class RoutineStepLog {
     private String note;
 
     @Convert(converter = DurationToLongConverter.class)
-    @Column(nullable = false)
+    @Column
     private Duration actualTime;
 
     @Column(nullable = false)
@@ -49,8 +49,4 @@ public class RoutineStepLog {
 
     @Column(nullable = false)
     private boolean isCompleted = false;
-
-    @Convert(converter = DurationToLongConverter.class)
-    @Column
-    private Duration pausedTime;
 }
