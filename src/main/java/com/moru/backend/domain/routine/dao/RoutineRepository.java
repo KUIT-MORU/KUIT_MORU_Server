@@ -88,4 +88,6 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
 
     @Query("select distinct r from Routine r left join r.routineTags rt where r.user = :user order by r.createdAt desc")
     Page<Routine> findByUserOrderByCreatedAtDesc(@Param("user") User user, Pageable pageable);
+
+    List<Routine> findAllByUserId(UUID userId);
 }
