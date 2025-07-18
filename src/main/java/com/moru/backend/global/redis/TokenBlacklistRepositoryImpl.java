@@ -17,7 +17,6 @@ public class TokenBlacklistRepositoryImpl implements TokenBlacklistRepository {
     public void addBlacklist(String token, long expirationMillis) {
         String key = BLACKLIST_PREFIX + token;
         redisTemplate.opsForValue().set(key, "", expirationMillis, TimeUnit.MILLISECONDS);
-        throw new UnsupportedOperationException("Unimplemented method 'addBlacklist'");
     }
 
     @Override
@@ -25,5 +24,4 @@ public class TokenBlacklistRepositoryImpl implements TokenBlacklistRepository {
         String key = BLACKLIST_PREFIX + token;
         return Boolean.TRUE.equals(redisTemplate.hasKey(key));
     }
-    
 }
