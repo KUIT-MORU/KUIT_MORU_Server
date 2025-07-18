@@ -1,5 +1,6 @@
 package com.moru.backend.global.config;
 
+import com.moru.backend.domain.auth.application.TokenBlacklistService;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.global.jwt.JwtProvider;
 import com.moru.backend.global.jwt.filter.JwtAuthenticationFilter;
@@ -21,11 +22,13 @@ public class SecurityConfig {
     private final JwtProvider jwtProvider;
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    public SecurityConfig(JwtProvider jwtProvider, RefreshTokenRepository refreshTokenRepository, UserRepository userRepository) {
+    public SecurityConfig(JwtProvider jwtProvider, RefreshTokenRepository refreshTokenRepository, UserRepository userRepository, TokenBlacklistService tokenBlacklistService) {
         this.jwtProvider = jwtProvider;
         this.refreshTokenRepository = refreshTokenRepository;
         this.userRepository = userRepository;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @Bean
@@ -52,7 +55,7 @@ public class SecurityConfig {
                     .requestMatchers("/routines/**").authenticated() // 루틴 API는 인증 필요
                     .anyRequest().authenticated() // 그 외에는 인증 필요
             )
-                .addFilterBefore(new JwtAuthenticationFilter(jwtProvider, refreshTokenRepository, userRepository),
+                .addFilterBefore(new JwtAuthenticationFilter(jwtProvider, refreshTokenRepository, userRepository, tokenBlacklistService),
                         UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
