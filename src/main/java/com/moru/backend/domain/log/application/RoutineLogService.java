@@ -77,6 +77,7 @@ public class RoutineLogService {
 
         // 루틴 스냅샷 생성
         RoutineSnapshot snapshot = RoutineSnapshot.builder()
+                .originalRoutineId(routine.getId())
                 .title(routine.getTitle())
                 .content(routine.getContent())
                 .imageUrl(routine.getImageUrl())
