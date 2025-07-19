@@ -25,7 +25,13 @@ public class RoutineInsightCalculator {
     private final RoutineRepository routineRepository;
     private final RoutineScheduleHistoryRepository routineScheduleHistoryRepository;
 
-    // 실천률 계산
+    /**
+     * 실천률 계산
+     * @param user
+     * @param startDate
+     * @param endDate
+     * @return
+     */
     public Double calculateCompletionRate(User user, LocalDate startDate, LocalDate endDate) {
         double totalScheduled = 0;
         double totalCompleted = 0;
@@ -79,7 +85,13 @@ public class RoutineInsightCalculator {
                 );
     }
 
-    // 주중 / 주말 실천 평균 개수 계산
+    /**
+     * 주중 / 주말 실천 평균 개수 계산
+     * @param user
+     * @param startDate
+     * @param endDate
+     * @return
+     */
     public Map<String, Double> calculateWeekdayWeekendAvg(User user, LocalDate startDate, LocalDate endDate) {
         Map<LocalDate, List<RoutineLog>> logsByDate = routineLogRepository.findCompletedByUserIdAndPeriodWithSnapshot(user.getId(), startDate, endDate)
                 .stream()
@@ -113,7 +125,13 @@ public class RoutineInsightCalculator {
         );
     }
 
-    // 시간대별 루틴 실천 수 계산
+    /**
+     * 시간대별 루틴 실천 수 계산
+     * @param user
+     * @param startDate
+     * @param endDate
+     * @return
+     */
     public Map<TimeSlot, Integer> calculateCompletionCountByTimeSlot(User user, LocalDate startDate, LocalDate endDate) {
         List<RoutineLog> logs = routineLogRepository.findCompletedByUserIdAndPeriodWithSnapshot(user.getId(), startDate, endDate);
         Map<TimeSlot, Integer> timeSlotCount = new EnumMap<>(TimeSlot.class);
