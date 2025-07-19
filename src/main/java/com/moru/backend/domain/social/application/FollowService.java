@@ -64,29 +64,30 @@ public class FollowService {
         userFollowRepository.delete(follow);
     }
 
-    public List<FollowUserSummaryResponse> getFollowingList(UUID userId) {
-        List<UserFollow> followings = userFollowRepository.findAllByFollowerId(userId);
+    public List<FollowUserSummaryResponse> getFollowingList(UUID targetUserId, UUID loginUserId) {
+        List<UserFollow> followings = userFollowRepository.findAllByFollowerId(targetUserId);
 
         return followings.stream()
                 .map(relation -> {
                     User following = relation.getFollowing();
-                    return FollowUserSummaryResponse.from(following, true);
+                    return FollowUserSummaryResponse.from(
+                            following,
+                            isAlreadyFollowing(loginUserId, following.getId())
+                    );
                 })
                 .toList();
     }
 
-    public List<FollowUserSummaryResponse> getFollowerList(UUID userId) {
-        List<UserFollow> followers = userFollowRepository.findAllByFollowingId(userId);
+    public List<FollowUserSummaryResponse> getFollowerList(UUID targetUserId, UUID loginUserId) {
+        List<UserFollow> followers = userFollowRepository.findAllByFollowingId(targetUserId);
 
         return followers.stream()
                 .map(relation -> {
                     User follower = relation.getFollower();
-                    boolean isFollow = userFollowRepository
-                            .existsByFollowerIdAndFollowingId(
-                                    userId,
-                                    follower.getId()
-                            );
-                    return FollowUserSummaryResponse.from(follower, isFollow);
+                    return FollowUserSummaryResponse.from(
+                            follower,
+                            isAlreadyFollowing(loginUserId, follower.getId())
+                    );
                 })
                 .toList();
     }
