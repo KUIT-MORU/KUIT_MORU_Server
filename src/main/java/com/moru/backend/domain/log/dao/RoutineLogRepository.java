@@ -48,9 +48,25 @@ public interface RoutineLogRepository extends JpaRepository<RoutineLog, UUID> {
     @Query("""
         SELECT rl FROM RoutineLog rl
         JOIN FETCH rl.routineSnapshot rs
-        WHERE rl.user.id = :userId AND DATE(rl.createdAt) = :date
+        WHERE rl.user.id = :userId
+            AND DATE(rl.createdAt) = :date
+            AND rl.isCompleted = true
     """)
-    List<RoutineLog> findByUserIdAndDateWithSnapshot(@Param("userId") UUID userId, @Param("date") LocalDate date);
+    List<RoutineLog> findCompletedByUserIdAndDateWithSnapshot(@Param("userId") UUID userId, @Param("date") LocalDate date);
+
+    @Query("""
+        SELECT rl
+        FROM RoutineLog rl
+        JOIN FETCH rl.routineSnapshot rs
+        WHERE rl.user.id = :userId
+          AND rl.startedAt BETWEEN :startDate AND :endDate
+          AND rl.isCompleted = true
+    """)
+    List<RoutineLog> findCompletedByUserIdAndPeriodWithSnapshot(
+            @Param("userId") UUID userId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
 
     // 실행 중인 루틴 로그들 조회하기기
     @Query(value = "SELECT DISTINCT user_id FROM routine_log WHERE ended_at IS NULL ORDER BY RAND() LIMIT :count", nativeQuery = true)
