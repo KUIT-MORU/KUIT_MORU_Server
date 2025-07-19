@@ -3,6 +3,8 @@ package com.moru.backend.domain.insight.application;
 import com.moru.backend.domain.insight.dao.UserInsightRepository;
 import com.moru.backend.domain.insight.domain.UserInsight;
 import com.moru.backend.domain.insight.dto.GlobalInsight;
+import com.moru.backend.global.exception.CustomException;
+import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.util.RedisKeyUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -15,16 +17,43 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static com.moru.backend.global.config.InsightConfig.INSIGHT_DAYS_RANGE;
+import static com.moru.backend.global.config.InsightConfig.MAX_LOOKBACK_DAYS;
+
 @Service
 @RequiredArgsConstructor
-public class GlobalInsightCalculator {
+public class GlobalInsightService {
     private final UserInsightRepository userInsightRepository;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<String, GlobalInsight> redisTemplate;
+    /**
+     * Redis에서 전체 인사이트 조회. 없으면 과거로 후방 탐색하거나 새로 계산하여 캐싱함.
+     */
+    public GlobalInsight getOrCalculateGlobalInsight() {
+        // 후방 탐색: 오늘부터 MAX_LOOKBACK_DAYS까지
+        for (int i = 0; i < MAX_LOOKBACK_DAYS; i++) {
+            LocalDate date = LocalDate.now().minusDays(i);
+            String redisKey = RedisKeyUtil.globalInsightKey(date);
+            Object cached = redisTemplate.opsForValue().get(redisKey);
+            if (cached instanceof GlobalInsight insight) {
+                return insight;
+            }
+        }
 
-    public void recalculateAndCacheGlobalInsight(LocalDate startDate) {
+        // 모두 없으면 새로 계산
+        LocalDate startDate = LocalDate.now().minusDays(INSIGHT_DAYS_RANGE);
+        GlobalInsight globalInsight = recalculateAndCacheGlobalInsight(startDate);
+
+        if(globalInsight == null) {
+            throw new CustomException(ErrorCode.GLOBAL_INSIGHT_CALCULATE_FAILED);
+        }
+
+        return globalInsight;
+    }
+
+    public GlobalInsight recalculateAndCacheGlobalInsight(LocalDate startDate) {
         LocalDateTime updatedAtStart = startDate.atStartOfDay(); // 00:00:00
         List<UserInsight> insights = userInsightRepository.findByUpdatedAtAfter(updatedAtStart);
-        if(insights.isEmpty()) { return; }
+        if(insights.isEmpty()) { return null; }
 
         // 전체 평균 실천률
         double averageCompletionRate = getAverageCompletionRate(insights);
@@ -46,10 +75,12 @@ public class GlobalInsightCalculator {
         Duration ttl = Duration.ofDays(30); // 30일 후 자동 만료
 
         redisTemplate.opsForValue().set(redisKey, globalInsight, ttl);
+
+        return globalInsight;
     }
 
     /**
-     * 전체 사용자 평균 실천률 계산 (최근 7일 이내로 계산된 인사이트 대상)
+     * 전체 사용자 평균 실천률 계산
      */
     public double getAverageCompletionRate(List<UserInsight> insights) {
         return insights.stream()
