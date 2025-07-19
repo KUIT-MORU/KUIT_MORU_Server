@@ -13,7 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -67,13 +69,13 @@ public class FollowService {
     public List<FollowUserSummaryResponse> getFollowingList(UUID targetUserId, UUID loginUserId) {
         List<UserFollow> followings = userFollowRepository.findAllByFollowerId(targetUserId);
 
+        Set<UUID> followingIdsByLoginUser = getFollowingIdSet(loginUserId);
+
         return followings.stream()
                 .map(relation -> {
                     User following = relation.getFollowing();
-                    return FollowUserSummaryResponse.from(
-                            following,
-                            isAlreadyFollowing(loginUserId, following.getId())
-                    );
+                    boolean isFollowing = followingIdsByLoginUser.contains(following.getId());
+                    return FollowUserSummaryResponse.from(following, isFollowing);
                 })
                 .toList();
     }
@@ -81,14 +83,21 @@ public class FollowService {
     public List<FollowUserSummaryResponse> getFollowerList(UUID targetUserId, UUID loginUserId) {
         List<UserFollow> followers = userFollowRepository.findAllByFollowingId(targetUserId);
 
+        Set<UUID> followingIdsByLoginUser = getFollowingIdSet(loginUserId);
+
         return followers.stream()
                 .map(relation -> {
                     User follower = relation.getFollower();
-                    return FollowUserSummaryResponse.from(
-                            follower,
-                            isAlreadyFollowing(loginUserId, follower.getId())
-                    );
+                    boolean isFollowing = followingIdsByLoginUser.contains(follower.getId());
+                    return FollowUserSummaryResponse.from(follower, isFollowing);
                 })
                 .toList();
+    }
+
+    private Set<UUID> getFollowingIdSet(UUID loginUserId) {
+        return userFollowRepository.findAllByFollowerId(loginUserId)
+                .stream()
+                .map(f -> f.getFollowing().getId())
+                .collect(Collectors.toSet());
     }
 }
