@@ -19,6 +19,7 @@ import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
 import com.moru.backend.domain.routine.dto.response.RoutineAppResponse;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.validator.RoutineValidator;
@@ -29,11 +30,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import com.moru.backend.domain.log.dto.LiveUserResponse;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +47,7 @@ public class RoutineLogService {
     private final RoutineValidator routineValidator;
     private final RoutineStepSnapshotRepository routineStepSnapshotRepository;
     private final RoutineStepLogRepository routineStepLogRepository;
+    private final UserRepository userRepository;
 
     public UUID startRoutine(User user, UUID routineId) {
         // 루틴 권한 검증 및 조회
@@ -263,5 +268,30 @@ public class RoutineLogService {
                 .countByRoutineLogIdAndIsCompletedFalse(routineLogId) == 0;
 
         log.endLog(request.endedAt(), request.totalTime(), isCompleted);
+    }
+
+    //====모루 라이브 기능====//
+    public List<UUID> findRandomActiveRoutineUserIds(int count) {
+        return routineLogRepository.findRandomActiveUserIds(count);
+    }
+
+    public List<LiveUserResponse> getRandomLiveUsers(List<UUID> userIds) {
+        List<User> users = userRepository.findByIdIn(userIds);
+        return users.stream()
+                .map(user -> {
+                    RoutineLog log = routineLogRepository.findActiveByUserId(user.getId()).orElse(null);
+                    String tag = null;
+                    if (log != null) {
+                        List<RoutineTagSnapshot> tags = log.getRoutineSnapshot().getTagSnapshots();
+                        if (tags != null && !tags.isEmpty()) tag = tags.get(0).getTagName();
+                    }
+                    return new LiveUserResponse(
+                        user.getId(),
+                        user.getNickname(),
+                        user.getProfileImageUrl(),
+                        tag
+                    );
+                })
+                .collect(Collectors.toList());
     }
 }
