@@ -28,14 +28,8 @@ public class UserInsightService {
         double completionRate = routineInsightCalculator.calculateCompletionRate(user, startDate, endDate);
         // 주중 / 주말 평균 실천 루틴 수
         Map<String, Double> avgCounts = routineInsightCalculator.calculateWeekdayWeekendAvg(user, startDate, endDate);
-        Map<String, Double> overallAvgCounts = globalInsightCalculator.getOverallWeekdayWeekendAvg();
-
         // 시간대별 실천 수
         Map<TimeSlot, Integer> countByTimeSlot = routineInsightCalculator.calculateCompletionCountByTimeSlot(user, startDate, endDate);
-
-        // 전체 사용자 실천률 평균 & 분포
-        double globalAvg = globalInsightCalculator.getAverageCompletionRate();
-        Map<String, Integer> distribution = globalInsightCalculator.getCompletionRateDistribution();
 
         // 인사이트 저장
         try {
@@ -46,17 +40,9 @@ public class UserInsightService {
                     .weekdayRoutineAvgCount(
                             avgCounts.getOrDefault("weekday", 0.0)
                     )
-                    .overallWeekdayRoutineAvgCount(
-                            overallAvgCounts.getOrDefault("weekday", 0.0)
-                    )
                     .weekendRoutineAvgCount(
                             avgCounts.getOrDefault("weekend", 0.0)
                     )
-                    .overallWeekendRoutineAvgCount(
-                            overallAvgCounts.getOrDefault("weekend", 0.0)
-                    )
-                    .globalAverageRoutineCompletionRate(globalAvg)
-                    .completionDistributionJson(objectMapper.writeValueAsString(distribution))
                     .routineCompletionCountByTimeSlotJson(objectMapper.writeValueAsString(countByTimeSlot))
                     .build();
             userInsightRepository.save(insight);
