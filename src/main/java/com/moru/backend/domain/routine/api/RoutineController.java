@@ -1,5 +1,6 @@
 package com.moru.backend.domain.routine.api;
 
+import com.moru.backend.domain.log.application.RoutineLogService;
 import com.moru.backend.domain.meta.dto.response.TagResponse;
 import com.moru.backend.domain.routine.application.RoutineAppService;
 import com.moru.backend.domain.routine.application.RoutineScheduleService;
@@ -30,6 +31,7 @@ public class RoutineController {
     private final RoutineAppService routineAppService;
     private final RoutineTagService routineTagService;
     private final RoutineScheduleService routineScheduleService;
+    private final RoutineLogService routineLogService;
 
     @Operation(summary = "루틴 생성", description = "새로운 루틴을 생성합니다.")
     @PostMapping
@@ -192,5 +194,12 @@ public class RoutineController {
     public ResponseEntity<RecommendFeedResponse> getRecommendFeed(@CurrentUser User currentUser) {
         RecommendFeedResponse response = routineService.getRecommendFeed(currentUser);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "모루 라이브 기능", description = "랜덤 유저들의 이밎, 닉네임, 실행중인 태그 중 첫번째를 반환한다")
+    @GetMapping("/live-users")
+    public List<LiveUserResponse> getLiveUsers(@RequestParam(defaultValue = "10") int count) {
+        List<UUID> activeUserIds = routineLogService.findRandomActiveRoutineUserIds(count);
+        return routineLogService.getRandomLiveUsers(activeUserIds);
     }
 } 
