@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.UUID;
 public class RoutineScheduleService {
     private final RoutineRepository routineRepository;
     private final RoutineScheduleRepository routineScheduleRepository;
+    private final RoutineScheduleHistoryService routineScheduleHistoryService;
 
     /**
      * 루틴 스케줄 추가
@@ -34,6 +36,13 @@ public class RoutineScheduleService {
                 .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
 
         List<DayOfWeek> daysToCreate = resolveDaysToCreate(request);
+
+        // 히스토리 기록
+        routineScheduleHistoryService.recordNewHistory(
+                routine,
+                daysToCreate,
+                LocalDateTime.now()
+        );
 
         List<RoutineScheduleResponse> responses = new ArrayList<>();
         for (DayOfWeek day : daysToCreate) {
@@ -101,6 +110,10 @@ public class RoutineScheduleService {
         if (request.repeatType() != null) {
             List<RoutineSchedule> existing = routineScheduleRepository.findAllByRoutineId(routineId);
             routineScheduleRepository.deleteAll(existing);
+
+            // 히스토리 종료 후 createSchedule로 위임
+            routineScheduleHistoryService.endCurrentHistory(routine, LocalDateTime.now());
+
             return createSchedule(routineId, request);
         }
         throw new CustomException(ErrorCode.INVALID_REPEAT_TYPE);
