@@ -1,0 +1,28 @@
+package com.moru.backend.domain.insight.application;
+
+import com.moru.backend.domain.user.dao.UserRepository;
+import com.moru.backend.domain.user.domain.User;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class UserInsightBatchService {
+    private final UserRepository userRepository;
+    private final UserInsightService userInsightService;
+
+    public void updateAllUserInsights() {
+        List<User> activeUsers = userRepository.findAllByStatusTrue();
+
+        // 최근 7일 간의 기록을 바탕으로 인사이트 계산
+        LocalDate startDate = LocalDate.now().minusDays(7);
+        LocalDate endDate = LocalDate.now().minusDays(1); // 오늘은 제외
+
+        for (User user : activeUsers) {
+            userInsightService.calculateAndSaveUserInsight(user, startDate, endDate);
+        }
+    }
+}
