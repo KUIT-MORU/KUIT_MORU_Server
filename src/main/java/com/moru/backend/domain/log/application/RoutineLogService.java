@@ -273,7 +273,7 @@ public class RoutineLogService {
         log.endLog(request.endedAt(), request.totalTime(), isCompleted);
     }
 
-    public List<String> findActiveRoutineUserIds() {
+    public List<String> findActiveRoutineUsers() {
         List<RoutineLog> activeLogs = routineLogRepository.findAllActiveLogs();
         // 한 사람당 하나만 실행 가능 -> dinstict로 중복 제거 
         return activeLogs.stream()
