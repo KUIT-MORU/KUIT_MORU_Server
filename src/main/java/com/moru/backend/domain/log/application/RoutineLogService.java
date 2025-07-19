@@ -34,6 +34,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -270,5 +271,14 @@ public class RoutineLogService {
                 .countByRoutineLogIdAndIsCompletedFalse(routineLogId) == 0;
 
         log.endLog(request.endedAt(), request.totalTime(), isCompleted);
+    }
+
+    public List<String> findActiveRoutineUserIds() {
+        List<RoutineLog> activeLogs = routineLogRepository.findAllActiveLogs();
+        // 한 사람당 하나만 실행 가능 -> dinstict로 중복 제거 
+        return activeLogs.stream()
+            .map(r1 -> r1.getUser().getNickname())
+            .distinct()
+            .collect(Collectors.toList());
     }
 }
