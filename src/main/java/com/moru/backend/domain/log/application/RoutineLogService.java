@@ -69,12 +69,6 @@ public class RoutineLogService {
 
     private RoutineSnapshot createSnapshotFromRoutine(Routine routine) {
         // 스냅샷 생성
-        // scheduledDays 계산
-        List<DayOfWeek> days = routine.getRoutineSchedules().stream()
-                .map(RoutineSchedule::getDayOfWeek)
-                .distinct()
-                .toList();
-
         // 루틴 스냅샷 생성
         RoutineSnapshot snapshot = RoutineSnapshot.builder()
                 .originalRoutineId(routine.getId())
