@@ -30,6 +30,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import com.moru.backend.domain.routine.dto.response.LiveUserResponse;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -277,13 +278,14 @@ public class RoutineLogService {
     }
 
     //====모루 라이브 기능====//
-    public List<LiveUserResponse> getRandomLiveUsers(List<UUID> userIds, int count) {
+    public List<UUID> findRandomActiveRoutineUserIds(int count) {
+        return routineLogRepository.findRandomActiveUserIds(count);
+    }
+
+    public List<LiveUserResponse> getRandomLiveUsers(List<UUID> userIds) {
         List<User> users = userRepository.findByIdIn(userIds);
-        Collections.shuffle(users); // 랜덤 섞기
         return users.stream()
-                .limit(count)
                 .map(user -> {
-                    // 실행 중 루틴의 첫 번째 태그 추출
                     RoutineLog log = routineLogRepository.findActiveByUserId(user.getId()).orElse(null);
                     String tag = null;
                     if (log != null) {
@@ -291,10 +293,10 @@ public class RoutineLogService {
                         if (tags != null && !tags.isEmpty()) tag = tags.get(0).getTagName();
                     }
                     return new LiveUserResponse(
-                        user.getNickname(), // getUsername() → getNickname()
+                        user.getNickname(),
                         user.getProfileImageUrl(),
                         tag,
-                        null // feelUrl 필드는 현재 User 엔티티에 없으므로 null로 대체
+                        null // todo : 다른 유저의 정보를 조회하는 api 추가 해서 해당 주소로 반환하기 
                     );
                 })
                 .collect(Collectors.toList());
