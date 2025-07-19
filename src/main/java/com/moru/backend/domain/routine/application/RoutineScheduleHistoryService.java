@@ -32,7 +32,7 @@ public class RoutineScheduleHistoryService {
     @Transactional
     public void endCurrentHistory(Routine routine, LocalDateTime effectiveEndDateTime) {
         RoutineScheduleHistory current = routineScheduleHistoryRepository.findCurrentByRoutineId(routine.getId());
-        if(current != null && current.getEffectiveStartDateTime() == null) {
+        if(current != null && current.getEffectiveEndDateTime() == null) {
             current.endHistory(effectiveEndDateTime);
         }
     }
