@@ -1,5 +1,7 @@
 package com.moru.backend.domain.insight.domain;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.moru.backend.domain.user.domain.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -10,6 +12,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -48,4 +51,17 @@ public class UserInsight {
     @LastModifiedDate
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    public Map<String, Integer> getRoutineCompletionCountByTimeSlotAsMap() {
+        if(this.routineCompletionCountByTimeSlotJson == null) { return Map.of(); }
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.readValue(
+                    this.routineCompletionCountByTimeSlotJson,
+                    new TypeReference<Map<String, Integer>>() {}
+            );
+        } catch (Exception e) {
+            return Map.of();
+        }
+    }
 }
