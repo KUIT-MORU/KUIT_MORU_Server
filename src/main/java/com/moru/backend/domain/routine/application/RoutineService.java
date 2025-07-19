@@ -4,37 +4,35 @@ import com.moru.backend.domain.meta.dao.AppRepository;
 import com.moru.backend.domain.meta.dao.TagRepository;
 import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.meta.domain.Tag;
-import com.moru.backend.domain.routine.dao.RoutineAppRepository;
-import com.moru.backend.domain.routine.dao.RoutineRepository;
-import com.moru.backend.domain.routine.dao.RoutineScheduleRepository;
-import com.moru.backend.domain.routine.dao.RoutineStepRepository;
-import com.moru.backend.domain.routine.dao.RoutineTagRepository;
-import com.moru.backend.domain.routine.domain.Routine;
-import com.moru.backend.domain.routine.domain.RoutineStep;
+import com.moru.backend.domain.routine.dao.*;
+import com.moru.backend.domain.routine.domain.*;
 import com.moru.backend.domain.routine.domain.meta.RoutineApp;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
-import com.moru.backend.domain.routine.dto.request.RoutineCreateRequest;
-import com.moru.backend.domain.routine.dto.response.RoutineCreateResponse;
-import com.moru.backend.domain.routine.dto.response.RoutineDetailResponse;
-import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
+import com.moru.backend.domain.routine.dto.request.*;
+import com.moru.backend.domain.routine.dto.response.*;
+import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
 import com.moru.backend.domain.user.domain.User;
-import com.moru.backend.global.validator.RoutineValidator;
+import com.moru.backend.domain.user.domain.UserFavoriteTag;
+import com.moru.backend.domain.social.application.LikeService;
+import com.moru.backend.domain.social.application.ScrapService;
 import com.moru.backend.domain.social.dao.RoutineUserActionRepository;
-import com.moru.backend.domain.routine.domain.ActionType;
-import com.moru.backend.domain.routine.dto.request.RoutineUpdateRequest;
-import com.moru.backend.domain.routine.dto.request.RoutineStepRequest;
+import com.moru.backend.domain.social.domain.RoutineUserAction;
+import com.moru.backend.global.validator.RoutineValidator;
+import com.moru.backend.global.util.RedisKeyUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import java.time.Duration;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -48,96 +46,184 @@ public class RoutineService {
     private final AppRepository appRepository;
     private final RoutineValidator routineValidator;
     private final RoutineUserActionRepository routineUserActionRepository;
-    // 추가: ScrapService, LikeService DI
-    private final com.moru.backend.domain.social.application.ScrapService scrapService;
-    private final com.moru.backend.domain.social.application.LikeService likeService;
+    private final ScrapService scrapService;
+    private final LikeService likeService;
+    private final UserFavoriteTagRepository userFavoriteTagRepository;
+    private final RedisTemplate<String, String> redisTemplate;
+
+    // ========================= 루틴 생성/수정/삭제 =========================
 
     @Transactional
     public RoutineCreateResponse createRoutine(RoutineCreateRequest request, User user) {
-        // 검증용 로그 추가
         boolean isSimple = request.isSimple();
-        Duration totalTime = null;
-        if (!isSimple) {
-            totalTime = request.steps().stream()
-                .map(step -> {
-                    Duration stepTime = step.estimatedTime() != null ? step.estimatedTime() : Duration.ZERO;
-                    return stepTime;
-                })
-                .reduce(Duration.ZERO, (acc, stepTime) -> {
-                    Duration result = acc.plus(stepTime);
-                    return result;
-                });
-        }
-        
-        // 루틴 엔티티 생성 및 저장 
+        Duration totalTime = isSimple ? null : request.steps().stream()
+                .map(step -> Optional.ofNullable(step.estimatedTime()).orElse(Duration.ZERO))
+                .reduce(Duration.ZERO, Duration::plus);
+
         Routine routine = Routine.builder()
-            .id(UUID.randomUUID())
-            .user(user)
-            .title(request.title())
-            .isSimple(isSimple)
-            .isUserVisible(request.isUserVisible())
-            .likeCount(0)
-            .content(Optional.ofNullable(request.description()).orElse(""))
-            .requiredTime(isSimple ? null : totalTime)
-            .status(true)
-            .build();
+                .id(UUID.randomUUID())
+                .user(user)
+                .title(request.title())
+                .isSimple(isSimple)
+                .isUserVisible(request.isUserVisible())
+                .likeCount(0)
+                .content(Optional.ofNullable(request.description()).orElse(""))
+                .requiredTime(totalTime)
+                .status(true)
+                .build();
         Routine savedRoutine = routineRepository.save(routine);
 
-        // 태그 저장 (최대 3개)
-        List<RoutineTag> routineTags = request.tags().stream()
-                .map(tagName -> {
-                    // 기존 태그가 존재하면 재사용, 없으면 생성 
-                    Tag tag = tagRepository.findByName(tagName)
-                            .orElseGet(() -> tagRepository.save(Tag.builder().name(tagName).build()));
-                    return RoutineTag.builder()
-                            .routine(savedRoutine)
-                            .tag(tag)
-                            .build();
-                })
-                .toList();
-        routineTagRepository.saveAll(routineTags);
+        saveRoutineTags(savedRoutine, request.tags());
+        saveRoutineSteps(savedRoutine, request.steps(), isSimple);
+        saveRoutineApps(savedRoutine, request.selectedApps());
 
-        // 스텝 저장 (최대 6개)
-        List<RoutineStep> routineSteps = request.steps().stream()
-            .map(stepReq -> {
-                RoutineStep.RoutineStepBuilder builder = RoutineStep.builder()
-                        .routine(savedRoutine)
-                        .name(stepReq.name())
-                        .stepOrder(stepReq.stepOrder());
-                if (!isSimple && stepReq.estimatedTime() != null) {
-                    builder.estimatedTime(stepReq.estimatedTime());
-                }
-                return builder.build();
-            })
-            .toList();
-        routineStepRepository.saveAll(routineSteps);
-        // 앱 저장 (최대 4개) - 해당 루틴 실행시 제한되는 앱 목록
-        List<RoutineApp> routineApps = List.of();
-        if (request.selectedApps() != null && !request.selectedApps().isEmpty()) {
-            routineApps = request.selectedApps().stream()
-                    .map(pkg -> {
-                        // findOrCreateApp
-                        App app = appRepository.findByPackageName(pkg)
-                                .orElseGet(() -> appRepository.save(
-                                        App.builder()
-                                                .packageName(pkg)
-                                                .name(pkg) // name에도 packageName을 임시로 넣음
-                                                .build()
-                                ));
-                        return RoutineApp.builder()
-                                .routine(savedRoutine)
-                                .app(app)
-                                .build();
-                    })
-                    .toList();
-            routineAppRepository.saveAll(routineApps);
+        return new RoutineCreateResponse(savedRoutine.getId(), savedRoutine.getTitle(), savedRoutine.getCreatedAt());
+    }
+
+    @Transactional
+    public RoutineDetailResponse getRoutineDetail(UUID routineId, User currentUser) {
+        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
+
+        // 1. 자신의 루틴이면 조회수 증가 X
+        if (!routine.getUser().getId().equals(currentUser.getId())) {
+            // 2, 3. 1분 내 중복 조회 방지 (Redis 사용)
+            String redisKey = RedisKeyUtil.routineViewKey(routineId, currentUser.getId());
+            Boolean isFirst = redisTemplate.opsForValue().setIfAbsent(redisKey, "1", Duration.ofMinutes(1));
+            if (Boolean.TRUE.equals(isFirst)) {
+                // 4. 동시성 안전하게 DB에서 직접 증가
+                routineRepository.incrementViewCount(routineId);
+            }
         }
-        // 생성 응답은 최소 정보만 반환
-        return new RoutineCreateResponse(
-                savedRoutine.getId(),
-                savedRoutine.getTitle(),
-                savedRoutine.getCreatedAt()
-        );
+
+        List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
+        List<RoutineStep> steps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
+        List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
+
+        int likeCount = likeService.countLikes(routine.getId()).intValue();
+        int scrapCount = scrapService.countScrap(routine.getId()).intValue();
+        return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser);
+    }
+
+    @Transactional
+    public RoutineDetailResponse updateRoutine(UUID routineId, RoutineUpdateRequest request, User currentUser) {
+        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
+        updateSimpleFields(routine, request);
+        if (request.tags() != null) updateTags(routine, request.tags());
+        if (request.steps() != null) updateSteps(routine, request.steps());
+        if (request.selectedApps() != null) updateApps(routine, request.selectedApps());
+
+        List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
+        List<RoutineStep> steps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
+        List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
+        int likeCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.LIKE).intValue();
+        int scrapCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.SCRAP).intValue();
+        return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser);
+    }
+
+    @Transactional
+    public void deleteRoutine(UUID routineId, User currentUser) {
+        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
+        routineRepository.delete(routine);
+    }
+
+    // ========================= 추천 피드 =========================
+
+    @Transactional
+    public RecommendFeedResponse getRecommendFeed(User user) {
+        List<RoutineListResponse> hotRoutines = getHotRoutines(10);
+        List<RoutineListResponse> personalRoutines = getPersonalRoutines(user, 10);
+        TagPairSection tagPairSection1 = getTopTagPairSection(10);
+        TagPairSection tagPairSection2 = getInterestTagPairSection(user, 10);
+        return new RecommendFeedResponse(hotRoutines, personalRoutines, tagPairSection1, tagPairSection2);
+    }
+
+    @Transactional
+    public List<RoutineListResponse> getHotRoutines(int limit) {
+        LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
+        double viewWeight = 0.5; // 기본값, 추후 외부에서 주입 가능
+        double likeWeight = 0.5; // 기본값, 추후 외부에서 주입 가능
+        return routineRepository.findHotRoutines(weekAgo, viewWeight, likeWeight, PageRequest.of(0, limit)).stream()
+                .map(this::toRoutineListResponse)
+                .toList();
+    }
+
+    @Transactional
+    public List<RoutineListResponse> getPersonalRoutines(User user, int limit) {
+        // 추천 루틴 중복 방지를 위한 Set
+        Set<UUID> routineIds = new HashSet<>();
+        List<RoutineListResponse> result = new ArrayList<>();
+
+        // 1. 관심 태그 + 내 루틴 태그 기반 추천
+        List<String> tagNames = new ArrayList<>();
+        tagNames.addAll(getFavoriteTagNames(user)); // 관심 태그
+        tagNames.addAll(getMyRoutineTagNames(user)); // 내 루틴 태그
+
+        List<String> sortedTags = sortTagsByCount(tagNames);
+        if (!sortedTags.isEmpty()) {
+            List<Routine> routines = routineRepository.findRoutinesByTagsOrderByTagCount(sortedTags, PageRequest.of(0, limit));
+            for (Routine routine : routines) {
+                // Set으로 중복 방지
+                if (routineIds.add(routine.getId())) {
+                    result.add(toRoutineListResponse(routine));
+                    if (result.size() >= limit) break;
+                }
+            }
+        }
+
+        // 2. scrap 루틴 태그 기반 추천 (위에서 limit 못 채웠을 때)
+        if (result.size() < limit) {
+            List<String> scrapTagNames = getScrapRoutineTagNames(user); // scrap 루틴 태그
+            List<String> sortedScrapTags = sortTagsByCount(scrapTagNames);
+            if (!sortedScrapTags.isEmpty()) {
+                List<Routine> routines = routineRepository.findRoutinesByTagsOrderByTagCount(sortedScrapTags, PageRequest.of(0, limit));
+                for (Routine routine : routines) {
+                    // Set으로 중복 방지
+                    if (routineIds.add(routine.getId())) {
+                        result.add(toRoutineListResponse(routine));
+                        if (result.size() >= limit) break;
+                    }
+                }
+            }
+        }
+
+        // 3. 인기 루틴으로 채우기 (위에서 limit 못 채웠을 때)
+        if (result.size() < limit) {
+            List<RoutineListResponse> hotRoutines = getHotRoutines(limit);
+            for (RoutineListResponse routine : hotRoutines) {
+                // Set으로 중복 방지
+                if (routineIds.add(routine.id())) {
+                    result.add(routine);
+                    if (result.size() >= limit) break;
+                }
+            }
+        }
+
+        // 최종적으로 limit 개수만큼 반환
+        return result.stream().limit(limit).toList();
+    }
+
+    @Transactional
+    public TagPairSection getTopTagPairSection(int limit) {
+        List<TagPairCount> topPairs = routineTagRepository.findTopTagPairs();
+        if (topPairs.isEmpty()) return null;
+        for (TagPairCount pair : topPairs) {
+            TagPairSection section = buildTagPairSection(pair, limit);
+            if (section != null) return section;
+        }
+        return null;
+    }
+
+    @Transactional
+    public TagPairSection getInterestTagPairSection(User user, int limit) {
+        Set<String> interestTagIds = getFavoriteTagIds(user);
+        List<TagPairCount> topPairs = routineTagRepository.findTopTagPairs();
+        for (TagPairCount pair : topPairs) {
+            if (interestTagIds.contains(pair.getTag1()) || interestTagIds.contains(pair.getTag2())) {
+                TagPairSection section = buildTagPairSection(pair, limit);
+                if (section != null) return section;
+            }
+        }
+        return null;
     }
 
     @Transactional
@@ -151,6 +237,71 @@ public class RoutineService {
             routines = routineRepository.findByUserOrderByCreatedAtDesc(user, pageable);
         }
         return routines.map(this::toRoutineListResponse);
+    }
+
+    // ========================= 유틸/헬퍼 =========================
+
+    private List<String> getFavoriteTagNames(User user) {
+        return userFavoriteTagRepository.findAllByUserId(user.getId()).stream()
+                .map(f -> f.getTag().getName()).toList();
+    }
+
+    private Set<String> getFavoriteTagIds(User user) {
+        return userFavoriteTagRepository.findAllByUserId(user.getId()).stream()
+                .map(f -> f.getTag().getId().toString()).collect(Collectors.toSet());
+    }
+
+    private List<String> getMyRoutineTagNames(User user) {
+        List<Routine> myRoutines = routineRepository.findAllByUser(user);
+        List<String> tagNames = new ArrayList<>();
+        for (Routine r : myRoutines) {
+            tagNames.addAll(routineTagRepository.findByRoutine(r).stream()
+                    .map(rt -> rt.getTag().getName()).toList());
+        }
+        return tagNames;
+    }
+
+    private List<String> getScrapRoutineTagNames(User user) {
+        List<RoutineUserAction> scraps = routineUserActionRepository.findAllByUserIdAndActionType(user.getId(), ActionType.SCRAP);
+        List<String> tagNames = new ArrayList<>();
+        for (RoutineUserAction scrap : scraps) {
+            tagNames.addAll(routineTagRepository.findByRoutine(scrap.getRoutine()).stream()
+                    .map(rt -> rt.getTag().getName()).toList());
+        }
+        return tagNames;
+    }
+
+    private List<String> sortTagsByCount(List<String> tagNames) {
+        Map<String, Long> tagCount = tagNames.stream()
+                .collect(Collectors.groupingBy(t -> t, Collectors.counting()));
+        return tagCount.entrySet().stream()
+                .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                .map(Map.Entry::getKey)
+                .toList();
+    }
+
+    private TagPairSection buildTagPairSection(TagPairCount pair, int limit) {
+        if (pair == null || pair.getTag1() == null || pair.getTag2() == null) {
+            return null;
+        }
+        try {
+            UUID tagId1 = UUID.fromString(pair.getTag1());
+            UUID tagId2 = UUID.fromString(pair.getTag2());
+            // 두 태그를 한 번에 batch 조회
+            List<Tag> tags = tagRepository.findAllById(List.of(tagId1, tagId2));
+            String tagName1 = "";
+            String tagName2 = "";
+            for (Tag tag : tags) {
+                if (tag.getId().equals(tagId1)) tagName1 = tag.getName();
+                if (tag.getId().equals(tagId2)) tagName2 = tag.getName();
+            }
+            List<Routine> routines = routineRepository.findRoutinesByTagPair(tagId1, tagId2, PageRequest.of(0, limit));
+            List<RoutineListResponse> routineList = routines.stream().map(this::toRoutineListResponse).toList();
+            return new TagPairSection(tagName1, tagName2, routineList);
+        } catch (IllegalArgumentException e) {
+            // UUID 변환 실패 시 null 반환 (로그 남겨도 됨)
+            return null;
+        }
     }
 
     private RoutineListResponse toRoutineListResponse(Routine routine) {
@@ -167,43 +318,42 @@ public class RoutineService {
         );
     }
 
-    @Transactional
-    public RoutineDetailResponse getRoutineDetail(UUID routineId, User currentUser) {
-        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
-        List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
-        List<RoutineStep> steps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
-        List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
-        // 서비스 사용하도록 변경
-        int likeCount = likeService.countLikes(routine.getId()).intValue();
-        int scrapCount = scrapService.countScrap(routine.getId()).intValue();
-        return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser);
+    private void saveRoutineTags(Routine routine, List<String> tagNames) {
+        List<RoutineTag> routineTags = tagNames.stream()
+                .map(tagName -> {
+                    Tag tag = tagRepository.findByName(tagName)
+                            .orElseGet(() -> tagRepository.save(Tag.builder().name(tagName).build()));
+                    return RoutineTag.builder().routine(routine).tag(tag).build();
+                }).toList();
+        routineTagRepository.saveAll(routineTags);
     }
 
-    @Transactional
-    public RoutineDetailResponse updateRoutine(UUID routineId, RoutineUpdateRequest request, User currentUser) {
-        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
-
-        // 단순 필드 수정
-        updateSimpleFields(routine, request);
-
-        // 태그, 스텝, 앱 교체
-        if (request.tags() != null) updateTags(routine, request.tags());
-        if (request.steps() != null) updateSteps(routine, request.steps());
-        if (request.selectedApps() != null) updateApps(routine, request.selectedApps());
-
-        // 응답 생성
-        List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
-        List<RoutineStep> steps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
-        List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
-        int likeCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.LIKE).intValue();
-        int scrapCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.SCRAP).intValue();
-        return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser);
+    private void saveRoutineSteps(Routine routine, List<RoutineStepRequest> steps, boolean isSimple) {
+        List<RoutineStep> routineSteps = steps.stream()
+                .map(stepReq -> {
+                    RoutineStep.RoutineStepBuilder builder = RoutineStep.builder()
+                            .routine(routine)
+                            .name(stepReq.name())
+                            .stepOrder(stepReq.stepOrder());
+                    if (!isSimple && stepReq.estimatedTime() != null) {
+                        builder.estimatedTime(stepReq.estimatedTime());
+                    }
+                    return builder.build();
+                }).toList();
+        routineStepRepository.saveAll(routineSteps);
     }
 
-    @Transactional
-    public void deleteRoutine(UUID routineId, User currentUser) {
-        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
-        routineRepository.delete(routine);
+    private void saveRoutineApps(Routine routine, List<String> selectedApps) {
+        if (selectedApps == null || selectedApps.isEmpty()) return;
+        List<RoutineApp> routineApps = selectedApps.stream()
+                .map(pkg -> {
+                    App app = appRepository.findByPackageName(pkg)
+                            .orElseGet(() -> appRepository.save(
+                                    App.builder().packageName(pkg).name(pkg).build()
+                            ));
+                    return RoutineApp.builder().routine(routine).app(app).build();
+                }).toList();
+        routineAppRepository.saveAll(routineApps);
     }
 
     private void updateSimpleFields(Routine routine, RoutineUpdateRequest request) {
@@ -216,36 +366,16 @@ public class RoutineService {
 
     private void updateTags(Routine routine, List<String> tags) {
         routineTagRepository.deleteByRoutine(routine);
-        List<RoutineTag> newTags = tags.stream()
-            .map(tagName -> {
-                Tag tag = tagRepository.findByName(tagName)
-                    .orElseGet(() -> tagRepository.save(Tag.builder().name(tagName).build()));
-                return RoutineTag.builder().routine(routine).tag(tag).build();
-            }).toList();
-        routineTagRepository.saveAll(newTags);
+        saveRoutineTags(routine, tags);
     }
 
     private void updateSteps(Routine routine, List<RoutineStepRequest> steps) {
         routineStepRepository.deleteByRoutine(routine);
-        List<RoutineStep> newSteps = steps.stream()
-            .map(stepReq -> RoutineStep.builder()
-                .routine(routine)
-                .name(stepReq.name())
-                .stepOrder(stepReq.stepOrder())
-                .estimatedTime(stepReq.estimatedTime())
-                .build())
-            .toList();
-        routineStepRepository.saveAll(newSteps);
+        saveRoutineSteps(routine, steps, routine.isSimple());
     }
 
     private void updateApps(Routine routine, List<String> selectedApps) {
         routineAppRepository.deleteByRoutine(routine);
-        List<RoutineApp> newApps = selectedApps.stream()
-            .map(pkg -> {
-                App app = appRepository.findByPackageName(pkg)
-                    .orElseGet(() -> appRepository.save(App.builder().packageName(pkg).name(pkg).build()));
-                return RoutineApp.builder().routine(routine).app(app).build();
-            }).toList();
-        routineAppRepository.saveAll(newApps);
+        saveRoutineApps(routine, selectedApps);
     }
 }

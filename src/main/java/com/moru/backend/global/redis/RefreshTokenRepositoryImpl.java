@@ -1,5 +1,6 @@
 package com.moru.backend.global.redis;
 
+import com.moru.backend.global.util.RedisKeyUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
@@ -14,17 +15,17 @@ public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
 
     @Override
     public void save(String userId, String refreshToken) {
-        redisTemplate.opsForValue().set(userId, refreshToken);
+        redisTemplate.opsForValue().set(RedisKeyUtil.refreshTokenKey(userId), refreshToken);
     }
 
     @Override
     public String get(String userId) {
-        return redisTemplate.opsForValue().get(userId);
+        return redisTemplate.opsForValue().get(RedisKeyUtil.refreshTokenKey(userId));
     }
 
     @Override
     public void delete(String userId) {
-        redisTemplate.delete(userId);
+        redisTemplate.delete(RedisKeyUtil.refreshTokenKey(userId));
     }
 }
 

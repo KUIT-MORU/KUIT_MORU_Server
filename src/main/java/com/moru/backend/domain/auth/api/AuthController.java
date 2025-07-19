@@ -5,6 +5,7 @@ import com.moru.backend.domain.auth.dto.*;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.validator.annotation.CurrentUser;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.moru.backend.global.jwt.JwtProvider;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -21,6 +23,7 @@ public class AuthController {
     private final LoginService loginService;
     private final RefreshService refreshService;
     private final LogoutService logoutService;
+    private final JwtProvider jwtProvider;
 
     @Operation(summary = "회원가입")
     @PostMapping("/signup")
@@ -43,8 +46,9 @@ public class AuthController {
 
     @Operation(summary = "로그아웃")
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@CurrentUser User user) {
-        logoutService.logout(user);
+    public ResponseEntity<Void> logout(@CurrentUser User user, HttpServletRequest request) {
+        String accessToken = jwtProvider.extractAccessToken(request);
+        logoutService.logout(user, accessToken);
         return ResponseEntity.ok().build();
     }
 }

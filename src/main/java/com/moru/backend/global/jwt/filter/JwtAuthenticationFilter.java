@@ -6,6 +6,7 @@ import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.jwt.JwtProvider;
 import com.moru.backend.global.redis.RefreshTokenRepository;
+import com.moru.backend.domain.auth.application.TokenBlacklistService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,11 +22,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtProvider jwtProvider;
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    public JwtAuthenticationFilter(JwtProvider jwtProvider, RefreshTokenRepository refreshTokenRepository, UserRepository userRepository) {
+    public JwtAuthenticationFilter(JwtProvider jwtProvider, RefreshTokenRepository refreshTokenRepository, UserRepository userRepository, TokenBlacklistService tokenBlacklistService) {
         this.jwtProvider = jwtProvider;
         this.refreshTokenRepository = refreshTokenRepository;
         this.userRepository = userRepository;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @Override
@@ -36,6 +39,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // AccessToken 만료 시 RefreshToken으로 재발급
         if(token != null && jwtProvider.isTokenExpired(token)) {
+            // 블랙리스트 체크
+            if(tokenBlacklistService.isBlacklisted(token)) {
+                SecurityContextHolder.clearContext();
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
             try {
                 UUID userId = jwtProvider.getSubject(token);
 
@@ -48,7 +57,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 String refreshToken = refreshTokenRepository.get(userId.toString());
 
-                if(refreshToken != null && jwtProvider.validateToken(refreshToken)) {
+                // refreshToken 블랙리스트 체크
+                if(refreshToken != null && !tokenBlacklistService.isBlacklisted(refreshToken) && jwtProvider.validateToken(refreshToken)) {
                     // AccessToken 및 RefreshToken 재발급
                     String newAccessToken = jwtProvider.createAccessToken(userId);
                     String newRefreshToken = jwtProvider.createRefreshToken(userId);
@@ -77,6 +87,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         // AccessToken 유효
         } else if(token != null && jwtProvider.validateToken(token)) {
+            // 블랙리스트 체크
+            if(tokenBlacklistService.isBlacklisted(token)) {
+                SecurityContextHolder.clearContext();
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
             UUID userId = jwtProvider.getSubject(token);
 
             // 유효한 유저(soft deleted 여부)인지 확인
