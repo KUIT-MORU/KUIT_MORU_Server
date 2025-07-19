@@ -8,13 +8,14 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 
+import static com.moru.backend.global.config.InsightConfig.INSIGHT_DAYS_RANGE;
+
 @Service
 @RequiredArgsConstructor
 public class UserInsightBatchService {
     private final UserRepository userRepository;
     private final UserInsightService userInsightService;
-    private static final Integer INSIGHT_DAYS_RANGE = 7;
-    private final GlobalInsightCalculator globalInsightCalculator;
+    private final GlobalInsightService globalInsightService;
 
     public void updateAllUserInsights() {
         List<User> activeUsers = userRepository.findAllByStatusTrue();
@@ -29,6 +30,6 @@ public class UserInsightBatchService {
         }
 
         // 전체 인사이트 계산
-        globalInsightCalculator.recalculateAndCacheGlobalInsight(startDate);
+        globalInsightService.recalculateAndCacheGlobalInsight(startDate);
     }
 }
