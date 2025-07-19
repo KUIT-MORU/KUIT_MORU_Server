@@ -1,9 +1,9 @@
 package com.moru.backend.domain.log.dto;
+import java.util.UUID;
 
 public record LiveUserResponse(
-    String username,
+    UUID userId,
+    String nickname,
     String profileImageUrl,
-    String motivationTag,
-    // 개인 페이지로 이동하기 용 url 
-    String feelUrl
+    String motivationTag
 ) {} 

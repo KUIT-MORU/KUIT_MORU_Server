@@ -30,7 +30,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import com.moru.backend.domain.routine.dto.response.LiveUserResponse;
+import com.moru.backend.domain.log.dto.LiveUserResponse;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -293,10 +293,10 @@ public class RoutineLogService {
                         if (tags != null && !tags.isEmpty()) tag = tags.get(0).getTagName();
                     }
                     return new LiveUserResponse(
+                        user.getId(),
                         user.getNickname(),
                         user.getProfileImageUrl(),
-                        tag,
-                        null // todo : 다른 유저의 정보를 조회하는 api 추가 해서 해당 주소로 반환하기 
+                        tag
                     );
                 })
                 .collect(Collectors.toList());
