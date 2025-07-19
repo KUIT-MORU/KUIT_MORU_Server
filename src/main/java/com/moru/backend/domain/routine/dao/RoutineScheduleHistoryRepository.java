@@ -4,6 +4,7 @@ import com.moru.backend.domain.routine.domain.schedule.RoutineScheduleHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,16 +13,16 @@ public interface RoutineScheduleHistoryRepository extends JpaRepository<RoutineS
     @Query("""
         SELECT h FROM RoutineScheduleHistory h
         WHERE h.routine.id = :routineId
-          AND h.effectiveStartDate <= :date
-          AND (h.effectiveEndDate IS NULL OR h.effectiveEndDate >= :date)
+          AND h.effectiveStartDateTime <= :date
+          AND (h.effectiveEndDateTime IS NULL OR h.effectiveEndDateTime >= :date)
     """)
-    List<RoutineScheduleHistory> findValidHistoryByRoutineIdAndDate(UUID routineId, LocalDate date);
+    List<RoutineScheduleHistory> findValidHistoryByRoutineIdAndDate(UUID routineId, LocalDateTime dateTime);
 
     // 현재 유효한 히스토리 1개만 조회
     @Query("""
         SELECT h FROM RoutineScheduleHistory h
         WHERE h.routine.id = :routineId
-          AND h.effectiveEndDate IS NULL
+          AND h.effectiveEndDateTime IS NULL
     """)
     RoutineScheduleHistory findCurrentByRoutineId(UUID routineId);
 }
