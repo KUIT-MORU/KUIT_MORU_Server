@@ -1,12 +1,14 @@
 package com.moru.backend.domain.log.dao;
 
 import com.moru.backend.domain.log.domain.RoutineLog;
+import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -42,4 +44,12 @@ public interface RoutineLogRepository extends JpaRepository<RoutineLog, UUID> {
             "routineSnapshot.tagSnapshots"
     })
     Page<RoutineLog> findByUserIdAndIsSimpleFalse(UUID userId, Pageable pageable);
+
+    @Query("""
+        SELECT rl FROM RoutineLog rl
+        JOIN FETCH rl.routineSnapshot rs
+        WHERE rl.user.id = :userId AND DATE(rl.createdAt) = :date
+    """)
+    List<RoutineLog> findByUserIdAndDateWithSnapshot(@Param("userId") UUID userId, @Param("date") LocalDate date);
+
 }

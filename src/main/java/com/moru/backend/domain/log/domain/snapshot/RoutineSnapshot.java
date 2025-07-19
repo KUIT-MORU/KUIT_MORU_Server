@@ -26,6 +26,9 @@ public class RoutineSnapshot {
     @GeneratedValue
     private UUID id;
 
+    @Column(nullable = false)
+    private UUID originalRoutineId;
+
     @Column(length = 10, nullable = false)
     private String title;
 

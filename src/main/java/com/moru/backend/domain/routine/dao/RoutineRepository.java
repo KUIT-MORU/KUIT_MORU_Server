@@ -91,6 +91,8 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
     @Query("select distinct r from Routine r left join r.routineTags rt where r.user = :user order by r.createdAt desc")
     Page<Routine> findByUserOrderByCreatedAtDesc(@Param("user") User user, Pageable pageable);
 
+    List<Routine> findAllByUserId(UUID userId);
+
     //====루틴 추천 정렬 기능====// 
     // 지금 가장 핫한 루틴 
     @Query(value = "SELECT * FROM routine r WHERE r.created_at >= :weekAgo ORDER BY (r.view_count * :viewWeight + r.like_count * :likeWeight) DESC, r.created_at DESC", nativeQuery = true)
