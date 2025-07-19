@@ -19,6 +19,7 @@ import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
 import com.moru.backend.domain.routine.dto.response.RoutineAppResponse;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.validator.RoutineValidator;
@@ -32,6 +33,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -44,6 +46,7 @@ public class RoutineLogService {
     private final RoutineValidator routineValidator;
     private final RoutineStepSnapshotRepository routineStepSnapshotRepository;
     private final RoutineStepLogRepository routineStepLogRepository;
+    private final UserRepository userRepository;
 
     public UUID startRoutine(User user, UUID routineId) {
         // 루틴 권한 검증 및 조회
@@ -273,12 +276,27 @@ public class RoutineLogService {
         log.endLog(request.endedAt(), request.totalTime(), isCompleted);
     }
 
-    public List<String> findActiveRoutineUsers() {
-        List<RoutineLog> activeLogs = routineLogRepository.findAllActiveLogs();
-        // 한 사람당 하나만 실행 가능 -> dinstict로 중복 제거 
-        return activeLogs.stream()
-            .map(r1 -> r1.getUser().getNickname())
-            .distinct()
-            .collect(Collectors.toList());
+    //====모루 라이브 기능====//
+    public List<LiveUserResponse> getRandomLiveUsers(List<UUID> userIds, int count) {
+        List<User> users = userRepository.findByIdIn(userIds);
+        Collections.shuffle(users); // 랜덤 섞기
+        return users.stream()
+                .limit(count)
+                .map(user -> {
+                    // 실행 중 루틴의 첫 번째 태그 추출
+                    RoutineLog log = routineLogRepository.findActiveByUserId(user.getId()).orElse(null);
+                    String tag = null;
+                    if (log != null) {
+                        List<RoutineTagSnapshot> tags = log.getRoutineSnapshot().getTagSnapshots();
+                        if (tags != null && !tags.isEmpty()) tag = tags.get(0).getTagName();
+                    }
+                    return new LiveUserResponse(
+                        user.getNickname(), // getUsername() → getNickname()
+                        user.getProfileImageUrl(),
+                        tag,
+                        null // feelUrl 필드는 현재 User 엔티티에 없으므로 null로 대체
+                    );
+                })
+                .collect(Collectors.toList());
     }
 }

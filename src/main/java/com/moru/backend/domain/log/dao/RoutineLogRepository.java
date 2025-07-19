@@ -53,7 +53,6 @@ public interface RoutineLogRepository extends JpaRepository<RoutineLog, UUID> {
     List<RoutineLog> findByUserIdAndDateWithSnapshot(@Param("userId") UUID userId, @Param("date") LocalDate date);
 
     // 실행 중인 루틴 로그들 조회하기기
-    @Query("SELECT r1 FROM RoutineLog r1 WHERE r1.endedAt IS NULL")
-    List<RoutineLog> findAllActiveLogs();
-
+    @Query("SELECT rl FROM RoutineLog rl WHERE rl.user.id = :userId AND rl.endedAt IS NULL")
+    Optional<RoutineLog> findActiveByUserId(UUID userId);
 }
