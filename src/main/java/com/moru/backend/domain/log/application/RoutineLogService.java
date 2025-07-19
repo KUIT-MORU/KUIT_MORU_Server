@@ -84,7 +84,6 @@ public class RoutineLogService {
                 .isSimple(routine.isSimple())
                 .isUserVisible(routine.isUserVisible())
                 .requiredTime(routine.getRequiredTime())
-                .scheduledDays(days)
                 .build();
 
         // 루틴 스탭 스냅샷 생성
