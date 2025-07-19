@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/admin/insights")
+@RequestMapping("/api/admin/insights")
 @RequiredArgsConstructor
 public class AdminInsightController {
     private final UserInsightBatchService userInsightBatchService;
