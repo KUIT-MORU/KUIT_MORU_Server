@@ -24,10 +24,8 @@ import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.validator.RoutineValidator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import com.moru.backend.domain.log.dto.LiveUserResponse;
 
