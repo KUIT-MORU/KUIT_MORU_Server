@@ -17,6 +17,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -70,12 +71,12 @@ public class ScrapService {
 
     public ScrollResponse<ScrappedRoutineSummaryResponse> getScrappedRoutine(
             User user,
-            UUID lastScrapId, int limit
+            LocalDateTime lastCreatedAt, UUID lastScrapId, int limit
     ) {
         Pageable pageable = PageRequest.of(0, limit);
         List<RoutineUserAction> scraps = routineUserActionRepository.findScrapsByCursor(
                 user.getId(), ActionType.SCRAP,
-                lastScrapId, pageable
+                lastCreatedAt, lastScrapId, pageable
         );
 
         List<ScrappedRoutineSummaryResponse> result = scraps.stream()

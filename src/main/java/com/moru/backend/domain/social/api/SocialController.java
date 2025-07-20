@@ -11,9 +11,11 @@ import com.moru.backend.global.common.dto.ScrollResponse;
 import com.moru.backend.global.validator.annotation.CurrentUser;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @RestController
@@ -68,10 +70,11 @@ public class SocialController {
     @GetMapping("/scraps")
     public ResponseEntity<ScrollResponse<ScrappedRoutineSummaryResponse>> getScraps(
             @CurrentUser User user,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime lastCreatedAt,
             @RequestParam(required = false) UUID lastScrapId,
             @RequestParam(defaultValue = "10") int limit
     ) {
-        return ResponseEntity.ok(scrapService.getScrappedRoutine(user, lastScrapId, limit));
+        return ResponseEntity.ok(scrapService.getScrappedRoutine(user, lastCreatedAt, lastScrapId, limit));
     }
 
     @Operation(summary = "스크랩한 루틴을 내 루틴으로 불러오기")

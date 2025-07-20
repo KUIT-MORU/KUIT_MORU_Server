@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,12 +28,17 @@ public interface RoutineUserActionRepository extends JpaRepository<RoutineUserAc
         JOIN FETCH rua.routine r
         WHERE rua.user.id = :userId
         AND rua.actionType = :actionType
-        AND (:lastScrapId IS NULL OR rua.id < :lastScrapId)
-        ORDER BY rua.id DESC
+        AND (
+            :lastScrapId IS NULL OR
+            (rua.createdAt < :lastCreatedAt) OR
+            (rua.createdAt = :lastCreatedAt AND rua.id < :lastScrapId)
+        )
+        ORDER BY rua.createdAt DESC, rua.id DESC
     """)
     List<RoutineUserAction> findScrapsByCursor(
             @Param("userId") UUID userId,
             @Param("actionType") ActionType actionType,
+            @Param("lastCreatedAt") LocalDateTime lastCreatedAt,
             @Param("lastScrapId") UUID lastScrapId,
             Pageable pageable
     );
