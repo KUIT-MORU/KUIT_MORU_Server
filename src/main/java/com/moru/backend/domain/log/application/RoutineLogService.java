@@ -17,7 +17,6 @@ import com.moru.backend.domain.routine.domain.meta.RoutineApp;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import com.moru.backend.domain.routine.dto.response.RoutineAppResponse;
 import com.moru.backend.domain.log.dto.RoutineLogCursor;
-import com.moru.backend.domain.social.dto.ScrapCursor;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.global.common.dto.ScrollResponse;

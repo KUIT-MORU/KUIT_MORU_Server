@@ -5,7 +5,6 @@ import com.moru.backend.domain.routine.domain.ActionType;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.social.dao.RoutineUserActionRepository;
 import com.moru.backend.domain.social.domain.RoutineUserAction;
-import com.moru.backend.domain.social.dto.FollowCursor;
 import com.moru.backend.domain.social.dto.RoutineImportRequest;
 import com.moru.backend.domain.social.dto.ScrapCursor;
 import com.moru.backend.domain.social.dto.ScrappedRoutineSummaryResponse;
