@@ -41,11 +41,16 @@ public interface RoutineLogRepository extends JpaRepository<RoutineLog, UUID> {
         JOIN FETCH rl.routineSnapshot rs
         WHERE rl.user.id = :userId
         AND rs.isSimple = false
-        AND (:lastLogId IS NULL OR rl.id < :lastLogId)
-        ORDER BY rl.id DESC
+        AND (
+            :lastLogId IS NULL OR
+            (rl.createdAt < :lastCreatedAt) OR
+            (rl.createdAt = :lastCreatedAt AND rl.id < :lastLogId)
+        )
+        ORDER BY rl.createdAt DESC, rl.id DESC
     """)
     List<RoutineLog> findLogsByCursor(
             @Param("userId") UUID userId,
+            @Param("lastCreatedAt") LocalDateTime lastCreatedAt,
             @Param("lastLogId") UUID lastLogId,
             Pageable pageable
     );

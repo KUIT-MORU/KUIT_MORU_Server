@@ -11,10 +11,12 @@ import com.moru.backend.global.validator.annotation.CurrentUser;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -89,10 +91,11 @@ public class RoutineLogController {
     @GetMapping
     public ResponseEntity<ScrollResponse<RoutineLogSummaryResponse>> getRoutineLogs(
             @CurrentUser User user,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime lastCreatedAt,
             @RequestParam(required = false) UUID lastLogId,
             @RequestParam(defaultValue = "10") int limit
     ) {
-        return ResponseEntity.ok(routineLogService.getLogs(user, lastLogId, limit));
+        return ResponseEntity.ok(routineLogService.getLogs(user, lastCreatedAt, lastLogId, limit));
     }
 
 }

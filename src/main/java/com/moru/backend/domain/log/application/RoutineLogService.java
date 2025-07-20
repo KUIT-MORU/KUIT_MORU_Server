@@ -224,9 +224,13 @@ public class RoutineLogService {
                 .toList();
     }
 
-    public ScrollResponse<RoutineLogSummaryResponse> getLogs(User user, UUID lastLogId, Integer limit) {
+    public ScrollResponse<RoutineLogSummaryResponse> getLogs(
+            User user,
+            LocalDateTime lastCreatedAt, UUID lastLogId, Integer limit) {
         Pageable pageable = PageRequest.of(0, limit);
-        List<RoutineLog> logs = routineLogRepository.findLogsByCursor(user.getId(), lastLogId, pageable);
+        List<RoutineLog> logs = routineLogRepository.findLogsByCursor(
+                user.getId(), lastCreatedAt, lastLogId, pageable
+        );
 
         List<RoutineLogSummaryResponse> result = logs.stream()
                 .map(log -> {
