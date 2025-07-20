@@ -42,6 +42,12 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 	//Redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	// AWS
+	implementation platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.0.2")
+	implementation "io.awspring.cloud:spring-cloud-aws-starter-s3"
+
+	//.env 인식
+	implementation 'io.github.cdimascio:java-dotenv:5.2.2'
 }
 
 tasks.named('test') {
