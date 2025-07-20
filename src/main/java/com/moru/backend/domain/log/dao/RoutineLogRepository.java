@@ -2,9 +2,7 @@ package com.moru.backend.domain.log.dao;
 
 import com.moru.backend.domain.log.domain.RoutineLog;
 import io.lettuce.core.dynamic.annotation.Param;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -38,21 +36,19 @@ public interface RoutineLogRepository extends JpaRepository<RoutineLog, UUID> {
 
     List<RoutineLog> findByUserIdAndStartedAtBetween(UUID userId, LocalDateTime start, LocalDateTime end);
 
-
-    @EntityGraph(attributePaths = {
-            "routineSnapshot",
-            "routineSnapshot.tagSnapshots"
-    })
-    Page<RoutineLog> findByUserIdAndIsSimpleFalse(UUID userId, Pageable pageable);
-
     @Query("""
         SELECT rl FROM RoutineLog rl
         JOIN FETCH rl.routineSnapshot rs
         WHERE rl.user.id = :userId
-            AND DATE(rl.createdAt) = :date
-            AND rl.isCompleted = true
+        AND rs.isSimple = false
+        AND (:lastLogId IS NULL OR rl.id < :lastLogId)
+        ORDER BY rl.id DESC
     """)
-    List<RoutineLog> findCompletedByUserIdAndDateWithSnapshot(@Param("userId") UUID userId, @Param("date") LocalDate date);
+    List<RoutineLog> findLogsByCursor(
+            @Param("userId") UUID userId,
+            @Param("lastLogId") UUID lastLogId,
+            Pageable pageable
+    );
 
     @Query("""
         SELECT rl

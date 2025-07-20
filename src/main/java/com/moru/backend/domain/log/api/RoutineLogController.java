@@ -6,6 +6,7 @@ import com.moru.backend.domain.log.dto.RoutineLogEndRequest;
 import com.moru.backend.domain.log.dto.RoutineLogSummaryResponse;
 import com.moru.backend.domain.log.dto.RoutineStepLogCreateRequest;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.global.common.dto.ScrollResponse;
 import com.moru.backend.global.validator.annotation.CurrentUser;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -86,12 +87,12 @@ public class RoutineLogController {
 
     @Operation(summary = "무한 스크롤용 전체 로그(페이지 포함)")
     @GetMapping
-    public ResponseEntity<List<RoutineLogSummaryResponse>> getRoutineLogs(
+    public ResponseEntity<ScrollResponse<RoutineLogSummaryResponse>> getRoutineLogs(
             @CurrentUser User user,
-            @RequestParam(defaultValue = "0") Integer offset,
-            @RequestParam(defaultValue = "10") Integer limit
+            @RequestParam(required = false) UUID lastLogId,
+            @RequestParam(defaultValue = "10") int limit
     ) {
-        return ResponseEntity.ok(routineLogService.getLogs(user, offset, limit));
+        return ResponseEntity.ok(routineLogService.getLogs(user, lastLogId, limit));
     }
 
 }
