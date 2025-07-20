@@ -2,7 +2,10 @@ package com.moru.backend.domain.social.dao;
 
 import com.moru.backend.domain.routine.domain.ActionType;
 import com.moru.backend.domain.social.domain.RoutineUserAction;
+import io.lettuce.core.dynamic.annotation.Param;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,4 +21,19 @@ public interface RoutineUserActionRepository extends JpaRepository<RoutineUserAc
     Long countByRoutineIdAndActionType(UUID routineId, ActionType actionType);
 
     List<RoutineUserAction> findAllByUserIdAndActionType(UUID userId, ActionType actionType);
+
+    @Query("""
+        SELECT rua FROM RoutineUserAction rua
+        JOIN FETCH rua.routine r
+        WHERE rua.user.id = :userId
+        AND rua.actionType = :actionType
+        AND (:lastScrapId IS NULL OR rua.id < :lastScrapId)
+        ORDER BY rua.id DESC
+    """)
+    List<RoutineUserAction> findScrapsByCursor(
+            @Param("userId") UUID userId,
+            @Param("actionType") ActionType actionType,
+            @Param("lastScrapId") UUID lastScrapId,
+            Pageable pageable
+    );
 }

@@ -7,13 +7,13 @@ import com.moru.backend.domain.social.dto.FollowUserSummaryResponse;
 import com.moru.backend.domain.social.dto.RoutineImportRequest;
 import com.moru.backend.domain.social.dto.ScrappedRoutineSummaryResponse;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.global.common.dto.ScrollResponse;
 import com.moru.backend.global.validator.annotation.CurrentUser;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -66,8 +66,12 @@ public class SocialController {
 
     @Operation(summary = "스크랩 조회")
     @GetMapping("/scraps")
-    public ResponseEntity<List<ScrappedRoutineSummaryResponse>> getScraps(@CurrentUser User user) {
-        return ResponseEntity.ok(scrapService.getScrappedRoutine(user));
+    public ResponseEntity<ScrollResponse<ScrappedRoutineSummaryResponse>> getScraps(
+            @CurrentUser User user,
+            @RequestParam(required = false) UUID lastScrapId,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        return ResponseEntity.ok(scrapService.getScrappedRoutine(user, lastScrapId, limit));
     }
 
     @Operation(summary = "스크랩한 루틴을 내 루틴으로 불러오기")
@@ -103,18 +107,23 @@ public class SocialController {
 
     @Operation(summary = "팔로잉 조회")
     @GetMapping("/{userId}/following")
-    public ResponseEntity<List<FollowUserSummaryResponse>> getFollowing(
+    public ResponseEntity<ScrollResponse<FollowUserSummaryResponse>> getFollowing(
             @PathVariable UUID userId,
-            @CurrentUser User user
+            @CurrentUser User user,
+            @RequestParam(required = false) UUID lastUserId,
+            @RequestParam(defaultValue = "10") int limit
     ) {
-        return ResponseEntity.ok(followService.getFollowingList(userId, user.getId()));
+        return ResponseEntity.ok(followService.getFollowingList(userId, user.getId(), lastUserId, limit));
     }
 
     @Operation(summary = "팔로워 조회")
     @GetMapping("/{userId}/follower")
-    public ResponseEntity<List<FollowUserSummaryResponse>> getFollower(
+    public ResponseEntity<ScrollResponse<FollowUserSummaryResponse>> getFollower(
             @PathVariable UUID userId,
-            @CurrentUser User user    ){
-        return ResponseEntity.ok(followService.getFollowerList(userId, user.getId()));
+            @CurrentUser User user,
+            @RequestParam(required = false) UUID lastUserId,
+            @RequestParam(defaultValue = "10") int limit
+    ){
+        return ResponseEntity.ok(followService.getFollowerList(userId, user.getId(), lastUserId, limit));
     }
 }

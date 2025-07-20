@@ -8,10 +8,13 @@ import com.moru.backend.domain.social.domain.RoutineUserAction;
 import com.moru.backend.domain.social.dto.RoutineImportRequest;
 import com.moru.backend.domain.social.dto.ScrappedRoutineSummaryResponse;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.global.common.dto.ScrollResponse;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -65,14 +68,22 @@ public class ScrapService {
         routineUserActionRepository.delete(action);
     }
 
-    public List<ScrappedRoutineSummaryResponse> getScrappedRoutine(User user) {
-        List<RoutineUserAction> scraps = routineUserActionRepository
-                .findAllByUserIdAndActionType(user.getId(), ActionType.SCRAP);
+    public ScrollResponse<ScrappedRoutineSummaryResponse> getScrappedRoutine(
+            User user,
+            UUID lastScrapId, int limit
+    ) {
+        Pageable pageable = PageRequest.of(0, limit);
+        List<RoutineUserAction> scraps = routineUserActionRepository.findScrapsByCursor(
+                user.getId(), ActionType.SCRAP,
+                lastScrapId, pageable
+        );
 
-        return scraps.stream()
+        List<ScrappedRoutineSummaryResponse> result = scraps.stream()
                 .map(scrap -> ScrappedRoutineSummaryResponse.from(scrap.getRoutine()))
                 .toList();
 
+        boolean hasNext = scraps.size() == limit;
+        return ScrollResponse.of(result, hasNext);
     }
 
     @Transactional
