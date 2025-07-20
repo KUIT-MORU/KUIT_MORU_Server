@@ -6,10 +6,13 @@ import com.moru.backend.domain.social.dto.FollowCountResponse;
 import com.moru.backend.domain.social.dto.FollowUserSummaryResponse;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.global.common.dto.ScrollResponse;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -66,32 +69,44 @@ public class FollowService {
         userFollowRepository.delete(follow);
     }
 
-    public List<FollowUserSummaryResponse> getFollowingList(UUID targetUserId, UUID loginUserId) {
-        List<UserFollow> followings = userFollowRepository.findAllByFollowerId(targetUserId);
+    public ScrollResponse<FollowUserSummaryResponse> getFollowingList(
+            UUID targetUserId, UUID loginUserId,
+            UUID lastUserId, int limit
+    ) {
+        Pageable pageable = PageRequest.of(0, limit);
+        List<UserFollow> followings = userFollowRepository.findFollowingsByCursor(targetUserId, lastUserId, pageable);
 
         Set<UUID> followingIdsByLoginUser = getFollowingIdSet(loginUserId);
 
-        return followings.stream()
+        List<FollowUserSummaryResponse> result = followings.stream()
                 .map(relation -> {
                     User following = relation.getFollowing();
                     boolean isFollowing = followingIdsByLoginUser.contains(following.getId());
                     return FollowUserSummaryResponse.from(following, isFollowing);
                 })
                 .toList();
+        boolean hasNext = result.size() == limit;
+        return ScrollResponse.of(result, hasNext);
     }
 
-    public List<FollowUserSummaryResponse> getFollowerList(UUID targetUserId, UUID loginUserId) {
-        List<UserFollow> followers = userFollowRepository.findAllByFollowingId(targetUserId);
+    public ScrollResponse<FollowUserSummaryResponse> getFollowerList(
+            UUID targetUserId, UUID loginUserId,
+            UUID lastUserId, int limit
+    ) {
+        Pageable pageable = PageRequest.of(0, limit);
+        List<UserFollow> followers = userFollowRepository.findFollowersByCursor(targetUserId, lastUserId, pageable);
 
         Set<UUID> followingIdsByLoginUser = getFollowingIdSet(loginUserId);
 
-        return followers.stream()
+        List<FollowUserSummaryResponse> result = followers.stream()
                 .map(relation -> {
                     User follower = relation.getFollower();
                     boolean isFollowing = followingIdsByLoginUser.contains(follower.getId());
                     return FollowUserSummaryResponse.from(follower, isFollowing);
                 })
                 .toList();
+        boolean hasNext = result.size() == limit;
+        return ScrollResponse.of(result, hasNext);
     }
 
     private Set<UUID> getFollowingIdSet(UUID loginUserId) {
