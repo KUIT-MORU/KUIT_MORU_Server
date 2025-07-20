@@ -71,10 +71,12 @@ public class FollowService {
 
     public ScrollResponse<FollowUserSummaryResponse> getFollowingList(
             UUID targetUserId, UUID loginUserId,
-            UUID lastUserId, int limit
+            String lastNickname, UUID lastUserId, int limit
     ) {
         Pageable pageable = PageRequest.of(0, limit);
-        List<UserFollow> followings = userFollowRepository.findFollowingsByCursor(targetUserId, lastUserId, pageable);
+        List<UserFollow> followings = userFollowRepository.findFollowingsByCursor(
+                targetUserId, lastNickname, lastUserId, pageable
+        );
 
         Set<UUID> followingIdsByLoginUser = getFollowingIdSet(loginUserId);
 
@@ -91,10 +93,12 @@ public class FollowService {
 
     public ScrollResponse<FollowUserSummaryResponse> getFollowerList(
             UUID targetUserId, UUID loginUserId,
-            UUID lastUserId, int limit
+            String lastNickname, UUID lastUserId, int limit
     ) {
         Pageable pageable = PageRequest.of(0, limit);
-        List<UserFollow> followers = userFollowRepository.findFollowersByCursor(targetUserId, lastUserId, pageable);
+        List<UserFollow> followers = userFollowRepository.findFollowersByCursor(
+                targetUserId, lastNickname, lastUserId, pageable
+        );
 
         Set<UUID> followingIdsByLoginUser = getFollowingIdSet(loginUserId);
 

@@ -22,11 +22,16 @@ public interface UserFollowRepository extends JpaRepository<UserFollow, UUID> {
     @Query("""
         SELECT uf FROM UserFollow uf
         WHERE uf.following.id = :targetUserId
-        AND (:lastUserId IS NULL OR uf.follower.id > :lastUserId)
+        AND (
+            :lastUserId IS NULL OR
+            (uf.follower.nickname > :lastNickname) OR
+            (uf.follower.nickname = :lastNickname AND uf.follower.id > :lastUserId)
+        )
         ORDER BY uf.follower.nickname ASC, uf.follower.id ASC
     """)
     List<UserFollow> findFollowersByCursor(
             @Param("targetUserId") UUID targetUserId,
+            @Param("lastNickname") String lastNickname,
             @Param("lastUserId") UUID lastUserId,
             Pageable pageable
     );
@@ -35,11 +40,16 @@ public interface UserFollowRepository extends JpaRepository<UserFollow, UUID> {
     @Query("""
         SELECT uf FROM UserFollow uf
         WHERE uf.follower.id = :targetUserId
-        AND (:lastUserId IS NULL OR uf.following.id > :lastUserId)
+        AND (
+            :lastUserId IS NULL OR
+            (uf.following.nickname > :lastNickname) OR
+            (uf.following.nickname = :lastNickname AND uf.following.id > :lastUserId)
+        )
         ORDER BY uf.following.nickname ASC, uf.following.id ASC
     """)
     List<UserFollow> findFollowingsByCursor(
             @Param("targetUserId") UUID targetUserId,
+            @Param("lastNickname") String lastNickname,
             @Param("lastUserId") UUID lastUserId,
             Pageable pageable
     );

@@ -110,10 +110,11 @@ public class SocialController {
     public ResponseEntity<ScrollResponse<FollowUserSummaryResponse>> getFollowing(
             @PathVariable UUID userId,
             @CurrentUser User user,
+            @RequestParam(required = false) String lastNickname,
             @RequestParam(required = false) UUID lastUserId,
             @RequestParam(defaultValue = "10") int limit
     ) {
-        return ResponseEntity.ok(followService.getFollowingList(userId, user.getId(), lastUserId, limit));
+        return ResponseEntity.ok(followService.getFollowingList(userId, user.getId(), lastNickname, lastUserId, limit));
     }
 
     @Operation(summary = "팔로워 조회")
@@ -121,9 +122,10 @@ public class SocialController {
     public ResponseEntity<ScrollResponse<FollowUserSummaryResponse>> getFollower(
             @PathVariable UUID userId,
             @CurrentUser User user,
+            @RequestParam(required = false) String lastNickname,
             @RequestParam(required = false) UUID lastUserId,
             @RequestParam(defaultValue = "10") int limit
     ){
-        return ResponseEntity.ok(followService.getFollowerList(userId, user.getId(), lastUserId, limit));
+        return ResponseEntity.ok(followService.getFollowerList(userId, user.getId(), lastNickname, lastUserId, limit));
     }
 }
