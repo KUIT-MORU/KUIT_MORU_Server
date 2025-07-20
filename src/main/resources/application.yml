@@ -24,6 +24,20 @@ spring:
     redis:
       host: localhost
       port: 6379
+  cloud:
+    aws:
+      region:
+        static: ${AWS_REGION}
+      credentials:
+        access-key: ${AWS_ACCESS_KEY}
+        secret-key: ${AWS_SECRET_KEY}
+      s3:
+        bucket: moru-image-bucket
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
+
 springdoc:
   api-docs:
     path: /api-docs
@@ -34,3 +48,4 @@ springdoc:
 
 jwt:
   secret: w9X37H8oCdKf4Blh5Mv2N5QwU9YeT4F2t4WJ0jB9FpE
+
