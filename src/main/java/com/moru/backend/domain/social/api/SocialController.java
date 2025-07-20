@@ -103,13 +103,18 @@ public class SocialController {
 
     @Operation(summary = "팔로잉 조회")
     @GetMapping("/{userId}/following")
-    public ResponseEntity<List<FollowUserSummaryResponse>> getFollowing(@PathVariable UUID userId) {
-        return ResponseEntity.ok(followService.getFollowingList(userId));
+    public ResponseEntity<List<FollowUserSummaryResponse>> getFollowing(
+            @PathVariable UUID userId,
+            @CurrentUser User user
+    ) {
+        return ResponseEntity.ok(followService.getFollowingList(userId, user.getId()));
     }
 
     @Operation(summary = "팔로워 조회")
     @GetMapping("/{userId}/follower")
-    public ResponseEntity<List<FollowUserSummaryResponse>> getFollower(@PathVariable UUID userId){
-        return ResponseEntity.ok(followService.getFollowerList(userId));
+    public ResponseEntity<List<FollowUserSummaryResponse>> getFollower(
+            @PathVariable UUID userId,
+            @CurrentUser User user    ){
+        return ResponseEntity.ok(followService.getFollowerList(userId, user.getId()));
     }
 }
