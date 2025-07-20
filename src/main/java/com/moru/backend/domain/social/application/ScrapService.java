@@ -5,7 +5,9 @@ import com.moru.backend.domain.routine.domain.ActionType;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.social.dao.RoutineUserActionRepository;
 import com.moru.backend.domain.social.domain.RoutineUserAction;
+import com.moru.backend.domain.social.dto.FollowCursor;
 import com.moru.backend.domain.social.dto.RoutineImportRequest;
+import com.moru.backend.domain.social.dto.ScrapCursor;
 import com.moru.backend.domain.social.dto.ScrappedRoutineSummaryResponse;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.common.dto.ScrollResponse;
@@ -69,7 +71,7 @@ public class ScrapService {
         routineUserActionRepository.delete(action);
     }
 
-    public ScrollResponse<ScrappedRoutineSummaryResponse> getScrappedRoutine(
+    public ScrollResponse<ScrappedRoutineSummaryResponse, ScrapCursor> getScrappedRoutine(
             User user,
             LocalDateTime lastCreatedAt, UUID lastScrapId, int limit
     ) {
@@ -84,7 +86,10 @@ public class ScrapService {
                 .toList();
 
         boolean hasNext = scraps.size() == limit;
-        return ScrollResponse.of(result, hasNext);
+        ScrapCursor nextCursor = hasNext
+                ? new ScrapCursor(scraps.getLast().getCreatedAt(), scraps.getLast().getId())
+                : null;
+        return ScrollResponse.of(result, hasNext, nextCursor);
     }
 
     @Transactional

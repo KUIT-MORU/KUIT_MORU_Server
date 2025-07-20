@@ -1,10 +1,7 @@
 package com.moru.backend.domain.log.api;
 
 import com.moru.backend.domain.log.application.RoutineLogService;
-import com.moru.backend.domain.log.dto.RoutineLogDetailResponse;
-import com.moru.backend.domain.log.dto.RoutineLogEndRequest;
-import com.moru.backend.domain.log.dto.RoutineLogSummaryResponse;
-import com.moru.backend.domain.log.dto.RoutineStepLogCreateRequest;
+import com.moru.backend.domain.log.dto.*;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.common.dto.ScrollResponse;
 import com.moru.backend.global.validator.annotation.CurrentUser;
@@ -89,7 +86,7 @@ public class RoutineLogController {
 
     @Operation(summary = "무한 스크롤용 전체 로그(페이지 포함)")
     @GetMapping
-    public ResponseEntity<ScrollResponse<RoutineLogSummaryResponse>> getRoutineLogs(
+    public ResponseEntity<ScrollResponse<RoutineLogSummaryResponse, RoutineLogCursor>> getRoutineLogs(
             @CurrentUser User user,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime lastCreatedAt,
             @RequestParam(required = false) UUID lastLogId,

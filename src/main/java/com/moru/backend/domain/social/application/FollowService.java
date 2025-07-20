@@ -3,6 +3,7 @@ package com.moru.backend.domain.social.application;
 import com.moru.backend.domain.social.dao.UserFollowRepository;
 import com.moru.backend.domain.social.domain.UserFollow;
 import com.moru.backend.domain.social.dto.FollowCountResponse;
+import com.moru.backend.domain.social.dto.FollowCursor;
 import com.moru.backend.domain.social.dto.FollowUserSummaryResponse;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
@@ -69,7 +70,7 @@ public class FollowService {
         userFollowRepository.delete(follow);
     }
 
-    public ScrollResponse<FollowUserSummaryResponse> getFollowingList(
+    public ScrollResponse<FollowUserSummaryResponse, FollowCursor> getFollowingList(
             UUID targetUserId, UUID loginUserId,
             String lastNickname, UUID lastUserId, int limit
     ) {
@@ -88,10 +89,13 @@ public class FollowService {
                 })
                 .toList();
         boolean hasNext = result.size() == limit;
-        return ScrollResponse.of(result, hasNext);
+        FollowCursor nextCursor = hasNext
+                ? new FollowCursor(result.getLast().nickname(), result.getLast().userId())
+                : null;
+        return ScrollResponse.of(result, hasNext, nextCursor);
     }
 
-    public ScrollResponse<FollowUserSummaryResponse> getFollowerList(
+    public ScrollResponse<FollowUserSummaryResponse, FollowCursor> getFollowerList(
             UUID targetUserId, UUID loginUserId,
             String lastNickname, UUID lastUserId, int limit
     ) {
@@ -110,7 +114,10 @@ public class FollowService {
                 })
                 .toList();
         boolean hasNext = result.size() == limit;
-        return ScrollResponse.of(result, hasNext);
+        FollowCursor nextCursor = hasNext
+                ? new FollowCursor(result.getLast().nickname(), result.getLast().userId())
+                : null;
+        return ScrollResponse.of(result, hasNext, nextCursor);
     }
 
     private Set<UUID> getFollowingIdSet(UUID loginUserId) {

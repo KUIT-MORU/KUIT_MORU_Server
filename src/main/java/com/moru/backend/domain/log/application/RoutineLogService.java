@@ -16,6 +16,8 @@ import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.meta.RoutineApp;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import com.moru.backend.domain.routine.dto.response.RoutineAppResponse;
+import com.moru.backend.domain.log.dto.RoutineLogCursor;
+import com.moru.backend.domain.social.dto.ScrapCursor;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.global.common.dto.ScrollResponse;
@@ -224,7 +226,7 @@ public class RoutineLogService {
                 .toList();
     }
 
-    public ScrollResponse<RoutineLogSummaryResponse> getLogs(
+    public ScrollResponse<RoutineLogSummaryResponse, RoutineLogCursor> getLogs(
             User user,
             LocalDateTime lastCreatedAt, UUID lastLogId, Integer limit) {
         Pageable pageable = PageRequest.of(0, limit);
@@ -242,7 +244,10 @@ public class RoutineLogService {
                 })
                 .toList();
         boolean hasNext = logs.size() == limit;
-        return ScrollResponse.of(result, hasNext);
+        RoutineLogCursor nextCursor = hasNext
+                ? new RoutineLogCursor(logs.getLast().getCreatedAt(), logs.getLast().getId())
+                : null;
+        return ScrollResponse.of(result, hasNext, nextCursor);
     }
 
     @Transactional
