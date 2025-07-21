@@ -33,6 +33,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.moru.backend.global.exception.CustomException;
+import com.moru.backend.global.exception.ErrorCode;
 
 @Service
 @RequiredArgsConstructor
@@ -237,6 +239,33 @@ public class RoutineService {
             routines = routineRepository.findByUserOrderByCreatedAtDesc(user, pageable);
         }
         return routines.map(this::toRoutineListResponse);
+    }
+
+    @Transactional
+    public List<RoutineListResponse> getSimilarRoutines(UUID routineId, int limit, User currentUser) {
+        // 1. 루틴 및 권한 검증
+        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
+
+        // 2. 태그가 없으면 빈 배열 반환
+        List<RoutineTag> routineTags = routineTagRepository.findByRoutine(routine);
+        if (routineTags == null || routineTags.isEmpty()) {
+            return List.of();
+        }
+        List<UUID> tagIds = routineTags.stream()
+                .map(rt -> rt.getTag().getId())
+                .toList();
+
+        // 3. 비슷한 루틴 조회
+        Pageable pageable = PageRequest.of(0, limit);
+        List<Routine> routines = routineRepository.findSimilarRoutinesByTagIds(tagIds, routineId, pageable);
+
+        // 비슷한 루틴이 없으면 빈 배열 반환
+        if (routines == null || routines.isEmpty()) {
+            return List.of();
+        }
+        return routines.stream()
+                .map(this::toRoutineListResponse)
+                .toList();
     }
 
     // ========================= 유틸/헬퍼 =========================
