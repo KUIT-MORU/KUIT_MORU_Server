@@ -22,6 +22,8 @@ public class S3Service {
     @Value("${spring.cloud.aws.region.static}")
     private String region;
 
+    private final boolean usePresigned = false;
+
     public String uploadFile(MultipartFile file) throws IOException {
         String key =  S3Directory.TEMP.getDirName() + UUID.randomUUID() + "-" + file.getOriginalFilename();
 
@@ -51,16 +53,8 @@ public class S3Service {
             throw e;
         }
 
-        String newKey = directory.getDirName() + key.substring(key.lastIndexOf("/") + 1);
-
         // 복사하기
-        CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
-                .sourceBucket(bucket)
-                .sourceKey(key)
-                .destinationBucket(bucket)
-                .destinationKey(newKey)
-                .build();
-        s3Client.copyObject(copyObjectRequest);
+        String newKey = copyObject(key, directory);
 
         // 삭제
         DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
@@ -72,7 +66,28 @@ public class S3Service {
 
     }
 
-    public String getFullUrl(String key) {
+    public String copyObject(String key, S3Directory directory) {
+        String newKey = directory.getDirName() + key.substring(key.lastIndexOf("/") + 1);
+
+        CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
+                .sourceBucket(bucket)
+                .sourceKey(key)
+                .destinationBucket(bucket)
+                .destinationKey(newKey)
+                .build();
+        s3Client.copyObject(copyObjectRequest);
+        return newKey;
+    }
+
+    public String getImageUrl(String key) {
+        if(usePresigned) {
+            return generatePresignedUrl(key);
+        } else {
+            return getFullUrl(key);
+        }
+    }
+
+    private String getFullUrl(String key) {
         StringBuilder url = new StringBuilder();
         url.append("https://")
                 .append(bucket)
@@ -81,5 +96,10 @@ public class S3Service {
                 .append(".amazonaws.com/")
                 .append(key);
         return url.toString();
+    }
+
+    private String generatePresignedUrl(String key) {
+        // presigned 로직은 나중에 필요 시 구현
+        throw new UnsupportedOperationException("Presigned URL 기능은 아직 구현되지 않았습니다.");
     }
 }
