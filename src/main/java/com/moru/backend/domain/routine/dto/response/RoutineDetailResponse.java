@@ -58,7 +58,9 @@ public record RoutineDetailResponse(
     @Schema(description = "스크랩 수", example = "5")
     int scrapCount,
     @Schema(description = "루틴 소유자 여부", example = "true")
-    boolean isOwner
+    boolean isOwner,
+    @Schema(description = "비슷한 루틴 목록")
+    List<RoutineListResponse> similarRoutines
 ) {
     public static RoutineDetailResponse of(
         Routine routine,
@@ -67,7 +69,8 @@ public record RoutineDetailResponse(
         List<RoutineApp> apps,
         int likeCount,
         int scrapCount,
-        User currentUser
+        User currentUser,
+        List<RoutineListResponse> similarRoutines
     ) {
         boolean isOwner = routine.getUser().getId().equals(currentUser.getId());
         return new RoutineDetailResponse(
@@ -85,7 +88,8 @@ public record RoutineDetailResponse(
             routine.getRequiredTime(),
             likeCount,
             scrapCount,
-            isOwner
+            isOwner,
+            similarRoutines
         );
     }
 } 

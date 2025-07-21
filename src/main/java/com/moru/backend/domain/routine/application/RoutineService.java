@@ -103,7 +103,11 @@ public class RoutineService {
 
         int likeCount = likeService.countLikes(routine.getId()).intValue();
         int scrapCount = scrapService.countScrap(routine.getId()).intValue();
-        return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser);
+
+        // 비슷한 루틴 10개 조회
+        List<RoutineListResponse> similarRoutines = getSimilarRoutines(routineId, 10, currentUser);
+
+        return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser, similarRoutines);
     }
 
     @Transactional
@@ -119,7 +123,8 @@ public class RoutineService {
         List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
         int likeCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.LIKE).intValue();
         int scrapCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.SCRAP).intValue();
-        return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser);
+        // update에서는 비슷한 루틴은 빈 리스트로 반환
+        return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser, List.of());
     }
 
     @Transactional
@@ -268,7 +273,7 @@ public class RoutineService {
                 .toList();
     }
 
-    // ========================= 유틸/헬퍼 =========================
+    // ========================= 유틸/헬퍼 ========================= //
 
     private List<String> getFavoriteTagNames(User user) {
         return userFavoriteTagRepository.findAllByUserId(user.getId()).stream()

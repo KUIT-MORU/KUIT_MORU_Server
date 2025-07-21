@@ -7,5 +7,6 @@ public record RoutineStepLogDto(
         String stepName,
         String note,
         Duration estimatedTime,
-        Duration actualTime
+        Duration actualTime,
+        boolean isCompleted
 ) {}
