@@ -22,6 +22,8 @@ import com.moru.backend.domain.user.dto.UserProfileRequest;
 import com.moru.backend.domain.user.dto.UserProfileResponse;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
+import com.moru.backend.global.util.S3Directory;
+import com.moru.backend.global.util.S3Service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -39,6 +41,7 @@ public class UserProfileService {
     private final RoutineTagRepository routineTagRepository;
     private final FollowService followService;
     private final LikeService likeService;
+    private final S3Service s3Service;
 
     public UserProfileResponse getProfile(User user) {
         if(!user.isActive()) {
@@ -118,8 +121,11 @@ public class UserProfileService {
             user.setBio(request.bio());
         }
 
-        if(request.profileImageUrl() != null && !request.profileImageUrl().trim().isBlank()) {
-            user.setProfileImageUrl(request.profileImageUrl());
+        // === 이미지 이동 처리 ===
+        String imageKey = null;
+        if(request.profileImageUrl() != null && !request.profileImageUrl().isBlank()) {
+            imageKey = s3Service.moveToRealLocation(request.profileImageUrl(), S3Directory.PROFILE);
+            user.setProfileImageUrl(imageKey);
         }
 
         return UserProfileResponse.from(user, null, null, null);
