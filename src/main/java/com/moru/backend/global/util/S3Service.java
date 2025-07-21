@@ -6,9 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -39,6 +37,20 @@ public class S3Service {
     }
 
     public String moveToRealLocation(String key, S3Directory directory) {
+        // key에 해당하는 이미지가 존재하는지 확인
+        try {
+            s3Client.headObject(HeadObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .build());
+        } catch (S3Exception e) {
+            if(e.statusCode() == 404) {
+                // 존재하지 않는 객체인 경우 null 반환 또는 예외
+                return null;
+            }
+            throw e;
+        }
+
         String newKey = directory.getDirName() + key.substring(key.lastIndexOf("/") + 1);
 
         // 복사하기
