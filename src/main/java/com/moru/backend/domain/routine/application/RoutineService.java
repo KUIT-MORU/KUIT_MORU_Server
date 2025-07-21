@@ -128,7 +128,11 @@ public class RoutineService {
             similarRoutines = routines.stream()
                     .filter(r -> !r.getUser().getId().equals(currentUser.getId()))
                     .limit(10)
-                    .map(r -> RoutineListResponse.fromRoutine(r, routineTagRepository.findByRoutine(r)))
+                    .map(r -> RoutineListResponse.fromRoutine(
+                            r,
+                            s3Service.getImageUrl(r.getImageUrl()),
+                            routineTagRepository.findByRoutine(r))
+                    )
                     .toList();
         }
 
@@ -343,6 +347,7 @@ public class RoutineService {
         Long likeCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.LIKE);
         return RoutineListResponse.fromRoutine(
                 routine,
+                s3Service.getImageUrl(routine.getImageUrl()),
                 tags
         );
     }

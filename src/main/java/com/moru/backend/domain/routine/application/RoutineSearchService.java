@@ -17,6 +17,7 @@ import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.domain.log.dao.RoutineLogRepository;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
+import com.moru.backend.global.util.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,6 +37,7 @@ public class RoutineSearchService {
     private final SearchHistoryRepository searchHistoryRepository;
     private final TagRepository tagRepository;
     private final RoutineLogRepository routineLogRepository;
+    private final S3Service s3Service;
 
     /**
      * 루틴 검색 비즈니스 로직 수행
@@ -69,7 +71,11 @@ public class RoutineSearchService {
             // 루틴에 연결된 태그 목록 조회
             List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
             // RoutineListResponse 생성 (routine & tag entity 포함)
-            RoutineListResponse routineListResponse = RoutineListResponse.fromRoutine(routine, tags);
+            RoutineListResponse routineListResponse = RoutineListResponse.fromRoutine(
+                    routine,
+                    s3Service.getImageUrl(routine.getImageUrl()),
+                    tags
+            );
             // 실행중 여부는 더 이상 포함하지 않음
             return RoutineSearchResponse.of(routineListResponse);
         });
