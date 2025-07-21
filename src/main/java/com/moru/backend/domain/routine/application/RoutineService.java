@@ -307,14 +307,9 @@ public class RoutineService {
     private RoutineListResponse toRoutineListResponse(Routine routine) {
         List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
         Long likeCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.LIKE);
-        return new RoutineListResponse(
-                routine.getId(),
-                routine.getTitle(),
-                routine.getImageUrl(),
-                tags.stream().map(rt -> rt.getTag().getName()).toList(),
-                likeCount.intValue(),
-                routine.getCreatedAt(),
-                routine.getRequiredTime()
+        return RoutineListResponse.fromRoutine(
+                routine,
+                tags
         );
     }
 
