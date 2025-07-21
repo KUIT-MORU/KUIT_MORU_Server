@@ -51,6 +51,7 @@ public class UserProfileService {
         FollowCountResponse followCount = followService.countFollow(user.getId());
         return UserProfileResponse.from(
                 user,
+                s3Service.getImageUrl(user.getProfileImageUrl()),
                 routineCount,
                 followCount.followerCount(),
                 followCount.followingCount()
@@ -70,7 +71,10 @@ public class UserProfileService {
         RoutineListResponse currentRoutine = null;
         RoutineLog activeLog = routineLogRepository.findActiveByUserId(targetUserId).orElse(null);
         if (activeLog != null && activeLog.getRoutineSnapshot() != null) {
-            currentRoutine = RoutineListResponse.fromSnapshot(activeLog.getRoutineSnapshot());
+            currentRoutine = RoutineListResponse.fromSnapshot(
+                    activeLog.getRoutineSnapshot(),
+                    s3Service.getImageUrl(activeLog.getRoutineSnapshot().getImageUrl())
+            );
         }
 
         // 소유한(공개) 루틴 목록
@@ -79,14 +83,18 @@ public class UserProfileService {
                 .map(r -> {
                     List<RoutineTag> tags = routineTagRepository.findByRoutine(r);
                     int likeCount = likeService.countLikes(r.getId()).intValue();
-                    return RoutineListResponse.fromRoutine(r, tags);
+                    return RoutineListResponse.fromRoutine(
+                            r,
+                            s3Service.getImageUrl(r.getImageUrl()),
+                            tags
+                    );
                 })
                 .toList();
 
         return new OtherUserProfileResponse(
                 isMe,
                 targetUser.getNickname(),
-                targetUser.getProfileImageUrl(),
+                s3Service.getImageUrl(targetUser.getProfileImageUrl()),
                 targetUser.getBio(),
                 routineCount,
                 followerCount,
@@ -128,6 +136,11 @@ public class UserProfileService {
             user.setProfileImageUrl(imageKey);
         }
 
-        return UserProfileResponse.from(user, null, null, null);
+        return UserProfileResponse.from(
+                user,
+                s3Service.getImageUrl(user.getProfileImageUrl()),
+                null,
+                null,
+                null);
     }
 }
