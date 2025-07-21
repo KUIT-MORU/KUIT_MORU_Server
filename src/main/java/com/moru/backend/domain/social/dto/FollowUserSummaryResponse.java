@@ -11,10 +11,10 @@ public record FollowUserSummaryResponse(
         String bio,
         boolean isFollow
 ) {
-    public static FollowUserSummaryResponse from(User user, boolean isFollow) {
+    public static FollowUserSummaryResponse from(User user, String imageFullUrl, boolean isFollow) {
         return new FollowUserSummaryResponse(
                 user.getId(),
-                user.getProfileImageUrl(),
+                imageFullUrl,
                 user.getNickname(),
                 user.getBio(),
                 isFollow
