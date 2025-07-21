@@ -42,7 +42,11 @@ public record RoutineListResponse(
     @Schema(description = "필요 시간(집중루틴만)", example = "PT50M") // 시간순으로 정렬할 때 
     Duration requiredTime
 ) {
-    public static RoutineListResponse of(Routine routine, List<RoutineTag> tags) {
+    /**
+     * 일반 Routine 엔티티 기반 카드 응답 생성 (공개/소유 루틴 등)
+     * Routine + List<RoutineTag> → RoutineListResponse
+     */
+    public static RoutineListResponse fromRoutine(Routine routine, List<RoutineTag> tags) {
         return RoutineListResponse.builder()
                 .id(routine.getId())
                 .title(routine.getTitle())
@@ -54,6 +58,10 @@ public record RoutineListResponse(
                 .build();
     }
 
+    /**
+     * 실행중인 루틴(스냅샷 기반) 카드 응답 생성
+     * RoutineSnapshot → RoutineListResponse
+     */
     public static RoutineListResponse fromSnapshot(RoutineSnapshot snapshot) {
         return RoutineListResponse.builder()
                 .id(snapshot.getOriginalRoutineId())

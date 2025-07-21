@@ -239,6 +239,29 @@ public class RoutineService {
         return routines.map(this::toRoutineListResponse);
     }
 
+    @Transactional
+    public List<RoutineListResponse> getSimilarRoutinesByTags(UUID routineId, int limit, User currentUser) {
+        Routine routine = routineValidator.validateRoutineViewPermission(routineId, currentUser);
+
+        List<RoutineTag> routineTags = routineTagRepository.findByRoutine(routine);
+        if (routineTags == null || routineTags.isEmpty()) {
+            return List.of();
+        }
+        List<UUID> tagIds = routineTags.stream()
+                .map(rt -> rt.getTag().getId())
+                .toList();
+
+        Pageable pageable = PageRequest.of(0, limit);
+        List<Routine> routines = routineRepository.findSimilarRoutinesByTagIds(tagIds, routineId, pageable);
+
+        if (routines == null || routines.isEmpty()) {
+            return List.of();
+        }
+        return routines.stream()
+                .map(r -> RoutineListResponse.fromRoutine(r, routineTagRepository.findByRoutine(r)))
+                .toList();
+    }
+
     // ========================= 유틸/헬퍼 =========================
 
     private List<String> getFavoriteTagNames(User user) {
@@ -307,14 +330,9 @@ public class RoutineService {
     private RoutineListResponse toRoutineListResponse(Routine routine) {
         List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
         Long likeCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.LIKE);
-        return new RoutineListResponse(
-                routine.getId(),
-                routine.getTitle(),
-                routine.getImageUrl(),
-                tags.stream().map(rt -> rt.getTag().getName()).toList(),
-                likeCount.intValue(),
-                routine.getCreatedAt(),
-                routine.getRequiredTime()
+        return RoutineListResponse.fromRoutine(
+                routine,
+                tags
         );
     }
 

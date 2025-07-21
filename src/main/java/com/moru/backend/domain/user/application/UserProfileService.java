@@ -76,15 +76,7 @@ public class UserProfileService {
                 .map(r -> {
                     List<RoutineTag> tags = routineTagRepository.findByRoutine(r);
                     int likeCount = likeService.countLikes(r.getId()).intValue();
-                    return RoutineListResponse.builder()
-                            .id(r.getId())
-                            .title(r.getTitle())
-                            .imageUrl(r.getImageUrl())
-                            .tags(tags.stream().map(rt -> rt.getTag().getName()).toList())
-                            .likeCount(likeCount)
-                            .createdAt(r.getCreatedAt())
-                            .requiredTime(r.getRequiredTime())
-                            .build();
+                    return RoutineListResponse.fromRoutine(r, tags);
                 })
                 .toList();
 
