@@ -63,42 +63,28 @@ public class UserProfileService {
         int followerCount = (int) userFollowRepository.countByFollowingId(targetUserId);
         int followingCount = (int) userFollowRepository.countByFollowerId(targetUserId);
 
-        //실행 중인 루틴
-        RoutineLog activeLog = routineLogRepository.findActiveByUserId(targetUserId).orElse(null);
+        // 실행 중인 루틴
         RoutineListResponse currentRoutine = null;
+        RoutineLog activeLog = routineLogRepository.findActiveByUserId(targetUserId).orElse(null);
         if (activeLog != null && activeLog.getRoutineSnapshot() != null) {
-            RoutineSnapshot snapshot = activeLog.getRoutineSnapshot();
-            List<String> tagNames = snapshot.getTagSnapshots().stream()
-                    .map(RoutineTagSnapshot::getTagName)
-                    .toList();
-            new RoutineListResponse(
-                    snapshot.getOriginalRoutineId(),
-                    snapshot.getTitle(),
-                    snapshot.getImageUrl(),
-                    tagNames,
-                    0,// 실행중인 루틴은 좋아요 개수 필요 x
-                    null,
-                    null
-            );
+            currentRoutine = RoutineListResponse.fromSnapshot(activeLog.getRoutineSnapshot());
         }
 
-        List<Routine> routines = routineRepository.findAllByUserId(targetUserId)
-                .stream()
+        // 소유한(공개) 루틴 목록
+        List<RoutineListResponse> routineLists = routineRepository.findAllByUserId(targetUserId).stream()
                 .filter(Routine::isUserVisible)
-                .toList();
-        List<RoutineListResponse> routineLists = routines.stream()
                 .map(r -> {
                     List<RoutineTag> tags = routineTagRepository.findByRoutine(r);
                     int likeCount = likeService.countLikes(r.getId()).intValue();
-                    return new RoutineListResponse(
-                            r.getId(),
-                            r.getTitle(),
-                            r.getImageUrl(),
-                            tags.stream().map(rt -> rt.getTag().getName()).toList(),
-                            likeCount,
-                            r.getCreatedAt(),
-                            r.getRequiredTime()
-                    );
+                    return RoutineListResponse.builder()
+                            .id(r.getId())
+                            .title(r.getTitle())
+                            .imageUrl(r.getImageUrl())
+                            .tags(tags.stream().map(rt -> rt.getTag().getName()).toList())
+                            .likeCount(likeCount)
+                            .createdAt(r.getCreatedAt())
+                            .requiredTime(r.getRequiredTime())
+                            .build();
                 })
                 .toList();
 
