@@ -1,6 +1,7 @@
 package com.moru.backend.domain.routine.api;
 
 import com.moru.backend.domain.log.application.RoutineLogService;
+import com.moru.backend.domain.log.dto.LiveUserResponse;
 import com.moru.backend.domain.meta.dto.response.TagResponse;
 import com.moru.backend.domain.routine.application.RoutineAppService;
 import com.moru.backend.domain.routine.application.RoutineScheduleService;
