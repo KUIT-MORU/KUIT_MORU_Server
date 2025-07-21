@@ -1,0 +1,37 @@
+package com.moru.backend.domain.notification.domain;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Entity
+@EntityListeners(AuditingEntityListener.class)
+@Table(name = "notification")
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Notification {
+    @Id
+    @GeneratedValue
+    private UUID id;
+
+    private UUID receiverId;
+    private String title;
+    private String content;
+    private String link;
+    private boolean isRead = false;
+
+    @Enumerated(EnumType.STRING)
+    private NotificationType type;
+
+    @CreatedDate
+    private LocalDateTime createdAt;
+}
