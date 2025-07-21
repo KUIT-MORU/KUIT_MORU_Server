@@ -20,7 +20,9 @@ public record RoutineLogDetailResponse(
         String imageUrl,
         List<String> tagNames,
         List<RoutineStepLogDto> steps,
-        List<RoutineAppResponse> apps
+        List<RoutineAppResponse> apps,
+        long completedStepCount,
+        int totalStepCount
 ) {
     public static RoutineLogDetailResponse from (
             RoutineLog routineLog,
@@ -29,6 +31,8 @@ public record RoutineLogDetailResponse(
             List<RoutineStepLogDto> steps,
             List<RoutineAppResponse> apps
     ) {
+        long completed = steps.stream().filter(RoutineStepLogDto::isCompleted).count();
+        int total = steps.size();
         return new RoutineLogDetailResponse(
                 routineLog.getId(),
                 snapshot.getTitle(),
@@ -40,7 +44,9 @@ public record RoutineLogDetailResponse(
                 snapshot.getImageUrl(),
                 tagNames,
                 steps,
-                apps
+                apps,
+                completed,
+                total
         );
     }
 }

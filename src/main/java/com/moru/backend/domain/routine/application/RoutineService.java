@@ -5,34 +5,38 @@ import com.moru.backend.domain.meta.dao.TagRepository;
 import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.meta.domain.Tag;
 import com.moru.backend.domain.routine.dao.*;
-import com.moru.backend.domain.routine.domain.*;
+import com.moru.backend.domain.routine.domain.ActionType;
+import com.moru.backend.domain.routine.domain.Routine;
+import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.meta.RoutineApp;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
-import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
-import com.moru.backend.domain.routine.dto.request.*;
+import com.moru.backend.domain.routine.dto.request.RoutineCreateRequest;
+import com.moru.backend.domain.routine.dto.request.RoutineStepRequest;
+import com.moru.backend.domain.routine.dto.request.RoutineUpdateRequest;
 import com.moru.backend.domain.routine.dto.response.*;
-import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
-import com.moru.backend.domain.user.domain.User;
-import com.moru.backend.domain.user.domain.UserFavoriteTag;
 import com.moru.backend.domain.social.application.LikeService;
 import com.moru.backend.domain.social.application.ScrapService;
 import com.moru.backend.domain.social.dao.RoutineUserActionRepository;
 import com.moru.backend.domain.social.domain.RoutineUserAction;
-import com.moru.backend.global.validator.RoutineValidator;
+import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
+import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.util.RedisKeyUtil;
+import com.moru.backend.global.validator.RoutineValidator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.moru.backend.global.exception.CustomException;
+import com.moru.backend.global.exception.ErrorCode;
 
 @Service
 @RequiredArgsConstructor
@@ -82,7 +86,8 @@ public class RoutineService {
 
     @Transactional
     public RoutineDetailResponse getRoutineDetail(UUID routineId, User currentUser) {
-        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
+        Routine routine = routineRepository.findById(routineId)
+            .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
 
         // 1. 자신의 루틴이면 조회수 증가 X
         if (!routine.getUser().getId().equals(currentUser.getId())) {
@@ -101,7 +106,23 @@ public class RoutineService {
 
         int likeCount = likeService.countLikes(routine.getId()).intValue();
         int scrapCount = scrapService.countScrap(routine.getId()).intValue();
-        return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser);
+
+        // 비슷한 루틴 추천 (내 루틴은 제외)
+        List<RoutineListResponse> similarRoutines = List.of();
+        if (tags != null && !tags.isEmpty()) {
+            List<UUID> tagIds = tags.stream()
+                    .map(rt -> rt.getTag().getId())
+                    .toList();
+            Pageable pageable = PageRequest.of(0, 20); // 넉넉히 뽑기
+            List<Routine> routines = routineRepository.findSimilarRoutinesByTagIds(tagIds, routineId, pageable);
+            similarRoutines = routines.stream()
+                    .filter(r -> !r.getUser().getId().equals(currentUser.getId()))
+                    .limit(10)
+                    .map(r -> RoutineListResponse.fromRoutine(r, routineTagRepository.findByRoutine(r)))
+                    .toList();
+        }
+
+        return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser, similarRoutines);
     }
 
     @Transactional
@@ -117,7 +138,8 @@ public class RoutineService {
         List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
         int likeCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.LIKE).intValue();
         int scrapCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.SCRAP).intValue();
-        return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser);
+        // update에서는 비슷한 루틴은 빈 리스트로 반환
+        return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser, List.of());
     }
 
     @Transactional
@@ -239,7 +261,9 @@ public class RoutineService {
         return routines.map(this::toRoutineListResponse);
     }
 
-    // ========================= 유틸/헬퍼 =========================
+
+
+    // ========================= 유틸/헬퍼 ========================= //
 
     private List<String> getFavoriteTagNames(User user) {
         return userFavoriteTagRepository.findAllByUserId(user.getId()).stream()

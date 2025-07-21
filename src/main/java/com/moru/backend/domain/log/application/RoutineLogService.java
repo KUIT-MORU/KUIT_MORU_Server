@@ -142,7 +142,8 @@ public class RoutineLogService {
                             stepSnapshot.getName(),
                             stepLog.getNote(),
                             stepSnapshot.getEstimatedTime(),
-                            stepLog.getActualTime()
+                            stepLog.getActualTime(),
+                            stepLog.isCompleted()
                     );
                 })
                 .toList();
