@@ -69,7 +69,7 @@ public class RoutineSearchService {
             // 루틴에 연결된 태그 목록 조회
             List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
             // RoutineListResponse 생성 (routine & tag entity 포함)
-            RoutineListResponse routineListResponse = RoutineListResponse.of(routine, tags);
+            RoutineListResponse routineListResponse = RoutineListResponse.fromRoutine(routine, tags);
             // 실행중 여부는 더 이상 포함하지 않음
             return RoutineSearchResponse.of(routineListResponse);
         });

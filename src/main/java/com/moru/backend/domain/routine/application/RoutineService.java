@@ -5,29 +5,31 @@ import com.moru.backend.domain.meta.dao.TagRepository;
 import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.meta.domain.Tag;
 import com.moru.backend.domain.routine.dao.*;
-import com.moru.backend.domain.routine.domain.*;
+import com.moru.backend.domain.routine.domain.ActionType;
+import com.moru.backend.domain.routine.domain.Routine;
+import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.meta.RoutineApp;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
-import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
-import com.moru.backend.domain.routine.dto.request.*;
+import com.moru.backend.domain.routine.dto.request.RoutineCreateRequest;
+import com.moru.backend.domain.routine.dto.request.RoutineStepRequest;
+import com.moru.backend.domain.routine.dto.request.RoutineUpdateRequest;
 import com.moru.backend.domain.routine.dto.response.*;
-import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
-import com.moru.backend.domain.user.domain.User;
-import com.moru.backend.domain.user.domain.UserFavoriteTag;
 import com.moru.backend.domain.social.application.LikeService;
 import com.moru.backend.domain.social.application.ScrapService;
 import com.moru.backend.domain.social.dao.RoutineUserActionRepository;
 import com.moru.backend.domain.social.domain.RoutineUserAction;
-import com.moru.backend.global.validator.RoutineValidator;
+import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
+import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.util.RedisKeyUtil;
+import com.moru.backend.global.validator.RoutineValidator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -35,7 +37,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
-import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -85,8 +86,8 @@ public class RoutineService {
 
     @Transactional
     public RoutineDetailResponse getRoutineDetail(UUID routineId, User currentUser) {
-        // 공개 루틴이면 누구나, 비공개 루틴이면 작성자만 볼 수 있도록 권한 검증
-        Routine routine = routineValidator.validateRoutineViewPermission(routineId, currentUser);
+        Routine routine = routineRepository.findById(routineId)
+            .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
 
         // 1. 자신의 루틴이면 조회수 증가 X
         if (!routine.getUser().getId().equals(currentUser.getId())) {
@@ -106,8 +107,20 @@ public class RoutineService {
         int likeCount = likeService.countLikes(routine.getId()).intValue();
         int scrapCount = scrapService.countScrap(routine.getId()).intValue();
 
-        // 비슷한 루틴 10개 조회
-        List<RoutineListResponse> similarRoutines = getSimilarRoutinesByTags(routineId, 10, currentUser);
+        // 비슷한 루틴 추천 (내 루틴은 제외)
+        List<RoutineListResponse> similarRoutines = List.of();
+        if (tags != null && !tags.isEmpty()) {
+            List<UUID> tagIds = tags.stream()
+                    .map(rt -> rt.getTag().getId())
+                    .toList();
+            Pageable pageable = PageRequest.of(0, 20); // 넉넉히 뽑기
+            List<Routine> routines = routineRepository.findSimilarRoutinesByTagIds(tagIds, routineId, pageable);
+            similarRoutines = routines.stream()
+                    .filter(r -> !r.getUser().getId().equals(currentUser.getId()))
+                    .limit(10)
+                    .map(r -> RoutineListResponse.fromRoutine(r, routineTagRepository.findByRoutine(r)))
+                    .toList();
+        }
 
         return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser, similarRoutines);
     }
@@ -248,35 +261,7 @@ public class RoutineService {
         return routines.map(this::toRoutineListResponse);
     }
 
-    @Transactional
-    public List<RoutineListResponse> getSimilarRoutinesByTags(UUID routineId, int limit, User currentUser) {
-        // 1. 태그가 없으면 빈 배열 반환
-        List<RoutineTag> routineTags = routineTagRepository.findByRoutine(routine);
-        if (routineTags == null || routineTags.isEmpty()) {
-            return List.of();
-        }
-        List<UUID> tagIds = routineTags.stream()
-                .map(rt -> rt.getTag().getId())
-                .toList();
-        
-        Pageable pageable = PageRequest.of(0, limit * 2); // 넉넉히 뽑아서 내 루틴 제외 후 limit 맞추기
-        List<Routine> routines = routineRepository.findSimilarRoutinesByTagIds(tagIds, routineId, pageable);
 
-        // 비슷한 루틴이 없으면 빈 배열 반환
-        if (routines == null || routines.isEmpty()) {
-            return List.of();
-        }
-        // 내 루틴은 추천에서 제외
-        List<RoutineListResponse> result = new ArrayList<>();
-        for (Routine r : routines) {
-            if (!r.getUser().getId().equals(currentUser.getId())) {
-                List<RoutineTag> tags = routineTagRepository.findByRoutine(r);
-                result.add(RoutineListResponse.fromRoutine(r, tags));
-                if (result.size() >= limit) break;
-            }
-        }
-        return result;
-    }
 
     // ========================= 유틸/헬퍼 ========================= //
 
@@ -346,14 +331,9 @@ public class RoutineService {
     private RoutineListResponse toRoutineListResponse(Routine routine) {
         List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
         Long likeCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.LIKE);
-        return new RoutineListResponse(
-                routine.getId(),
-                routine.getTitle(),
-                routine.getImageUrl(),
-                tags.stream().map(rt -> rt.getTag().getName()).toList(),
-                likeCount.intValue(),
-                routine.getCreatedAt(),
-                routine.getRequiredTime()
+        return RoutineListResponse.fromRoutine(
+                routine,
+                tags
         );
     }
 
