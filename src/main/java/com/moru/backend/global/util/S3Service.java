@@ -25,7 +25,7 @@ public class S3Service {
     private String region;
 
     public String uploadFile(MultipartFile file) throws IOException {
-        String key =  "temp/" + UUID.randomUUID() + "-" + file.getOriginalFilename();
+        String key =  S3Directory.TEMP.getDirName() + UUID.randomUUID() + "-" + file.getOriginalFilename();
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucket)
@@ -38,8 +38,8 @@ public class S3Service {
         return key;
     }
 
-    public String moveToRealLocation(String key, String type) {
-        String newKey = type + "/" + key.substring(key.lastIndexOf("/") + 1);
+    public String moveToRealLocation(String key, S3Directory directory) {
+        String newKey = directory.getDirName() + key.substring(key.lastIndexOf("/") + 1);
 
         // 복사하기
         CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
