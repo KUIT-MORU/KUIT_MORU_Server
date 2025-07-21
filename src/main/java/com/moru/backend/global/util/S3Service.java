@@ -56,12 +56,7 @@ public class S3Service {
         // 복사하기
         String newKey = copyObject(key, directory);
 
-        // 삭제
-        DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
-                .bucket(bucket)
-                .key(key)
-                .build();
-        s3Client.deleteObject(deleteObjectRequest);
+        deleteObject(key);
         return newKey;
 
     }
@@ -77,6 +72,13 @@ public class S3Service {
                 .build();
         s3Client.copyObject(copyObjectRequest);
         return newKey;
+    }
+
+    public void deleteObject(String key) {
+        s3Client.deleteObject(DeleteObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .build());
     }
 
     public String getImageUrl(String key) {
