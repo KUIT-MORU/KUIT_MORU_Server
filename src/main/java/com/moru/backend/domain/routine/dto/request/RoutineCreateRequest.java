@@ -1,7 +1,6 @@
 package com.moru.backend.domain.routine.dto.request;
 
 import java.util.List;
-import java.util.UUID;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -16,8 +15,8 @@ public record RoutineCreateRequest(
     @Size(max = 10)
     String title,
 
-    @Schema(description = "루틴 이미지 URL", example = "https://example.com/image.jpg")
-    String imageUrl, // 선택
+    @Schema(description = "루틴 이미지 key", example = "temp/1111-2222-333...-image.jpg")
+    String imageKey, // 선택
 
     @Schema(description = "루틴 태그 목록", example = "[\"운동\", \"건강\", \"생산성\"]")
     @NotNull

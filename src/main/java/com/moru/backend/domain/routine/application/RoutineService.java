@@ -22,6 +22,8 @@ import com.moru.backend.domain.social.domain.RoutineUserAction;
 import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.util.RedisKeyUtil;
+import com.moru.backend.global.util.S3Directory;
+import com.moru.backend.global.util.S3Service;
 import com.moru.backend.global.validator.RoutineValidator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +56,7 @@ public class RoutineService {
     private final LikeService likeService;
     private final UserFavoriteTagRepository userFavoriteTagRepository;
     private final RedisTemplate<String, String> redisTemplate;
+    private final S3Service s3Service;
 
     // ========================= 루틴 생성/수정/삭제 =========================
 
@@ -63,7 +66,13 @@ public class RoutineService {
         Duration totalTime = isSimple ? null : request.steps().stream()
                 .map(step -> Optional.ofNullable(step.estimatedTime()).orElse(Duration.ZERO))
                 .reduce(Duration.ZERO, Duration::plus);
-
+        
+        // === 이미지 이동 처리 ===
+        String imageKey = null;
+        if(request.imageKey() != null && !request.imageKey().isBlank()) {
+            imageKey = s3Service.moveToRealLocation(request.imageKey(), S3Directory.ROUTINE);
+        }
+        
         Routine routine = Routine.builder()
                 .id(UUID.randomUUID())
                 .user(user)
@@ -74,6 +83,7 @@ public class RoutineService {
                 .content(Optional.ofNullable(request.description()).orElse(""))
                 .requiredTime(totalTime)
                 .status(true)
+                .imageUrl(imageKey)
                 .build();
         Routine savedRoutine = routineRepository.save(routine);
 
