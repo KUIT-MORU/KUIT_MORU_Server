@@ -136,7 +136,17 @@ public class RoutineService {
                     .toList();
         }
 
-        return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser, similarRoutines);
+        return RoutineDetailResponse.of(
+                routine,
+                s3Service.getImageUrl(routine.getImageUrl()),
+                tags,
+                steps,
+                apps,
+                likeCount,
+                scrapCount,
+                currentUser,
+                similarRoutines
+        );
     }
 
     @Transactional
@@ -153,7 +163,17 @@ public class RoutineService {
         int likeCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.LIKE).intValue();
         int scrapCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.SCRAP).intValue();
         // update에서는 비슷한 루틴은 빈 리스트로 반환
-        return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser, List.of());
+        return RoutineDetailResponse.of(
+                routine,
+                s3Service.getImageUrl(routine.getImageUrl()),
+                tags,
+                steps,
+                apps,
+                likeCount,
+                scrapCount,
+                currentUser,
+                List.of()
+        );
     }
 
     @Transactional

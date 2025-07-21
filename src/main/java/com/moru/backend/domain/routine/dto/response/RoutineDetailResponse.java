@@ -64,6 +64,7 @@ public record RoutineDetailResponse(
 ) {
     public static RoutineDetailResponse of(
         Routine routine,
+        String imageFullUrl,
         List<RoutineTag> tags,
         List<RoutineStep> steps,
         List<RoutineApp> apps,
@@ -76,7 +77,7 @@ public record RoutineDetailResponse(
         return new RoutineDetailResponse(
             routine.getId(),
             routine.getTitle(),
-            routine.getImageUrl(),
+            imageFullUrl,
             tags.stream().map(rt -> rt.getTag().getName()).toList(),
             routine.getContent(),
             routine.isSimple(),
