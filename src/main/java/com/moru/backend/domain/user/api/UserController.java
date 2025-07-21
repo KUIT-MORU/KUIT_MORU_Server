@@ -6,11 +6,8 @@ import com.moru.backend.domain.user.application.UserDeactivateService;
 import com.moru.backend.domain.user.application.UserFavoriteTagService;
 import com.moru.backend.domain.user.application.UserProfileService;
 import com.moru.backend.domain.user.domain.User;
-import com.moru.backend.domain.user.dto.FavoriteTagRequest;
-import com.moru.backend.domain.user.dto.FavoriteTagResponse;
+import com.moru.backend.domain.user.dto.*;
 
-import com.moru.backend.domain.user.dto.UserProfileRequest;
-import com.moru.backend.domain.user.dto.UserProfileResponse;
 import com.moru.backend.global.validator.annotation.CurrentUser;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -37,6 +34,15 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<UserProfileResponse> getProfile(@CurrentUser User user) {
         UserProfileResponse response = userProfileService.getProfile(user);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "다른 사용자 프로필 정보 조회")
+    @GetMapping("/{userId}")
+    public ResponseEntity<OtherUserProfileResponse> getProfile(
+            @PathVariable UUID userId,
+            @CurrentUser User user) {
+        OtherUserProfileResponse response = userProfileService.getOtherProfile(userId, user);
         return ResponseEntity.ok(response);
     }
 

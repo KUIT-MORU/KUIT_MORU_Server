@@ -117,4 +117,14 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
     @Modifying
     @Query("update Routine r set r.viewCount = r.viewCount + 1 where r.id = :id")
     void incrementViewCount(@Param("id") UUID id);
+
+    //====내 루틴에서 이 루틴과 비슷한 루틴 기능 반환====//
+    @Query("""
+    SELECT r FROM Routine r
+    JOIN r.routineTags rt
+    WHERE rt.tag.id IN :tagIds AND r.id <> :routineId
+    GROUP BY r.id
+    ORDER BY COUNT(rt.tag.id) DESC, r.createdAt DESC
+    """)
+    List<Routine> findSimilarRoutinesByTagIds(@Param("tagIds") List<UUID> tagIds, @Param("routineId") UUID routineId, Pageable pageable);
 }

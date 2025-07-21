@@ -15,26 +15,23 @@ import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.meta.RoutineApp;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
-import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
-import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
 import com.moru.backend.domain.routine.dto.response.RoutineAppResponse;
+import com.moru.backend.domain.log.dto.RoutineLogCursor;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.domain.user.dao.UserRepository;
+import com.moru.backend.global.common.dto.ScrollResponse;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.validator.RoutineValidator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import com.moru.backend.domain.log.dto.LiveUserResponse;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -145,7 +142,8 @@ public class RoutineLogService {
                             stepSnapshot.getName(),
                             stepLog.getNote(),
                             stepSnapshot.getEstimatedTime(),
-                            stepLog.getActualTime()
+                            stepLog.getActualTime(),
+                            stepLog.isCompleted()
                     );
                 })
                 .toList();
@@ -228,11 +226,15 @@ public class RoutineLogService {
                 .toList();
     }
 
-    public List<RoutineLogSummaryResponse> getLogs(User user, Integer offset, Integer limit) {
-        Pageable pageable = PageRequest.of(offset / limit, limit, Sort.by("startedAt").descending());
-        Page<RoutineLog> page = routineLogRepository.findByUserIdAndIsSimpleFalse(user.getId(), pageable);
+    public ScrollResponse<RoutineLogSummaryResponse, RoutineLogCursor> getLogs(
+            User user,
+            LocalDateTime lastCreatedAt, UUID lastLogId, Integer limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        List<RoutineLog> logs = routineLogRepository.findLogsByCursor(
+                user.getId(), lastCreatedAt, lastLogId, pageable
+        );
 
-        return page.getContent().stream()
+        List<RoutineLogSummaryResponse> result = logs.stream()
                 .map(log -> {
                     RoutineSnapshot snapshot = log.getRoutineSnapshot();
                     List<String> tagNames = snapshot.getTagSnapshots().stream()
@@ -241,6 +243,11 @@ public class RoutineLogService {
                     return RoutineLogSummaryResponse.from(snapshot, log, tagNames);
                 })
                 .toList();
+        boolean hasNext = logs.size() == limit;
+        RoutineLogCursor nextCursor = hasNext
+                ? new RoutineLogCursor(logs.getLast().getCreatedAt(), logs.getLast().getId())
+                : null;
+        return ScrollResponse.of(result, hasNext, nextCursor);
     }
 
     @Transactional
