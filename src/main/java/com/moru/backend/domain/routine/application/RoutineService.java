@@ -388,7 +388,12 @@ public class RoutineService {
     private void updateSimpleFields(Routine routine, RoutineUpdateRequest request) {
         if (request.title() != null) routine.setTitle(request.title());
         if (request.description() != null) routine.setContent(request.description());
-        if (request.imageUrl() != null) routine.setImageUrl(request.imageUrl());
+        // === 이미지 이동 처리 ===
+        String imageKey = null;
+        if(request.imageUrl() != null && !request.imageUrl().isBlank()) {
+            imageKey = s3Service.moveToRealLocation(request.imageUrl(), S3Directory.PROFILE);
+        }
+        routine.setImageUrl(imageKey);
         if (request.isUserVisible() != null) routine.setUserVisible(request.isUserVisible());
         if (request.isSimple() != null) routine.setSimple(request.isSimple());
     }
