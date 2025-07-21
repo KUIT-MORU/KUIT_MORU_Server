@@ -21,11 +21,10 @@ public class ImageUploadController {
     @Operation(summary = "S3에 이미지 업로드")
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, String>> uploadImage(
-            @RequestPart("file") MultipartFile file,
-            @RequestParam("type") String type // e.g., "routine", "profile"
+            @RequestPart("file") MultipartFile file
     ) {
         try {
-            String imageUrl = s3Service.uploadFile(file, type);
+            String imageUrl = s3Service.uploadFile(file);
             Map<String, String> result = new HashMap<>();
             result.put("imageUrl", imageUrl);
             return ResponseEntity.ok(result);
