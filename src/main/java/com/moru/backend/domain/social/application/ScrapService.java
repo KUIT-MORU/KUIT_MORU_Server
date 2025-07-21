@@ -12,6 +12,7 @@ import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.common.dto.ScrollResponse;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
+import com.moru.backend.global.util.S3Service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +29,7 @@ public class ScrapService {
     private final RoutineRepository routineRepository;
     private final RoutineUserActionRepository routineUserActionRepository;
     private final RoutineCloner routineCloner;
+    private final S3Service s3Service;
 
     public Long countScrap(UUID routineId) {
         return routineUserActionRepository.countByRoutineIdAndActionType(routineId, ActionType.SCRAP);
@@ -81,7 +83,12 @@ public class ScrapService {
         );
 
         List<ScrappedRoutineSummaryResponse> result = scraps.stream()
-                .map(scrap -> ScrappedRoutineSummaryResponse.from(scrap.getRoutine()))
+                .map(scrap 
+                        -> ScrappedRoutineSummaryResponse.from(
+                                scrap.getRoutine(),
+                                s3Service.getImageUrl(scrap.getRoutine().getImageUrl())
+                        )
+                )
                 .toList();
 
         boolean hasNext = scraps.size() == limit;
