@@ -84,7 +84,8 @@ public class RoutineService {
 
     @Transactional
     public RoutineDetailResponse getRoutineDetail(UUID routineId, User currentUser) {
-        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
+        // 공개 루틴이면 누구나, 비공개 루틴이면 작성자만 볼 수 있도록 권한 검증
+        Routine routine = routineValidator.validateRoutineViewPermission(routineId, currentUser);
 
         // 1. 자신의 루틴이면 조회수 증가 X
         if (!routine.getUser().getId().equals(currentUser.getId())) {
@@ -105,7 +106,7 @@ public class RoutineService {
         int scrapCount = scrapService.countScrap(routine.getId()).intValue();
 
         // 비슷한 루틴 10개 조회
-        List<RoutineListResponse> similarRoutines = getSimilarRoutines(routineId, 10, currentUser);
+        List<RoutineListResponse> similarRoutines = getSimilarRoutinesByTags(routineId, 10, currentUser);
 
         return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser, similarRoutines);
     }
@@ -247,7 +248,7 @@ public class RoutineService {
     }
 
     @Transactional
-    public List<RoutineListResponse> getSimilarRoutines(UUID routineId, int limit, User currentUser) {
+    public List<RoutineListResponse> getSimilarRoutinesByTags(UUID routineId, int limit, User currentUser) {
         // 1. 루틴 및 권한 검증
         Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
 
