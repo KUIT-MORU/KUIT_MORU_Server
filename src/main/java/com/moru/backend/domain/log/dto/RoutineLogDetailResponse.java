@@ -27,6 +27,7 @@ public record RoutineLogDetailResponse(
     public static RoutineLogDetailResponse from (
             RoutineLog routineLog,
             RoutineSnapshot snapshot,
+            String imageFullUrl,
             List<String> tagNames,
             List<RoutineStepLogDto> steps,
             List<RoutineAppResponse> apps
@@ -41,7 +42,7 @@ public record RoutineLogDetailResponse(
                 routineLog.getStartedAt(),
                 routineLog.getEndedAt(),
                 routineLog.getTotalTime(),
-                snapshot.getImageUrl(),
+                imageFullUrl,
                 tagNames,
                 steps,
                 apps,

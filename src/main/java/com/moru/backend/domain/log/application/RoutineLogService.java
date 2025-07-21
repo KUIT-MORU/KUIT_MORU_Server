@@ -157,7 +157,13 @@ public class RoutineLogService {
                 })
                 .toList();
 
-        return RoutineLogDetailResponse.from(routineLog, snapshot, tagNames, steps, apps);
+        return RoutineLogDetailResponse.from(
+                routineLog,
+                snapshot,
+                s3Service.getImageUrl(snapshot.getImageUrl()),
+                tagNames,
+                steps,
+                apps);
     }
 
     @Transactional
@@ -190,21 +196,6 @@ public class RoutineLogService {
         routineStepLogRepository.save(stepLog);
     }
 
-    public List<RoutineLogSummaryResponse> getLogs(User user) {
-        List<RoutineLog> logs = routineLogRepository.findAllByUserIdWithSnapshot(user.getId());
-
-        return logs.stream()
-                .map(log -> {
-                    RoutineSnapshot snapshot = log.getRoutineSnapshot();
-                    List<String> tags = snapshot.getTagSnapshots().stream()
-                            .map(RoutineTagSnapshot::getTagName)
-                            .toList();
-
-                    return RoutineLogSummaryResponse.from(snapshot, log, tags);
-                })
-                .toList();
-    }
-
     public List<RoutineLogSummaryResponse> getTodayLogs(User user) {
         LocalDate today = LocalDate.now();
         LocalDateTime start = today.atStartOfDay();
@@ -230,7 +221,12 @@ public class RoutineLogService {
                     List<String> tagNames = snapshot.getTagSnapshots().stream()
                             .map(RoutineTagSnapshot::getTagName)
                             .toList();
-                    return RoutineLogSummaryResponse.from(snapshot, log, tagNames);
+                    return RoutineLogSummaryResponse.from(
+                            snapshot,
+                            s3Service.getImageUrl(snapshot.getImageUrl()),
+                            log,
+                            tagNames
+                    );
                 })
                 .toList();
     }
@@ -249,7 +245,12 @@ public class RoutineLogService {
                     List<String> tagNames = snapshot.getTagSnapshots().stream()
                             .map(RoutineTagSnapshot::getTagName)
                             .toList();
-                    return RoutineLogSummaryResponse.from(snapshot, log, tagNames);
+                    return RoutineLogSummaryResponse.from(
+                            snapshot,
+                            s3Service.getImageUrl(snapshot.getImageUrl()),
+                            log,
+                            tagNames
+                    );
                 })
                 .toList();
         boolean hasNext = logs.size() == limit;
