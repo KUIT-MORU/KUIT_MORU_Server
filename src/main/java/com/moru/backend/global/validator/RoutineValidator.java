@@ -32,18 +32,4 @@ public class RoutineValidator {
         return routine;
     }
 
-    /**
-     * 공개 루틴이면 누구나, 비공개 루틴이면 작성자만 볼 수 있도록 권한 검증
-     */
-    public Routine validateRoutineViewPermission(UUID routineId, User currentUser) {
-        Routine routine = routineRepository.findById(routineId)
-            .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
-        if (routine.isUserVisible()) {
-            return routine;
-        }
-        if (!routine.getUser().getId().equals(currentUser.getId())) {
-            throw new CustomException(ErrorCode.FORBIDDEN);
-        }
-        return routine;
-    }
 }

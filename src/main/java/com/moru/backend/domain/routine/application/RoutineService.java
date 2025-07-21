@@ -35,6 +35,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
+import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -249,10 +250,7 @@ public class RoutineService {
 
     @Transactional
     public List<RoutineListResponse> getSimilarRoutinesByTags(UUID routineId, int limit, User currentUser) {
-        // 1. 루틴 및 권한 검증
-        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
-
-        // 2. 태그가 없으면 빈 배열 반환
+        // 1. 태그가 없으면 빈 배열 반환
         List<RoutineTag> routineTags = routineTagRepository.findByRoutine(routine);
         if (routineTags == null || routineTags.isEmpty()) {
             return List.of();
@@ -260,18 +258,24 @@ public class RoutineService {
         List<UUID> tagIds = routineTags.stream()
                 .map(rt -> rt.getTag().getId())
                 .toList();
-
-        // 3. 비슷한 루틴 조회
-        Pageable pageable = PageRequest.of(0, limit);
+        
+        Pageable pageable = PageRequest.of(0, limit * 2); // 넉넉히 뽑아서 내 루틴 제외 후 limit 맞추기
         List<Routine> routines = routineRepository.findSimilarRoutinesByTagIds(tagIds, routineId, pageable);
 
         // 비슷한 루틴이 없으면 빈 배열 반환
         if (routines == null || routines.isEmpty()) {
             return List.of();
         }
-        return routines.stream()
-                .map(this::toRoutineListResponse)
-                .toList();
+        // 내 루틴은 추천에서 제외
+        List<RoutineListResponse> result = new ArrayList<>();
+        for (Routine r : routines) {
+            if (!r.getUser().getId().equals(currentUser.getId())) {
+                List<RoutineTag> tags = routineTagRepository.findByRoutine(r);
+                result.add(RoutineListResponse.fromRoutine(r, tags));
+                if (result.size() >= limit) break;
+            }
+        }
+        return result;
     }
 
     // ========================= 유틸/헬퍼 ========================= //

@@ -36,7 +36,7 @@ public record RoutineListResponse(
     @Schema(description = "필요 시간(집중루틴만)", example = "PT50M") // 시간순으로 정렬할 때 
     Duration requiredTime
 ) {
-    public static RoutineListResponse of(Routine routine, List<RoutineTag> tags) {
+    public static RoutineListResponse fromRoutine(Routine routine, List<RoutineTag> tags) {
         return new RoutineListResponse(
                 routine.getId(),
                 routine.getTitle(),
@@ -44,7 +44,7 @@ public record RoutineListResponse(
                 tags.stream()
                         .map(rt -> rt.getTag().getName())
                         .collect(Collectors.toList()),
-                routine.getLikeCount(), // TODO: 실제 좋아요 수 반영 로직 구현 필요
+                routine.getLikeCount(),
                 routine.getCreatedAt(),
                 routine.getRequiredTime()
         );
