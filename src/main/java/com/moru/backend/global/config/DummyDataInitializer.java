@@ -1,5 +1,11 @@
 package com.moru.backend.global.config;
 
+import com.moru.backend.domain.log.dao.RoutineLogRepository;
+import com.moru.backend.domain.log.dao.RoutineSnapshotRepository;
+import com.moru.backend.domain.log.domain.RoutineLog;
+import com.moru.backend.domain.log.domain.snapshot.RoutineSnapshot;
+import com.moru.backend.domain.log.domain.snapshot.RoutineStepSnapshot;
+import com.moru.backend.domain.log.domain.snapshot.RoutineTagSnapshot;
 import com.moru.backend.domain.meta.dao.AppRepository;
 import com.moru.backend.domain.meta.dao.TagRepository;
 import com.moru.backend.domain.meta.domain.Tag;
@@ -10,9 +16,13 @@ import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
+import com.moru.backend.domain.social.dao.UserFollowRepository;
+import com.moru.backend.domain.social.domain.UserFollow;
+import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.Gender;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.domain.user.domain.UserFavoriteTag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.datafaker.Faker;
@@ -23,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -37,6 +48,10 @@ public class DummyDataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final AppRepository appRepository;
     private final RoutineRepository routineRepository;
+    private final UserFollowRepository userFollowRepository;
+    private final UserFavoriteTagRepository userFavoriteTagRepository;
+    private final RoutineLogRepository routineLogRepository;
+    private final RoutineSnapshotRepository routineSnapshotRepository;
 
     // Faker 인스턴스와 Random 객체를 필드로 선언해서 재사용하기
     private final Faker faker = new Faker(new Locale("ko"));
@@ -66,6 +81,12 @@ public class DummyDataInitializer implements CommandLineRunner {
 
         List<Routine> allRoutines = createBulkRoutines(20000, allUsers, allTags); // 약 2만개의 루틴 생성
         log.info("[4/5] {}개의 루틴과 관련 데이터(스텝, 태그연결, 스케줄)를 생성했습니다.", allRoutines.size());
+
+        // 3. 관계 데이터 생성 (팔로우, 선호 태그, 루틴 로그)
+        createBulkRelationsAndLogs(50000, allUsers, allTags, allRoutines);
+        log.info("[5/5] 팔로우, 선호 태그, 루틴 로그 데이터를 생성했습니다.");
+
+        log.info("===더미 데이터 생성 완료===");
     }
 
     private List<Tag> createManualTags() {
@@ -198,5 +219,111 @@ public class DummyDataInitializer implements CommandLineRunner {
             routinesToSave.add(routine);
         }
         return routineRepository.saveAll(routinesToSave);
+    }
+
+    private void createBulkRelationsAndLogs(int count, List<User> users, List<Tag> tags, List<Routine> routines) {
+        // 팔로우 관계 생성
+        Set<String> existingFollows = new HashSet<>();
+        List<UserFollow> followsToSave = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            User follower = users.get(random.nextInt(users.size()));
+            User following = users.get(random.nextInt(users.size()));
+
+            if (follower.getId().equals(following.getId())) continue;
+
+            String followKey = follower.getId() + ":" + following.getId();
+            if (existingFollows.contains(followKey)) continue;
+
+            followsToSave.add(UserFollow.builder().follower(follower).following(following).build());
+            existingFollows.add(followKey);
+        }
+        userFollowRepository.saveAll(followsToSave);
+
+        // 선호 태그 관계 생성
+        Set<String> existingFavoriteTags = new HashSet<>();
+        List<UserFavoriteTag> favoriteTagsToSave = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            User user = users.get(random.nextInt(users.size()));
+            Tag tag = tags.get(random.nextInt(tags.size()));
+
+            String favoriteKey = user.getId() + ":" + tag.getId();
+            if (existingFavoriteTags.contains(favoriteKey)) continue;
+
+            favoriteTagsToSave.add(UserFavoriteTag.builder().user(user).tag(tag).build());
+            existingFavoriteTags.add(favoriteKey);
+        }
+        userFavoriteTagRepository.saveAll(favoriteTagsToSave);
+
+        // 1. 로그를 생성할 루틴들로부터 스냅샷을 먼저 만듭니다.
+        List<RoutineSnapshot> snapshotsToSave = new ArrayList<>();
+        for (Routine routine : routines) {
+            if (random.nextInt(10) == 0) { // 10% 확률로 스냅샷 생성
+                RoutineSnapshot snapshot = RoutineSnapshot.builder()
+                        .id(UUID.randomUUID())
+                        .originalRoutineId(routine.getId())
+                        .title(routine.getTitle())
+                        .content(routine.getContent())
+                        .imageUrl(routine.getImageUrl())
+                        .isSimple(routine.isSimple())
+                        .isUserVisible(routine.isUserVisible())
+                        .requiredTime(routine.getRequiredTime())
+                        .build();
+
+                // 스텝 스냅샷 생성 및 연결
+                List<RoutineStepSnapshot> stepSnapshots = routine.getRoutineSteps().stream()
+                        .map(step -> RoutineStepSnapshot.builder()
+                                .routineSnapshot(snapshot) // 부모-자식 관계 설정
+                                .name(step.getName())
+                                .stepOrder(step.getStepOrder())
+                                .estimatedTime(step.getEstimatedTime())
+                                .build())
+                        .collect(Collectors.toList());
+                snapshot.getStepSnapshots().addAll(stepSnapshots);
+
+                // 태그 스냅샷 생성 및 연결
+                List<RoutineTagSnapshot> tagSnapshots = routine.getRoutineTags().stream()
+                        .map(routineTag -> RoutineTagSnapshot.builder()
+                                .routineSnapshot(snapshot) // 부모-자식 관계 설정
+                                .tagName(routineTag.getTag().getName())
+                                .build())
+                        .collect(Collectors.toList());
+                snapshot.getTagSnapshots().addAll(tagSnapshots);
+
+                snapshotsToSave.add(snapshot);
+            }
+        }
+        List<RoutineSnapshot> savedSnapshots = routineSnapshotRepository.saveAll(snapshotsToSave);
+
+        // 2. 저장된 스냅샷을 기반으로 실제 로그를 생성합니다.
+        List<RoutineLog> logsToSave = new ArrayList<>();
+        Map<UUID, User> routineUserMap = routines.stream()
+                .collect(Collectors.toMap(Routine::getId, Routine::getUser, (u1, u2) -> u1));
+
+        for (RoutineSnapshot snapshot : savedSnapshots) {
+            User user = routineUserMap.get(snapshot.getOriginalRoutineId());
+            if (user == null) continue;
+
+            LocalDateTime startedAt = LocalDateTime.now().minusDays(random.nextInt(30)).minusHours(random.nextInt(24));
+            boolean isCompleted = random.nextBoolean();
+            LocalDateTime endedAt = null;
+            Duration totalTime = null;
+
+            if (isCompleted && snapshot.getRequiredTime() != null) {
+                endedAt = startedAt.plus(snapshot.getRequiredTime()).plusMinutes(random.nextInt(10) - 5); // 약간의 오차
+                totalTime = Duration.between(startedAt, endedAt);
+            }
+
+            logsToSave.add(RoutineLog.builder()
+                    .id(UUID.randomUUID())
+                    .user(user)
+                    .routineSnapshot(snapshot)
+                    .startedAt(startedAt)
+                    .endedAt(endedAt)
+                    .totalTime(totalTime)
+                    .isSimple(snapshot.isSimple())
+                    .isCompleted(isCompleted)
+                    .build());
+        }
+        routineLogRepository.saveAll(logsToSave);
     }
 }
