@@ -7,6 +7,8 @@ import com.moru.backend.domain.routine.domain.meta.RoutineApp;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.global.util.S3Directory;
+import com.moru.backend.global.util.S3Service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -21,6 +23,7 @@ public class RoutineCloner {
     private final RoutineTagRepository routineTagRepository;
     private final RoutineAppRepository routineAppRepository;
     private final RoutineScheduleRepository routineScheduleRepository;
+    private final S3Service s3Service;
 
     @Transactional
     public Routine cloneRoutine(Routine origin, User owner) {

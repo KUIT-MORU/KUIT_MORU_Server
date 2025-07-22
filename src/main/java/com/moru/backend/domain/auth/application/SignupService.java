@@ -1,21 +1,19 @@
 package com.moru.backend.domain.auth.application;
 
 import com.moru.backend.domain.auth.dto.SignupRequest;
-import com.moru.backend.domain.meta.dao.TagRepository;
 import com.moru.backend.domain.user.application.UserFavoriteTagService;
-import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
-import com.moru.backend.domain.user.domain.UserFavoriteTag;
 import com.moru.backend.domain.user.dto.FavoriteTagRequest;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
+import com.moru.backend.global.util.S3Directory;
+import com.moru.backend.global.util.S3Service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -24,6 +22,7 @@ public class SignupService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserFavoriteTagService userFavoriteTagService;
+    private final S3Service s3Service;
 
     @Transactional
     public void signup(SignupRequest request) {
@@ -34,6 +33,12 @@ public class SignupService {
             throw new CustomException(ErrorCode.USER_NICKNAME_ALREADY_EXISTS);
         }
 
+        // === 이미지 이동 처리 ===
+        String imageKey = null;
+        if(request.profileImageUrl() != null && !request.profileImageUrl().isBlank()) {
+            imageKey = s3Service.moveToRealLocation(request.profileImageUrl(), S3Directory.PROFILE);
+        }
+
         User user = User.builder()
                 .id(UUID.randomUUID())
                 .email(request.email())
@@ -42,7 +47,7 @@ public class SignupService {
                 .gender(request.gender())
                 .birthday(request.birthday())
                 .bio(request.bio())
-                .profileImageUrl(request.profileImageUrl())
+                .profileImageUrl(imageKey)
                 .status(true)
                 .build();
         userRepository.save(user);

@@ -22,6 +22,8 @@ import com.moru.backend.domain.user.dto.UserProfileRequest;
 import com.moru.backend.domain.user.dto.UserProfileResponse;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
+import com.moru.backend.global.util.S3Directory;
+import com.moru.backend.global.util.S3Service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -39,6 +41,7 @@ public class UserProfileService {
     private final RoutineTagRepository routineTagRepository;
     private final FollowService followService;
     private final LikeService likeService;
+    private final S3Service s3Service;
 
     public UserProfileResponse getProfile(User user) {
         if(!user.isActive()) {
@@ -48,6 +51,7 @@ public class UserProfileService {
         FollowCountResponse followCount = followService.countFollow(user.getId());
         return UserProfileResponse.from(
                 user,
+                s3Service.getImageUrl(user.getProfileImageUrl()),
                 routineCount,
                 followCount.followerCount(),
                 followCount.followingCount()
@@ -67,7 +71,10 @@ public class UserProfileService {
         RoutineListResponse currentRoutine = null;
         RoutineLog activeLog = routineLogRepository.findActiveByUserId(targetUserId).orElse(null);
         if (activeLog != null && activeLog.getRoutineSnapshot() != null) {
-            currentRoutine = RoutineListResponse.fromSnapshot(activeLog.getRoutineSnapshot());
+            currentRoutine = RoutineListResponse.fromSnapshot(
+                    activeLog.getRoutineSnapshot(),
+                    s3Service.getImageUrl(activeLog.getRoutineSnapshot().getImageUrl())
+            );
         }
 
         // 소유한(공개) 루틴 목록
@@ -76,14 +83,18 @@ public class UserProfileService {
                 .map(r -> {
                     List<RoutineTag> tags = routineTagRepository.findByRoutine(r);
                     int likeCount = likeService.countLikes(r.getId()).intValue();
-                    return RoutineListResponse.fromRoutine(r, tags);
+                    return RoutineListResponse.fromRoutine(
+                            r,
+                            s3Service.getImageUrl(r.getImageUrl()),
+                            tags
+                    );
                 })
                 .toList();
 
         return new OtherUserProfileResponse(
                 isMe,
                 targetUser.getNickname(),
-                targetUser.getProfileImageUrl(),
+                s3Service.getImageUrl(targetUser.getProfileImageUrl()),
                 targetUser.getBio(),
                 routineCount,
                 followerCount,
@@ -118,10 +129,18 @@ public class UserProfileService {
             user.setBio(request.bio());
         }
 
-        if(request.profileImageUrl() != null && !request.profileImageUrl().trim().isBlank()) {
-            user.setProfileImageUrl(request.profileImageUrl());
+        // === 이미지 이동 처리 ===
+        String imageKey = null;
+        if(request.profileImageUrl() != null && !request.profileImageUrl().isBlank()) {
+            imageKey = s3Service.moveToRealLocation(request.profileImageUrl(), S3Directory.PROFILE);
+            user.setProfileImageUrl(imageKey);
         }
 
-        return UserProfileResponse.from(user, null, null, null);
+        return UserProfileResponse.from(
+                user,
+                s3Service.getImageUrl(user.getProfileImageUrl()),
+                null,
+                null,
+                null);
     }
 }

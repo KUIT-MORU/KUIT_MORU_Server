@@ -22,6 +22,8 @@ import com.moru.backend.domain.social.domain.RoutineUserAction;
 import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.util.RedisKeyUtil;
+import com.moru.backend.global.util.S3Directory;
+import com.moru.backend.global.util.S3Service;
 import com.moru.backend.global.validator.RoutineValidator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +56,7 @@ public class RoutineService {
     private final LikeService likeService;
     private final UserFavoriteTagRepository userFavoriteTagRepository;
     private final RedisTemplate<String, String> redisTemplate;
+    private final S3Service s3Service;
 
     // ========================= 루틴 생성/수정/삭제 =========================
 
@@ -63,7 +66,13 @@ public class RoutineService {
         Duration totalTime = isSimple ? null : request.steps().stream()
                 .map(step -> Optional.ofNullable(step.estimatedTime()).orElse(Duration.ZERO))
                 .reduce(Duration.ZERO, Duration::plus);
-
+        
+        // === 이미지 이동 처리 ===
+        String imageKey = null;
+        if(request.imageKey() != null && !request.imageKey().isBlank()) {
+            imageKey = s3Service.moveToRealLocation(request.imageKey(), S3Directory.ROUTINE);
+        }
+        
         Routine routine = Routine.builder()
                 .id(UUID.randomUUID())
                 .user(user)
@@ -74,6 +83,7 @@ public class RoutineService {
                 .content(Optional.ofNullable(request.description()).orElse(""))
                 .requiredTime(totalTime)
                 .status(true)
+                .imageUrl(imageKey)
                 .build();
         Routine savedRoutine = routineRepository.save(routine);
 
@@ -118,11 +128,25 @@ public class RoutineService {
             similarRoutines = routines.stream()
                     .filter(r -> !r.getUser().getId().equals(currentUser.getId()))
                     .limit(10)
-                    .map(r -> RoutineListResponse.fromRoutine(r, routineTagRepository.findByRoutine(r)))
+                    .map(r -> RoutineListResponse.fromRoutine(
+                            r,
+                            s3Service.getImageUrl(r.getImageUrl()),
+                            routineTagRepository.findByRoutine(r))
+                    )
                     .toList();
         }
 
-        return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser, similarRoutines);
+        return RoutineDetailResponse.of(
+                routine,
+                s3Service.getImageUrl(routine.getImageUrl()),
+                tags,
+                steps,
+                apps,
+                likeCount,
+                scrapCount,
+                currentUser,
+                similarRoutines
+        );
     }
 
     @Transactional
@@ -139,7 +163,17 @@ public class RoutineService {
         int likeCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.LIKE).intValue();
         int scrapCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.SCRAP).intValue();
         // update에서는 비슷한 루틴은 빈 리스트로 반환
-        return RoutineDetailResponse.of(routine, tags, steps, apps, likeCount, scrapCount, currentUser, List.of());
+        return RoutineDetailResponse.of(
+                routine,
+                s3Service.getImageUrl(routine.getImageUrl()),
+                tags,
+                steps,
+                apps,
+                likeCount,
+                scrapCount,
+                currentUser,
+                List.of()
+        );
     }
 
     @Transactional
@@ -332,6 +366,7 @@ public class RoutineService {
         Long likeCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.LIKE);
         return RoutineListResponse.fromRoutine(
                 routine,
+                s3Service.getImageUrl(routine.getImageUrl()),
                 tags
         );
     }
@@ -377,7 +412,12 @@ public class RoutineService {
     private void updateSimpleFields(Routine routine, RoutineUpdateRequest request) {
         if (request.title() != null) routine.setTitle(request.title());
         if (request.description() != null) routine.setContent(request.description());
-        if (request.imageUrl() != null) routine.setImageUrl(request.imageUrl());
+        // === 이미지 이동 처리 ===
+        String imageKey = null;
+        if(request.imageUrl() != null && !request.imageUrl().isBlank()) {
+            imageKey = s3Service.moveToRealLocation(request.imageUrl(), S3Directory.PROFILE);
+        }
+        routine.setImageUrl(imageKey);
         if (request.isUserVisible() != null) routine.setUserVisible(request.isUserVisible());
         if (request.isSimple() != null) routine.setSimple(request.isSimple());
     }

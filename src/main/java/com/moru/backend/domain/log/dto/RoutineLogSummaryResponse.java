@@ -17,6 +17,7 @@ public record RoutineLogSummaryResponse (
 ) {
     public static RoutineLogSummaryResponse from (
             RoutineSnapshot snapshot,
+            String imageFullUrl,
             RoutineLog log,
             List<String> tags
     ) {
@@ -25,7 +26,7 @@ public record RoutineLogSummaryResponse (
                 snapshot.getTitle(),
                 log.isCompleted(),
                 log.getTotalTime(),
-                snapshot.getImageUrl(),
+                imageFullUrl,
                 tags
         );
     }

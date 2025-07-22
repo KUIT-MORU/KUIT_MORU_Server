@@ -46,11 +46,11 @@ public record RoutineListResponse(
      * 일반 Routine 엔티티 기반 카드 응답 생성 (공개/소유 루틴 등)
      * Routine + List<RoutineTag> → RoutineListResponse
      */
-    public static RoutineListResponse fromRoutine(Routine routine, List<RoutineTag> tags) {
+    public static RoutineListResponse fromRoutine(Routine routine, String imageFullUrl, List<RoutineTag> tags) {
         return RoutineListResponse.builder()
                 .id(routine.getId())
                 .title(routine.getTitle())
-                .imageUrl(routine.getImageUrl())
+                .imageUrl(imageFullUrl)
                 .tags(tags.stream().map(rt -> rt.getTag().getName()).toList())
                 .likeCount(routine.getLikeCount())
                 .createdAt(routine.getCreatedAt())
@@ -62,11 +62,11 @@ public record RoutineListResponse(
      * 실행중인 루틴(스냅샷 기반) 카드 응답 생성
      * RoutineSnapshot → RoutineListResponse
      */
-    public static RoutineListResponse fromSnapshot(RoutineSnapshot snapshot) {
+    public static RoutineListResponse fromSnapshot(RoutineSnapshot snapshot, String imageFullUrl) {
         return RoutineListResponse.builder()
                 .id(snapshot.getOriginalRoutineId())
                 .title(snapshot.getTitle())
-                .imageUrl(snapshot.getImageUrl())
+                .imageUrl(imageFullUrl)
                 .tags(snapshot.getTagSnapshots().stream().map(RoutineTagSnapshot::getTagName).toList())
                 .likeCount(0)
                 .build();
