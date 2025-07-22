@@ -1,7 +1,7 @@
 package com.moru.backend.domain.auth.dto;
 
 import com.moru.backend.domain.user.domain.Gender;
-import com.moru.backend.global.validator.annotation.Password;
+import com.moru.backend.global.annotation.Password;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 

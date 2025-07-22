@@ -3,7 +3,7 @@ package com.moru.backend.domain.insight.api;
 import com.moru.backend.domain.insight.application.UserInsightService;
 import com.moru.backend.domain.insight.dto.UserInsightResponse;
 import com.moru.backend.domain.user.domain.User;
-import com.moru.backend.global.validator.annotation.CurrentUser;
+import com.moru.backend.global.annotation.CurrentUser;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
