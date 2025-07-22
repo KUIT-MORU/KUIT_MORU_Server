@@ -47,6 +47,6 @@ public class RoutineStepLog {
     @Column(nullable = false)
     private LocalDateTime endedAt;
 
-    @Column(nullable = false)
+    @Builder.Default
     private boolean isCompleted = false;
 }

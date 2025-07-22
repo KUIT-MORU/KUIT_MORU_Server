@@ -50,6 +50,7 @@ public class Routine {
     private Integer likeCount;
 
     @Column(columnDefinition = "int unsigned default 0", nullable = false)
+    @Builder.Default
     private Integer viewCount = 0;
 
     @Column
@@ -78,11 +79,14 @@ public class Routine {
     private List<RoutineTag> routineTags;
 
     @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL)
+    @Builder.Default
     private List<RoutineApp> routineApps = new ArrayList<>();
 
     @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<RoutineStep> routineSteps = new ArrayList<>();
 
     @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<RoutineSchedule> routineSchedules = new ArrayList<>();
 }
