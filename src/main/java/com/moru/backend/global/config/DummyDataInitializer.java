@@ -2,6 +2,7 @@ package com.moru.backend.global.config;
 
 import com.moru.backend.domain.meta.dao.TagRepository;
 import com.moru.backend.domain.meta.domain.Tag;
+import com.moru.backend.domain.user.dao.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -19,9 +20,19 @@ import java.util.stream.Collectors;
 @Transactional
 public class DummyDataInitializer implements CommandLineRunner {
     private final TagRepository tagRepository;
+    private final UserRepository userRepository;
 
     @Override
     public void run(String... args) throws Exception {
+        if (userRepository.count() > 0) {
+            log.info("더미 데이터가 이미 존재하므로 생성 건너뛰기");
+            return;
+        }
+        log.info("===DataFaker을 사용해서 대규모 더미 데이터 생성 시작===");
+
+        // 수동 생성 : 태그와 같은 고정적인 데이터
+        List<Tag> allTags = createManualTags();
+        log.info("[1/5] {}개의 태그를 생성함", allTags.size());
 
     }
 
