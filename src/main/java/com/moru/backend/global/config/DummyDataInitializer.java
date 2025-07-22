@@ -4,6 +4,12 @@ import com.moru.backend.domain.meta.dao.AppRepository;
 import com.moru.backend.domain.meta.dao.TagRepository;
 import com.moru.backend.domain.meta.domain.Tag;
 import com.moru.backend.domain.meta.domain.App;
+import com.moru.backend.domain.routine.dao.RoutineRepository;
+import com.moru.backend.domain.routine.domain.Routine;
+import com.moru.backend.domain.routine.domain.RoutineStep;
+import com.moru.backend.domain.routine.domain.meta.RoutineTag;
+import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
+import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.Gender;
 import com.moru.backend.domain.user.domain.User;
@@ -15,6 +21,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
@@ -29,6 +36,7 @@ public class DummyDataInitializer implements CommandLineRunner {
     private final TagRepository tagRepository;
     private final UserRepository userRepository;
     private final AppRepository appRepository;
+    private final RoutineRepository routineRepository;
 
     // Faker 인스턴스와 Random 객체를 필드로 선언해서 재사용하기
     private final Faker faker = new Faker(new Locale("ko"));
@@ -53,8 +61,11 @@ public class DummyDataInitializer implements CommandLineRunner {
         log.info("[2/5] {}개의 앱을 생성함", allApps.size());
 
         // 자동 생성 : 사용자, 루틴 등
+        List<User> allUsers = createBulkUsers(10000); // 10000명의 사용자를 생성
+        log.info("[3/5] {}명의 사용자를 생성했습니다.", allUsers.size());
 
-
+        List<Routine> allRoutines = createBulkRoutines(20000, allUsers, allTags); // 약 2만개의 루틴 생성
+        log.info("[4/5] {}개의 루틴과 관련 데이터(스텝, 태그연결, 스케줄)를 생성했습니다.", allRoutines.size());
     }
 
     private List<Tag> createManualTags() {
@@ -92,7 +103,7 @@ public class DummyDataInitializer implements CommandLineRunner {
         return appRepository.saveAll(apps);
     }
 
-    private List<User> createBulkUser(int count) {
+    private List<User> createBulkUsers(int count) {
         List<User> users = new ArrayList<>();
         // 1. 테스트용 고정 사용자 추가 (data.sql 내용 반영)
         users.add(User.builder()
@@ -128,5 +139,64 @@ public class DummyDataInitializer implements CommandLineRunner {
                     .build());
         }
         return userRepository.saveAll(users);
+    }
+
+    private List<Routine> createBulkRoutines(int count, List<User> users, List<Tag> tags) {
+        List<Routine> routinesToSave = new ArrayList<>();
+        for (int i=0; i<count; i++) {
+            User owner = users.get(random.nextInt(users.size()));
+            Routine routine = Routine.builder()
+                    .id(UUID.randomUUID())
+                    .user(owner)
+                    .title(faker.book().title() + " 루틴")
+                    .content(String.join("\n", faker.lorem().paragraphs(2)))
+                    .isSimple(random.nextBoolean())
+                    .isUserVisible(true)
+                    .likeCount(random.nextInt(500))
+                    .viewCount(random.nextInt(2000))
+                    .requiredTime(Duration.ofMinutes(random.nextInt(120) + 5))
+                    .status(true)
+                    .build();
+
+            // 루틴 스텝 자동 생성 (1~6개)
+            int stepCount = random.nextInt(5) + 1;
+            List<RoutineStep> steps = new ArrayList<>();
+            for (int j = 1; j <= stepCount; j++) {
+                steps.add(RoutineStep.builder()
+                        .routine(routine)
+                        .name(faker.lorem().word() + "하기")
+                        .stepOrder(j)
+                        .estimatedTime(Duration.ofMinutes(random.nextInt(30) + 1))
+                        .build());
+            }
+            routine.setRoutineSteps(steps);
+
+            // 루틴 태그 자동 연결 (1~3개)
+            Collections.shuffle(tags);
+            int tagCount = random.nextInt(3) + 1;
+            List<RoutineTag> routineTags = new ArrayList<>();
+            for (int j = 0; j < tagCount; j++) {
+                routineTags.add(RoutineTag.builder()
+                        .routine(routine)
+                        .tag(tags.get(j))
+                        .build());
+            }
+            routine.setRoutineTags(routineTags);
+
+            // 루틴 스케줄 자동 생성
+            List<RoutineSchedule> schedules = new ArrayList<>();
+            Set<DayOfWeek> scheduledDays = new HashSet<>();
+            int dayCount = random.nextInt(7) + 1;
+            for (int j = 0; j < dayCount; j++) {
+                scheduledDays.add(DayOfWeek.values()[random.nextInt(7)]);
+            }
+            for (DayOfWeek day : scheduledDays) {
+                schedules.add(RoutineSchedule.builder().routine(routine).dayOfWeek(day).build());
+            }
+            routine.setRoutineSchedules(schedules);
+
+            routinesToSave.add(routine);
+        }
+        return routineRepository.saveAll(routinesToSave);
     }
 }
