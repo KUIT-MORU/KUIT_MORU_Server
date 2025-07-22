@@ -5,13 +5,18 @@ import com.moru.backend.domain.meta.dao.TagRepository;
 import com.moru.backend.domain.meta.domain.Tag;
 import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.user.dao.UserRepository;
+import com.moru.backend.domain.user.domain.Gender;
+import com.moru.backend.domain.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.datafaker.Faker;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -25,6 +30,12 @@ public class DummyDataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final AppRepository appRepository;
 
+    // Faker 인스턴스와 Random 객체를 필드로 선언해서 재사용하기
+    private final Faker faker = new Faker(new Locale("ko"));
+    private final Random random = new Random();
+
+    // 테스트용 공통 비밀번호 (실제 암호화된 값)
+    private static final String COMMON_PASSWORD_HASH = "$2a$10$j5YhIig/vZwnhy1D61vdm.J9djNvHLjdZAx8xTccYpGabXA7S2MGi"; // password
 
     @Override
     public void run(String... args) throws Exception {
@@ -40,6 +51,9 @@ public class DummyDataInitializer implements CommandLineRunner {
 
         List<App> allApps = createManualApps();
         log.info("[2/5] {}개의 앱을 생성함", allApps.size());
+
+        // 자동 생성 : 사용자, 루틴 등
+
 
     }
 
@@ -78,4 +92,41 @@ public class DummyDataInitializer implements CommandLineRunner {
         return appRepository.saveAll(apps);
     }
 
+    private List<User> createBulkUser(int count) {
+        List<User> users = new ArrayList<>();
+        // 1. 테스트용 고정 사용자 추가 (data.sql 내용 반영)
+        users.add(User.builder()
+                .id(UUID.fromString("550e8400-e29b-41d4-a716-446655440000"))
+                .email("test@example.com")
+                .password("$2a$10$xUBrBGPuFIPdnDU2LCRLOeb3ML.vcGEen7NrughMZcQAs/i4cbxsy")
+                .nickname("테스트유저")
+                .gender(Gender.MALE)
+                .birthday(LocalDate.parse("2000-01-01"))
+                .bio("테스트 계정입니다.")
+                .profileImageUrl("https://example.com/profile0.jpg")
+                // status, createdAt, updatedAt은 자동 처리되므로 설정 불필요
+                .build());
+
+        for (int i = 0; i < count - 1; i++) {
+            String nickname = faker.name().lastName() + faker.name().firstName();
+            // 닉네임 중복 방지하기
+            while (userRepository.existsByNickname(nickname)) {
+                nickname = faker.name().lastName() + faker.name().firstName() + random.nextInt(100);
+            }
+
+            users.add(User.builder()
+                    .id(UUID.randomUUID())
+                    .email(faker.internet().safeEmailAddress())
+                    .password(COMMON_PASSWORD_HASH)
+                    .nickname(nickname)
+                    .gender(random.nextBoolean() ? Gender.MALE : Gender.FEMALE)
+                    .birthday(faker.date().birthday(18, 65).toInstant().atZone(ZoneId.systemDefault()).toLocalDate())
+                    .bio(faker.lorem().sentence())
+                    // profileImageUrl은 faker로 직접 생성하여 설정
+                    .profileImageUrl(faker.avatar().image())
+                    // status, createdAt, updatedAt은 자동 처리되므로 설정 불필요
+                    .build());
+        }
+        return userRepository.saveAll(users);
+    }
 }
