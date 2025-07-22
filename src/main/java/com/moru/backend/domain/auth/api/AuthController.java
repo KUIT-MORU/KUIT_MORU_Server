@@ -3,7 +3,7 @@ package com.moru.backend.domain.auth.api;
 import com.moru.backend.domain.auth.application.*;
 import com.moru.backend.domain.auth.dto.*;
 import com.moru.backend.domain.user.domain.User;
-import com.moru.backend.global.validator.annotation.CurrentUser;
+import com.moru.backend.global.annotation.CurrentUser;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;

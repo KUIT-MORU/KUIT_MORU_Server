@@ -56,6 +56,7 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @Builder.Default
     @Column(columnDefinition = "tinyint default 1", nullable = false)
     private Boolean status = true;
 

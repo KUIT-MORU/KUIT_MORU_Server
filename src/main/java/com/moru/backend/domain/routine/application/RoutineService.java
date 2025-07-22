@@ -262,7 +262,6 @@ public class RoutineService {
     }
 
 
-
     // ========================= 유틸/헬퍼 ========================= //
 
     private List<String> getFavoriteTagNames(User user) {
