@@ -1,7 +1,9 @@
 package com.moru.backend.global.config;
 
+import com.moru.backend.domain.meta.dao.AppRepository;
 import com.moru.backend.domain.meta.dao.TagRepository;
 import com.moru.backend.domain.meta.domain.Tag;
+import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.user.dao.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +23,8 @@ import java.util.stream.Collectors;
 public class DummyDataInitializer implements CommandLineRunner {
     private final TagRepository tagRepository;
     private final UserRepository userRepository;
+    private final AppRepository appRepository;
+
 
     @Override
     public void run(String... args) throws Exception {
@@ -30,9 +34,12 @@ public class DummyDataInitializer implements CommandLineRunner {
         }
         log.info("===DataFaker을 사용해서 대규모 더미 데이터 생성 시작===");
 
-        // 수동 생성 : 태그와 같은 고정적인 데이터
+        // 수동 생성 : 태그, 앱와 같은 고정적인 데이터
         List<Tag> allTags = createManualTags();
         log.info("[1/5] {}개의 태그를 생성함", allTags.size());
+
+        List<App> allApps = createManualApps();
+        log.info("[2/5] {}개의 앱을 생성함", allApps.size());
 
     }
 
@@ -60,4 +67,15 @@ public class DummyDataInitializer implements CommandLineRunner {
                 .collect(Collectors.toList());
         return tagRepository.saveAll(tagsToCreate);
     }
+
+    private List<App> createManualApps() {
+        List<App> apps = Arrays.asList(
+                App.builder().id(UUID.randomUUID()).name("카카오톡").packageName("com.kakao.talk").build(),
+                App.builder().id(UUID.randomUUID()).name("인스타그램").packageName("com.instagram.android").build(),
+                App.builder().id(UUID.randomUUID()).name("유튜브").packageName("com.google.android.youtube").build(),
+                App.builder().id(UUID.randomUUID()).name("네이버").packageName("com.naver.app").build()
+        );
+        return appRepository.saveAll(apps);
+    }
+
 }
