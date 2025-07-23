@@ -1,10 +1,7 @@
 package com.moru.backend.domain.user.api;
 
-import com.moru.backend.domain.user.application.NicknameValidatorService;
-import com.moru.backend.domain.user.application.UserDeactivateService;
+import com.moru.backend.domain.user.application.*;
 
-import com.moru.backend.domain.user.application.UserFavoriteTagService;
-import com.moru.backend.domain.user.application.UserProfileService;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.domain.user.dto.*;
 
@@ -28,7 +25,7 @@ public class UserController {
     private final UserDeactivateService userDeactivateService;
 
     private final UserFavoriteTagService userFavoriteTagService;
-
+    private final UserFcmService userFcmService;
 
     @Operation(summary = "사용자 프로필 정보 조회")
     @GetMapping("/me")
@@ -95,5 +92,15 @@ public class UserController {
     public ResponseEntity<List<FavoriteTagResponse>> getFavoriteTags(@CurrentUser User user) {
         List<FavoriteTagResponse> response = userFavoriteTagService.getFavoriteTags(user);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "FCM 토큰 등록")
+    @PostMapping("/fcm-token")
+    public ResponseEntity<Void> updateFcmToken(
+            @CurrentUser User user,
+            @RequestBody FcmTokenRequest request
+    ) {
+        userFcmService.updateFcmToken(user.getId(), request.fcmToken());
+        return ResponseEntity.noContent().build();
     }
 }
