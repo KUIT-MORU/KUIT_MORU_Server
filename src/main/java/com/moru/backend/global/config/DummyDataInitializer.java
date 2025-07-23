@@ -140,23 +140,30 @@ public class DummyDataInitializer implements CommandLineRunner {
                 // status, createdAt, updatedAt은 자동 처리되므로 설정 불필요
                 .build());
 
-        for (int i = 0; i < count - 1; i++) {
-            String nickname = faker.name().lastName() + faker.name().firstName();
-            // 닉네임 중복 방지하기
-            while (userRepository.existsByNickname(nickname)) {
-                nickname = faker.name().lastName() + faker.name().firstName() + random.nextInt(100);
-            }
+        Set<String> generatedEmails = new HashSet<>();
+        generatedEmails.add("test@example.com"); // 고정 사용자 이메일 추가
 
-            String email = faker.internet().safeEmailAddress();
-            while (userRepository.existsByEmail(email)) {
+        Set<String> generatedNicknames = new HashSet<>();
+        generatedNicknames.add("테스트유저"); // 고정 사용자 닉네임 추가
+
+        for (int i = 0; i < count - 1; i++) {
+            // --- DB 조회 없이 메모리에서만 닉네임 중복 확인 ---
+            String nickname;
+            do {
+                nickname = faker.name().lastName() + faker.name().firstName();
+                if (nickname.length() > 20) {
+                    nickname = nickname.substring(0, 20);
+                }
+            } while (!generatedNicknames.add(nickname)); // Set.add()는 추가 성공 시 true, 실패(중복) 시 false 반환
+
+            // --- DB 조회 없이 메모리에서만 이메일 중복 확인 ---
+            String email;
+            do {
                 email = faker.internet().safeEmailAddress();
-            }
-            // ==================================================================
-            // 여기가 수정된 부분입니다. (가장 안정적인 최종 방식)
-            // ==================================================================
+            } while (!generatedEmails.add(email));
+
             // 1. DataFaker로 구버전 Date 객체 생성
             java.util.Date birthdayAsDate = faker.date().birthday(18, 65);
-
             // 2. Date 객체를 안정적인 최신 LocalDate 객체로 변환
             LocalDate birthday = birthdayAsDate.toInstant()
                     .atZone(ZoneId.systemDefault())

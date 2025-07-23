@@ -12,6 +12,9 @@ spring:
   sql:
     init:
       mode: never
+  devtools:
+    restart:
+      enabled: false # 이 설정을 추가하여 자동 재시작을 비활성화합니다.
   # =====================================================
   main:
     allow-bean-definition-overriding: true
