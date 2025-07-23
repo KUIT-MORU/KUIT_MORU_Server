@@ -3,17 +3,29 @@ package com.moru.backend.domain.notification.application;
 import com.moru.backend.domain.notification.dao.NotificationRepository;
 import com.moru.backend.domain.notification.domain.Notification;
 import com.moru.backend.domain.notification.domain.NotificationType;
-import com.moru.backend.domain.user.application.UserService;
+import com.moru.backend.domain.notification.dto.NotificationCursor;
+import com.moru.backend.domain.notification.dto.NotificationResponse;
+import com.moru.backend.domain.notification.mapper.NotificationMapper;
+import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.global.common.dto.ScrollResponse;
+import com.moru.backend.global.exception.CustomException;
+import com.moru.backend.global.exception.ErrorCode;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.crossstore.ChangeSetPersister;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
     private final NotificationRepository notificationRepository;
-    private final UserService userService;
+    private final NotificationMapper notificationMapper;
 
     // 루틴 생성 알림
     public void sendRoutineCreated(UUID receiverId, UUID senderId, UUID routineId) {
@@ -51,5 +63,42 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
+    // 알림 목록 조회
+    public ScrollResponse<NotificationResponse, NotificationCursor> getNotifications(
+            User user,
+            LocalDateTime lastCreatedAt, UUID lastNotificationId, int limit
+    ) {
+        Pageable pageable = PageRequest.of(0, limit);
+        List<Notification> notifications = notificationRepository.findNotificationByCursor(
+                user.getId(),
+                lastCreatedAt,
+                lastNotificationId,
+                pageable
+        );
 
+        List<NotificationResponse> result = notifications.stream()
+                .map(notificationMapper::toResponse)
+                .toList();
+
+        boolean hasNext = result.size() == limit;
+        NotificationCursor nextCursor = hasNext
+                ? new NotificationCursor(notifications.getLast().getCreatedAt(), notifications.getLast().getId())
+                : null;
+        return ScrollResponse.of(result, hasNext, nextCursor);
+    }
+
+    // 알림 읽음 처리
+    @Transactional
+    public void markAsRead(UUID notificationId, UUID receiverId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND));
+
+        if(!notification.getReceiverId().equals(receiverId)) {
+            throw new CustomException(ErrorCode.FORBIDDEN_NOTIFICATION_ACCESS);
+        }
+
+        if(!notification.isRead()) {
+            notification.markAsRead();
+        }
+    }
 }
