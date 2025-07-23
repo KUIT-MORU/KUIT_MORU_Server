@@ -436,4 +436,8 @@ public class RoutineService {
         routineAppRepository.deleteByRoutine(routine);
         saveRoutineApps(routine, selectedApps);
     }
+
+    public String getRoutineTitleById(UUID routineId) {
+        return routineRepository.findTitleById(routineId);
+    }
 }

@@ -127,4 +127,6 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
     ORDER BY COUNT(rt.tag.id) DESC, r.createdAt DESC
     """)
     List<Routine> findSimilarRoutinesByTagIds(@Param("tagIds") List<UUID> tagIds, @Param("routineId") UUID routineId, Pageable pageable);
+
+    String findTitleById(UUID routineId);
 }
