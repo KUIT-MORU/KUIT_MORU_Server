@@ -17,7 +17,6 @@ import java.util.UUID;
 @Entity
 @Table(name = "routine_snapshot")
 @Getter
-@
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
