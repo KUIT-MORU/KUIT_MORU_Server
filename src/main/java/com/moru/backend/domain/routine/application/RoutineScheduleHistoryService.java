@@ -1,13 +1,12 @@
 package com.moru.backend.domain.routine.application;
 
-import com.moru.backend.domain.insight.domain.TimeSlot;
 import com.moru.backend.domain.routine.dao.RoutineScheduleHistoryRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 import com.moru.backend.domain.routine.domain.schedule.RoutineScheduleHistory;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;

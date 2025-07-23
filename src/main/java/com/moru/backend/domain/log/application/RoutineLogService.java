@@ -25,12 +25,12 @@ import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.util.S3Directory;
 import com.moru.backend.global.util.S3Service;
 import com.moru.backend.global.validator.RoutineValidator;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import com.moru.backend.domain.log.dto.LiveUserResponse;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

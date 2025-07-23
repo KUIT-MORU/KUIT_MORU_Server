@@ -9,9 +9,9 @@ import com.moru.backend.domain.insight.domain.UserInsight;
 import com.moru.backend.domain.insight.dto.GlobalInsight;
 import com.moru.backend.domain.insight.dto.UserInsightResponse;
 import com.moru.backend.domain.user.domain.User;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.Map;

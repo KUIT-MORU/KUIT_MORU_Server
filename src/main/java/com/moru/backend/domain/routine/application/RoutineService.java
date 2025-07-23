@@ -25,7 +25,6 @@ import com.moru.backend.global.util.RedisKeyUtil;
 import com.moru.backend.global.util.S3Directory;
 import com.moru.backend.global.util.S3Service;
 import com.moru.backend.global.validator.RoutineValidator;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -39,6 +38,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
