@@ -6,10 +6,14 @@ import com.moru.backend.domain.notification.domain.NotificationType;
 import com.moru.backend.domain.notification.dto.NotificationCursor;
 import com.moru.backend.domain.notification.dto.NotificationResponse;
 import com.moru.backend.domain.notification.mapper.NotificationMapper;
+import com.moru.backend.domain.routine.application.RoutineService;
+import com.moru.backend.domain.user.application.UserService;
+import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.common.dto.ScrollResponse;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
+import com.moru.backend.global.fcm.FcmService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,9 +29,14 @@ import java.util.UUID;
 public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationMapper notificationMapper;
+    private final UserRepository userRepository;
+    private final UserService userService;
+    private final FcmService fcmService;
+    private final RoutineService routineService;
 
     // 루틴 생성 알림
     public void sendRoutineCreated(UUID receiverId, UUID senderId, UUID routineId) {
+        // DB 저장
         Notification notification = Notification.builder()
                 .receiverId(receiverId)
                 .senderId(senderId)
@@ -37,10 +46,22 @@ public class NotificationService {
                 .build();
 
         notificationRepository.save(notification);
+
+        // FCM 발송
+        userRepository.findById(receiverId).ifPresent(receiver -> {
+            String fcmToken = receiver.getFcmToken();
+            if(fcmToken != null && !fcmToken.isBlank()) {
+                String senderName = userService.getNicknameById(senderId);
+                String title = "새 루틴 알림";
+                String body = senderName + "님이 루틴을 생성했습니다.";
+                fcmService.sendMessage(fcmToken, title, body);
+            }
+        });
     }
 
     // 팔로우 알림
     public void sendFollowReceived(UUID receiverId, UUID senderId) {
+        //DB 저장
         Notification notification = Notification.builder()
                 .receiverId(receiverId)
                 .senderId(senderId)
@@ -48,10 +69,22 @@ public class NotificationService {
                 .type(NotificationType.FOLLOW_RECEIVED)
                 .build();
         notificationRepository.save(notification);
+
+        //FCM 발송
+        userRepository.findById(receiverId).ifPresent(receiver -> {
+            String fcmToken = receiver.getFcmToken();
+            if(fcmToken != null && !fcmToken.isBlank()) {
+                String receiverName = userService.getNicknameById(receiverId);
+                String senderName = userService.getNicknameById(senderId);
+                String body = senderName + "님이 회원님을 팔로우하기 시작했습니다.";
+                fcmService.sendMessage(fcmToken, receiverName, body);
+            }
+        });
     }
 
     // 루틴 스케줄 알림
     public void sendRoutineReminder(UUID receiverId, UUID routineId) {
+        // DB 저장
         Notification notification = Notification.builder()
                 .receiverId(receiverId)
                 .senderId(null) // 시스템 알림
@@ -60,9 +93,21 @@ public class NotificationService {
                 .type(NotificationType.ROUTINE_REMINDER)
                 .build();
         notificationRepository.save(notification);
+
+        //FCM 발송
+        userRepository.findById(receiverId).ifPresent(receiver -> {
+            String fcmToken = receiver.getFcmToken();
+            if(fcmToken != null && !fcmToken.isBlank()) {
+                String routineTitle = routineService.getRoutineTitleById(routineId);
+                String title = "루틴 알림";
+                String body = "지금 \"" + routineTitle + "\" 루틴을 실천해보세요!";
+                fcmService.sendMessage(fcmToken, title, body);
+            }
+        });
     }
 
     // 알림 목록 조회
+    @Transactional(readOnly = true)
     public ScrollResponse<NotificationResponse, NotificationCursor> getNotifications(
             User user,
             LocalDateTime lastCreatedAt, UUID lastNotificationId, int limit
@@ -106,7 +151,7 @@ public class NotificationService {
         notificationRepository.markAllAsRead(receiverId);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public int getUnreadCount(UUID receiverId) {
         return notificationRepository.countByReceiverIdAndIsReadFalse(receiverId);
     }
