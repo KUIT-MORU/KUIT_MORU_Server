@@ -13,6 +13,7 @@ import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.RoutineStep;
+import com.moru.backend.domain.routine.domain.meta.RoutineApp;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
@@ -79,7 +80,7 @@ public class DummyDataInitializer implements CommandLineRunner {
         List<User> allUsers = createBulkUsers(10000); // 10000명의 사용자를 생성
         log.info("[3/5] {}명의 사용자를 생성했습니다.", allUsers.size());
 
-        List<Routine> allRoutines = createBulkRoutines(20000, allUsers, allTags); // 약 2만개의 루틴 생성
+        List<Routine> allRoutines = createBulkRoutines(20000, allUsers, allTags, allApps); // 약 2만개의 루틴 생성
         log.info("[4/5] {}개의 루틴과 관련 데이터(스텝, 태그연결, 스케줄)를 생성했습니다.", allRoutines.size());
 
         // 3. 관계 데이터 생성 (팔로우, 선호 태그, 루틴 로그)
@@ -162,36 +163,68 @@ public class DummyDataInitializer implements CommandLineRunner {
         return userRepository.saveAll(users);
     }
 
-    private List<Routine> createBulkRoutines(int count, List<User> users, List<Tag> tags) {
+    private List<Routine> createBulkRoutines(int count, List<User> users, List<Tag> tags, List<App> apps) {
         List<Routine> routinesToSave = new ArrayList<>();
         for (int i=0; i<count; i++) {
             User owner = users.get(random.nextInt(users.size()));
+            boolean isSimpleRoutine = random.nextBoolean(); // 단순/집중 루틴 랜덤 결정
+
             Routine routine = Routine.builder()
                     .id(UUID.randomUUID())
                     .user(owner)
-                    .title(faker.book().title() + " 루틴")
+                    .title(faker.lorem().characters(5, 10))
                     .content(String.join("\n", faker.lorem().paragraphs(2)))
-                    .isSimple(random.nextBoolean())
+                    .isSimple(isSimpleRoutine)
                     .isUserVisible(true)
                     .likeCount(random.nextInt(500))
                     .viewCount(random.nextInt(2000))
-                    .requiredTime(Duration.ofMinutes(random.nextInt(120) + 5))
+                    // requiredTime은 아래에서 스텝 시간 합계로 계산되므로 여기서는 설정하지 않음
                     .status(true)
                     .build();
 
-            // 루틴 스텝 자동 생성 (1~6개)
+            // --- 스텝 생성 및 시간 계산 로직 ---
             int stepCount = random.nextInt(5) + 1;
             List<RoutineStep> steps = new ArrayList<>();
+            Duration totalRequiredTime = Duration.ZERO; // 총 소요시간 초기화
+
             for (int j = 1; j <= stepCount; j++) {
-                steps.add(RoutineStep.builder()
+                RoutineStep.RoutineStepBuilder stepBuilder = RoutineStep.builder()
                         .routine(routine)
                         .name(faker.lorem().word() + "하기")
-                        .stepOrder(j)
-                        .estimatedTime(Duration.ofMinutes(random.nextInt(30) + 1))
-                        .build());
+                        .stepOrder(j);
+
+                // 집중 루틴(isSimple=false)일 경우에만 estimatedTime 설정
+                if (!isSimpleRoutine) {
+                    Duration estimatedTime = Duration.ofMinutes(random.nextInt(30) + 1);
+                    stepBuilder.estimatedTime(estimatedTime);
+                    totalRequiredTime = totalRequiredTime.plus(estimatedTime); // 스텝 시간을 총 시간에 더함
+                }
+                // 단순 루틴의 경우 estimatedTime은 null로 유지됨
+                steps.add(stepBuilder.build());
             }
             routine.setRoutineSteps(steps);
 
+            // 계산된 총 소요 시간을 루틴에 설정 (집중 루틴만)
+            if (!isSimpleRoutine) {
+                routine.setRequiredTime(totalRequiredTime);
+            }
+            // --- 로직 종료 ---
+
+            // 집중 루틴(isSimple=false)일 경우에만 앱 연결
+            if (!isSimpleRoutine && !apps.isEmpty()) {
+                Collections.shuffle(apps);
+                int appCount = random.nextInt(2) + 1; // 1~2개 앱 연결
+                List<RoutineApp> routineApps = new ArrayList<>();
+                for (int j = 0; j < appCount; j++) {
+                    if (j < apps.size()) {
+                        routineApps.add(RoutineApp.builder()
+                                .routine(routine)
+                                .app(apps.get(j))
+                                .build());
+                    }
+                }
+                routine.setRoutineApps(routineApps);
+            }
             // 루틴 태그 자동 연결 (1~3개)
             Collections.shuffle(tags);
             int tagCount = random.nextInt(3) + 1;
