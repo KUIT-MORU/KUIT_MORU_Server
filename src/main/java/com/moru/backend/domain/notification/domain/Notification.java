@@ -23,15 +23,24 @@ public class Notification {
     @GeneratedValue
     private UUID id;
 
+    @Column(nullable = false)
     private UUID receiverId;
-    private String title;
-    private String content;
+
+    private UUID senderId;
+
+    private UUID resourceId;
+
+    @Column(nullable = false)
     private String link;
+
+    @Column(nullable = false)
     private boolean isRead = false;
 
+    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private NotificationType type;
 
     @CreatedDate
+    @Column(nullable = false)
     private LocalDateTime createdAt;
 }
