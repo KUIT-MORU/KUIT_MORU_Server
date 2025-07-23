@@ -203,7 +203,9 @@ public class DummyDataInitializer implements CommandLineRunner {
     }
 
     private List<Routine> createBulkRoutines(int count, List<User> users, List<Tag> tags, List<App> apps) {
-        List<Routine> routinesToSave = new ArrayList<>();
+        List<Routine> allGeneratedRoutines = new ArrayList<>();
+        List<Routine> routineBatch = new ArrayList<>();
+
         for (int i=0; i<count; i++) {
             User owner = users.get(random.nextInt(users.size()));
             boolean isSimpleRoutine = random.nextBoolean(); // 단순/집중 루틴 랜덤 결정
@@ -288,9 +290,23 @@ public class DummyDataInitializer implements CommandLineRunner {
             }
             routine.setRoutineSchedules(schedules);
 
-            routinesToSave.add(routine);
+            routineBatch.add(routine);
+
+            // BATCH_SIZE(1000개)가 모일 때마다 DB에 저장하고, 메모리를 비웁니다.
+            if (routineBatch.size() >= BATCH_SIZE) {
+                List<Routine> savedRoutines = routineRepository.saveAll(routineBatch);
+                allGeneratedRoutines.addAll(savedRoutines);
+                routineBatch.clear();
+                log.info("{}개의 루틴 중간 저장 완료...", allGeneratedRoutines.size());
+            }
         }
-        return routineRepository.saveAll(routinesToSave);
+        // 루프가 끝난 후 남은 루틴들을 저장합니다.
+        if (!routineBatch.isEmpty()) {
+            List<Routine> savedRoutines = routineRepository.saveAll(routineBatch);
+            allGeneratedRoutines.addAll(savedRoutines);
+        }
+
+        return allGeneratedRoutines;
     }
 
     private void createBulkRelationsAndLogs(int count, List<User> users, List<Tag> tags, List<Routine> routines) {
