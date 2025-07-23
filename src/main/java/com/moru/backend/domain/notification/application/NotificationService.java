@@ -100,4 +100,9 @@ public class NotificationService {
             notification.markAsRead();
         }
     }
+
+    @Transactional
+    public void markAllAsRead(UUID receiverId) {
+        notificationRepository.markAllAsRead(receiverId);
+    }
 }

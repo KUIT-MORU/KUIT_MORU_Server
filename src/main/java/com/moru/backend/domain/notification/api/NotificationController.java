@@ -45,4 +45,12 @@ public class NotificationController {
         notificationService.markAsRead(notificationId, user.getId());
         return ResponseEntity.noContent().build();
     }
+
+    // 전체 알림 읽음 처리
+    @Operation(summary = "전체 알림 읽음 처리")
+    @PutMapping("/read-all")
+    public ResponseEntity<Void> markAllAsRead(@CurrentUser User user) {
+        notificationService.markAllAsRead(user.getId());
+        return ResponseEntity.noContent().build();
+    }
 }
