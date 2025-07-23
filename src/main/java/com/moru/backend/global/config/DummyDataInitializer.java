@@ -110,17 +110,17 @@ public class DummyDataInitializer implements CommandLineRunner {
         ));
 
         List<Tag> tagsToCreate = tagNames.stream()
-                .map(name -> Tag.builder().id(UUID.randomUUID()).name(name).build())
+                .map(name -> Tag.builder().name(name).build()) // <- ID 생성 코드 삭제
                 .collect(Collectors.toList());
         return tagRepository.saveAll(tagsToCreate);
     }
 
     private List<App> createManualApps() {
         List<App> apps = Arrays.asList(
-                App.builder().id(UUID.randomUUID()).name("카카오톡").packageName("com.kakao.talk").build(),
-                App.builder().id(UUID.randomUUID()).name("인스타그램").packageName("com.instagram.android").build(),
-                App.builder().id(UUID.randomUUID()).name("유튜브").packageName("com.google.android.youtube").build(),
-                App.builder().id(UUID.randomUUID()).name("네이버").packageName("com.naver.app").build()
+                App.builder().name("카카오톡").packageName("com.kakao.talk").build(),
+                App.builder().name("인스타그램").packageName("com.instagram.android").build(),
+                App.builder().name("유튜브").packageName("com.google.android.youtube").build(),
+                App.builder().name("네이버").packageName("com.naver.app").build()
         );
         return appRepository.saveAll(apps);
     }
@@ -147,13 +147,28 @@ public class DummyDataInitializer implements CommandLineRunner {
                 nickname = faker.name().lastName() + faker.name().firstName() + random.nextInt(100);
             }
 
+            String email = faker.internet().safeEmailAddress();
+            while (userRepository.existsByEmail(email)) {
+                email = faker.internet().safeEmailAddress();
+            }
+            // ==================================================================
+            // 여기가 수정된 부분입니다. (가장 안정적인 최종 방식)
+            // ==================================================================
+            // 1. DataFaker로 구버전 Date 객체 생성
+            java.util.Date birthdayAsDate = faker.date().birthday(18, 65);
+
+            // 2. Date 객체를 안정적인 최신 LocalDate 객체로 변환
+            LocalDate birthday = birthdayAsDate.toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate();
+
             users.add(User.builder()
                     .id(UUID.randomUUID())
-                    .email(faker.internet().safeEmailAddress())
+                    .email(email)
                     .password(COMMON_PASSWORD_HASH)
                     .nickname(nickname)
                     .gender(random.nextBoolean() ? Gender.MALE : Gender.FEMALE)
-                    .birthday(faker.date().birthday(18, 65).toInstant().atZone(ZoneId.systemDefault()).toLocalDate())
+                    .birthday(birthday)
                     .bio(faker.lorem().sentence())
                     // profileImageUrl은 faker로 직접 생성하여 설정
                     .profileImageUrl(faker.avatar().image())
@@ -292,7 +307,6 @@ public class DummyDataInitializer implements CommandLineRunner {
         for (Routine routine : routines) {
             if (random.nextInt(10) == 0) { // 10% 확률로 스냅샷 생성
                 RoutineSnapshot snapshot = RoutineSnapshot.builder()
-                        .id(UUID.randomUUID())
                         .originalRoutineId(routine.getId())
                         .title(routine.getTitle())
                         .content(routine.getContent())
@@ -347,7 +361,6 @@ public class DummyDataInitializer implements CommandLineRunner {
             }
 
             logsToSave.add(RoutineLog.builder()
-                    .id(UUID.randomUUID())
                     .user(user)
                     .routineSnapshot(snapshot)
                     .startedAt(startedAt)

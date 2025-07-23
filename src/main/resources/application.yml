@@ -2,6 +2,17 @@ server:
   port: 8000
 
 spring:
+  # =====================================================
+  # 여기에 추가하시면 됩니다.
+  # 'dev' 프로필을 활성화하여 DummyDataInitializer가 실행되도록 합니다.
+  profiles:
+    active: dev
+
+  # (선택사항이지만 권장) data.sql 파일이 자동으로 실행되는 것을 방지합니다.
+  sql:
+    init:
+      mode: never
+  # =====================================================
   main:
     allow-bean-definition-overriding: true
   datasource:
