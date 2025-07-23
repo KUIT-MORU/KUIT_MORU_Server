@@ -60,6 +60,7 @@ public class DummyDataInitializer implements CommandLineRunner {
 
     // 테스트용 공통 비밀번호 (실제 암호화된 값)
     private static final String COMMON_PASSWORD_HASH = "$2a$10$j5YhIig/vZwnhy1D61vdm.J9djNvHLjdZAx8xTccYpGabXA7S2MGi"; // password
+    private static final int BATCH_SIZE = 1000; // 배치 크기를 상수로 관리
 
     @Override
     public void run(String... args) throws Exception {
@@ -126,9 +127,10 @@ public class DummyDataInitializer implements CommandLineRunner {
     }
 
     private List<User> createBulkUsers(int count) {
-        List<User> users = new ArrayList<>();
+        List<User> allGeneratedUsers = new ArrayList<>();
+        List<User> userBatch = new ArrayList<>();
         // 1. 테스트용 고정 사용자 추가 (data.sql 내용 반영)
-        users.add(User.builder()
+        User testUser = User.builder()
                 .id(UUID.fromString("550e8400-e29b-41d4-a716-446655440000"))
                 .email("test@example.com")
                 .password("$2a$10$xUBrBGPuFIPdnDU2LCRLOeb3ML.vcGEen7NrughMZcQAs/i4cbxsy")
@@ -138,11 +140,12 @@ public class DummyDataInitializer implements CommandLineRunner {
                 .bio("테스트 계정입니다.")
                 .profileImageUrl("https://example.com/profile0.jpg")
                 // status, createdAt, updatedAt은 자동 처리되므로 설정 불필요
-                .build());
+                .build();
+        userRepository.save(testUser);
+        allGeneratedUsers.add(testUser);
 
         Set<String> generatedEmails = new HashSet<>();
         generatedEmails.add("test@example.com"); // 고정 사용자 이메일 추가
-
         Set<String> generatedNicknames = new HashSet<>();
         generatedNicknames.add("테스트유저"); // 고정 사용자 닉네임 추가
 
@@ -169,7 +172,7 @@ public class DummyDataInitializer implements CommandLineRunner {
                     .atZone(ZoneId.systemDefault())
                     .toLocalDate();
 
-            users.add(User.builder()
+            userBatch.add(User.builder()
                     .id(UUID.randomUUID())
                     .email(email)
                     .password(COMMON_PASSWORD_HASH)
@@ -181,8 +184,22 @@ public class DummyDataInitializer implements CommandLineRunner {
                     .profileImageUrl(faker.avatar().image())
                     // status, createdAt, updatedAt은 자동 처리되므로 설정 불필요
                     .build());
+
+            // BATCH_SIZE(1000개)가 모일 때마다 DB에 저장하고, 메모리를 비웁니다.
+            if (userBatch.size() >= BATCH_SIZE) {
+                List<User> savedUsers = userRepository.saveAll(userBatch);
+                allGeneratedUsers.addAll(savedUsers);
+                userBatch.clear();
+                log.info("{}명의 사용자 중간 저장 완료...", allGeneratedUsers.size());
+            }
         }
-        return userRepository.saveAll(users);
+        // 루프가 끝난 후 남은 사용자들을 저장합니다.
+        if (!userBatch.isEmpty()) {
+            List<User> savedUsers = userRepository.saveAll(userBatch);
+            allGeneratedUsers.addAll(savedUsers);
+        }
+
+        return allGeneratedUsers;
     }
 
     private List<Routine> createBulkRoutines(int count, List<User> users, List<Tag> tags, List<App> apps) {
