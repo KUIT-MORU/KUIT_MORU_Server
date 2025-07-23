@@ -17,7 +17,7 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
             AND (
                 :lastCreatedAt IS NULL OR
                 n.createdAt < :lastCreatedAt OR
-                (n.createdAt = :lastCreatedAt AND n.id <: lastNotificationId)   
+                (n.createdAt = :lastCreatedAt AND n.id <: lastNotificationId)
             )
         ORDER BY n.createdAt DESC, n.id DESC
     """)
