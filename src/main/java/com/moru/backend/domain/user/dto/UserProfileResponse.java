@@ -18,6 +18,7 @@ public record UserProfileResponse (
     Long followingCount
 ) {
     public static UserProfileResponse from(User user,
+                                           String imageFullUrl,
                                            Long routineCount,
                                            Long followerCount,
                                            Long followingCount) {
@@ -27,7 +28,7 @@ public record UserProfileResponse (
                 user.getGender(),
                 user.getBirthday(),
                 user.getBio(),
-                user.getProfileImageUrl(),
+                imageFullUrl,
                 routineCount,
                 followerCount,
                 followingCount

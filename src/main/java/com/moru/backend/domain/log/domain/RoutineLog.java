@@ -63,6 +63,7 @@ public class RoutineLog {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "routineLog", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<RoutineStepLog> routineStepLogs = new ArrayList<>();
 
     public void endLog(LocalDateTime endedAt, Duration totalTime, boolean isCompleted) {

@@ -1,6 +1,6 @@
 package com.moru.backend.global.validator.impl;
 
-import com.moru.backend.global.validator.annotation.Password;
+import com.moru.backend.global.annotation.Password;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 

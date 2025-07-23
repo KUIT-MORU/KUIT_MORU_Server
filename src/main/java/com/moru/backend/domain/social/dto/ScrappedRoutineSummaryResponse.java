@@ -11,15 +11,14 @@ public record ScrappedRoutineSummaryResponse(
         String imageUrl,
         List<String> tagNames
 ) {
-    public static ScrappedRoutineSummaryResponse from(Routine routine) {
-        ScrappedRoutineSummaryResponse scrappedRoutineSummaryResponse = new ScrappedRoutineSummaryResponse(
+    public static ScrappedRoutineSummaryResponse from(Routine routine, String imageFullUrl) {
+        return new ScrappedRoutineSummaryResponse(
                 routine.getId(),
                 routine.getTitle(),
-                routine.getImageUrl(),
+                imageFullUrl,
                 routine.getRoutineTags().stream()
                         .map(routineTag -> routineTag.getTag().getName())
                         .toList()
         );
-        return scrappedRoutineSummaryResponse;
     }
 }

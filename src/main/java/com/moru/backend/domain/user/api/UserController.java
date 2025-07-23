@@ -8,7 +8,7 @@ import com.moru.backend.domain.user.application.UserProfileService;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.domain.user.dto.*;
 
-import com.moru.backend.global.validator.annotation.CurrentUser;
+import com.moru.backend.global.annotation.CurrentUser;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

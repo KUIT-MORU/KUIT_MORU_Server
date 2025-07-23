@@ -22,6 +22,8 @@ import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.global.common.dto.ScrollResponse;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
+import com.moru.backend.global.util.S3Directory;
+import com.moru.backend.global.util.S3Service;
 import com.moru.backend.global.validator.RoutineValidator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +47,7 @@ public class RoutineLogService {
     private final RoutineStepSnapshotRepository routineStepSnapshotRepository;
     private final RoutineStepLogRepository routineStepLogRepository;
     private final UserRepository userRepository;
+    private final S3Service s3Service;
 
     public UUID startRoutine(User user, UUID routineId) {
         // 루틴 권한 검증 및 조회
@@ -71,12 +74,18 @@ public class RoutineLogService {
 
     private RoutineSnapshot createSnapshotFromRoutine(Routine routine) {
         // 스냅샷 생성
+        // === 이미지 복사 ===
+        String imageKey = null;
+        if(routine.getImageUrl() != null && !routine.getImageUrl().isBlank()) {
+            imageKey = s3Service.copyObject(routine.getImageUrl(), S3Directory.ROUTINE_SNAPSHOT);
+        }
+
         // 루틴 스냅샷 생성
         RoutineSnapshot snapshot = RoutineSnapshot.builder()
                 .originalRoutineId(routine.getId())
                 .title(routine.getTitle())
                 .content(routine.getContent())
-                .imageUrl(routine.getImageUrl())
+                .imageUrl(imageKey)
                 .isSimple(routine.isSimple())
                 .isUserVisible(routine.isUserVisible())
                 .requiredTime(routine.getRequiredTime())
@@ -148,7 +157,13 @@ public class RoutineLogService {
                 })
                 .toList();
 
-        return RoutineLogDetailResponse.from(routineLog, snapshot, tagNames, steps, apps);
+        return RoutineLogDetailResponse.from(
+                routineLog,
+                snapshot,
+                s3Service.getImageUrl(snapshot.getImageUrl()),
+                tagNames,
+                steps,
+                apps);
     }
 
     @Transactional
@@ -181,21 +196,6 @@ public class RoutineLogService {
         routineStepLogRepository.save(stepLog);
     }
 
-    public List<RoutineLogSummaryResponse> getLogs(User user) {
-        List<RoutineLog> logs = routineLogRepository.findAllByUserIdWithSnapshot(user.getId());
-
-        return logs.stream()
-                .map(log -> {
-                    RoutineSnapshot snapshot = log.getRoutineSnapshot();
-                    List<String> tags = snapshot.getTagSnapshots().stream()
-                            .map(RoutineTagSnapshot::getTagName)
-                            .toList();
-
-                    return RoutineLogSummaryResponse.from(snapshot, log, tags);
-                })
-                .toList();
-    }
-
     public List<RoutineLogSummaryResponse> getTodayLogs(User user) {
         LocalDate today = LocalDate.now();
         LocalDateTime start = today.atStartOfDay();
@@ -221,7 +221,12 @@ public class RoutineLogService {
                     List<String> tagNames = snapshot.getTagSnapshots().stream()
                             .map(RoutineTagSnapshot::getTagName)
                             .toList();
-                    return RoutineLogSummaryResponse.from(snapshot, log, tagNames);
+                    return RoutineLogSummaryResponse.from(
+                            snapshot,
+                            s3Service.getImageUrl(snapshot.getImageUrl()),
+                            log,
+                            tagNames
+                    );
                 })
                 .toList();
     }
@@ -240,7 +245,12 @@ public class RoutineLogService {
                     List<String> tagNames = snapshot.getTagSnapshots().stream()
                             .map(RoutineTagSnapshot::getTagName)
                             .toList();
-                    return RoutineLogSummaryResponse.from(snapshot, log, tagNames);
+                    return RoutineLogSummaryResponse.from(
+                            snapshot,
+                            s3Service.getImageUrl(snapshot.getImageUrl()),
+                            log,
+                            tagNames
+                    );
                 })
                 .toList();
         boolean hasNext = logs.size() == limit;

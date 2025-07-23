@@ -54,12 +54,15 @@ public class RoutineSnapshot {
 
     // 연관관계 설정
     @OneToMany(mappedBy = "routineSnapshot", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<RoutineStepSnapshot> stepSnapshots = new ArrayList<>();
 
     @OneToMany(mappedBy = "routineSnapshot", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<RoutineTagSnapshot> tagSnapshots = new ArrayList<>();
 
     @OneToMany(mappedBy = "routineSnapshot", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<RoutineAppSnapshot> appSnapshots = new ArrayList<>();
 
 }

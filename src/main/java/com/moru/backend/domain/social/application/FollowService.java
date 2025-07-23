@@ -10,6 +10,7 @@ import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.common.dto.ScrollResponse;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
+import com.moru.backend.global.util.S3Service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 public class FollowService {
     private final UserRepository userRepository;
     private final UserFollowRepository userFollowRepository;
+    private final S3Service s3Service;
 
     public FollowCountResponse countFollow(UUID userId) {
         Long followingCount = userFollowRepository.countByFollowerId(userId);
@@ -85,7 +87,11 @@ public class FollowService {
                 .map(relation -> {
                     User following = relation.getFollowing();
                     boolean isFollowing = followingIdsByLoginUser.contains(following.getId());
-                    return FollowUserSummaryResponse.from(following, isFollowing);
+                    return FollowUserSummaryResponse.from(
+                            following,
+                            s3Service.getImageUrl(following.getProfileImageUrl()),
+                            isFollowing
+                    );
                 })
                 .toList();
         boolean hasNext = result.size() == limit;
@@ -110,7 +116,11 @@ public class FollowService {
                 .map(relation -> {
                     User follower = relation.getFollower();
                     boolean isFollowing = followingIdsByLoginUser.contains(follower.getId());
-                    return FollowUserSummaryResponse.from(follower, isFollowing);
+                    return FollowUserSummaryResponse.from(
+                            follower,
+                            s3Service.getImageUrl(follower.getProfileImageUrl()),
+                            isFollowing
+                    );
                 })
                 .toList();
         boolean hasNext = result.size() == limit;
