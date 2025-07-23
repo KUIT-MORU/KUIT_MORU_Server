@@ -36,4 +36,6 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
         WHERE n.receiverId = :receiverId AND n.isRead = false
     """)
     int markAllAsRead(@Param("receiverId") UUID receiverId);
+
+    int countByReceiverIdAndIsReadFalse(UUID receiverId);
 }

@@ -53,4 +53,12 @@ public class NotificationController {
         notificationService.markAllAsRead(user.getId());
         return ResponseEntity.noContent().build();
     }
+
+    // 안 읽은 알림 수 조회
+    @Operation(summary = "안 읽은 알림 수 조회")
+    @GetMapping("/unread-count")
+    public ResponseEntity<Integer> getUnreadCount(@CurrentUser User user) {
+        int count = notificationService.getUnreadCount(user.getId());
+        return ResponseEntity.ok(count);
+    }
 }
