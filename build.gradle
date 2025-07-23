@@ -48,6 +48,9 @@ dependencies {
 
 	//.env 인식
 	implementation 'io.github.cdimascio:java-dotenv:5.2.2'
+
+	// FCM
+	implementation 'com.google.firebase:firebase-admin:9.5.0'
 }
 
 tasks.named('test') {
