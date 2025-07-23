@@ -60,11 +60,18 @@ public class User {
     @Column(columnDefinition = "tinyint default 1", nullable = false)
     private Boolean status = true;
 
+    @Column(length = 1024)
+    private String fcmToken;
+
     public void deactivate() {
         this.status = false;
     }
 
     public Boolean isActive() {
         return status;
+    }
+
+    public void updateFcmToken(String fcmToken) {
+        this.fcmToken = fcmToken;
     }
 }
