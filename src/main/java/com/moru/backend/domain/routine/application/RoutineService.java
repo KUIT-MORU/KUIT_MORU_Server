@@ -109,7 +109,7 @@ public class RoutineService {
             }
         }
 
-        List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
+        List<RoutineTag> tags = Optional.ofNullable(routineTagRepository.findByRoutine(routine)).orElse(Collections.emptyList());
         List<RoutineStep> steps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
         List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
 
@@ -118,7 +118,7 @@ public class RoutineService {
 
         // 비슷한 루틴 추천 (내 루틴은 제외)
         List<RoutineListResponse> similarRoutines = List.of();
-        if (tags != null && !tags.isEmpty()) {
+        if (!tags.isEmpty()) {
             List<UUID> tagIds = tags.stream()
                     .map(rt -> rt.getTag().getId())
                     .toList();
@@ -362,7 +362,6 @@ public class RoutineService {
 
     private RoutineListResponse toRoutineListResponse(Routine routine) {
         List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
-        Long likeCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.LIKE);
         return RoutineListResponse.fromRoutine(
                 routine,
                 s3Service.getImageUrl(routine.getImageUrl()),
