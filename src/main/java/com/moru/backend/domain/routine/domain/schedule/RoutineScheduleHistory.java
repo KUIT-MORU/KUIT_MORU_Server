@@ -12,6 +12,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 
 @Entity

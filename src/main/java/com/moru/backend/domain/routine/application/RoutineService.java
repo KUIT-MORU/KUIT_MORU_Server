@@ -21,6 +21,8 @@ import com.moru.backend.domain.social.dao.RoutineUserActionRepository;
 import com.moru.backend.domain.social.domain.RoutineUserAction;
 import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.global.exception.CustomException;
+import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.util.RedisKeyUtil;
 import com.moru.backend.global.util.S3Directory;
 import com.moru.backend.global.util.S3Service;
@@ -37,8 +39,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-import com.moru.backend.global.exception.CustomException;
-import com.moru.backend.global.exception.ErrorCode;
 
 @Service
 @RequiredArgsConstructor
@@ -47,7 +47,6 @@ public class RoutineService {
     private final RoutineStepRepository routineStepRepository;
     private final RoutineTagRepository routineTagRepository;
     private final RoutineAppRepository routineAppRepository;
-    private final RoutineScheduleRepository routineScheduleRepository;
     private final TagRepository tagRepository;
     private final AppRepository appRepository;
     private final RoutineValidator routineValidator;
@@ -110,7 +109,7 @@ public class RoutineService {
             }
         }
 
-        List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
+        List<RoutineTag> tags = Optional.ofNullable(routineTagRepository.findByRoutine(routine)).orElse(Collections.emptyList());
         List<RoutineStep> steps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
         List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
 
@@ -119,7 +118,7 @@ public class RoutineService {
 
         // 비슷한 루틴 추천 (내 루틴은 제외)
         List<RoutineListResponse> similarRoutines = List.of();
-        if (tags != null && !tags.isEmpty()) {
+        if (!tags.isEmpty()) {
             List<UUID> tagIds = tags.stream()
                     .map(rt -> rt.getTag().getId())
                     .toList();
@@ -363,7 +362,6 @@ public class RoutineService {
 
     private RoutineListResponse toRoutineListResponse(Routine routine) {
         List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
-        Long likeCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.LIKE);
         return RoutineListResponse.fromRoutine(
                 routine,
                 s3Service.getImageUrl(routine.getImageUrl()),
