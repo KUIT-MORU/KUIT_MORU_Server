@@ -103,9 +103,13 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
      * @param pageable   결과 개수 제한
      * @return 인기 루틴 목록
      */
-    @Query(value = "SELECT * FROM routine r WHERE r.created_at >= :weekAgo ORDER BY (r.view_count * :viewWeight + r.like_count * :likeWeight) DESC, r.created_at DESC", nativeQuery = true)
-    List<Routine> findHotRoutines(@Param("weekAgo") LocalDateTime weekAgo, @Param("viewWeight") double viewWeight, @Param("likeWeight") double likeWeight, Pageable pageable);
-
+    @Query("SELECT r FROM Routine r " +
+            "WHERE r.createdAt >= :weekAgo " +
+            "ORDER BY (r.viewCount * :viewWeight + r.likeCount * :likeWeight) DESC, r.createdAt DESC")
+    List<Routine> findHotRoutines(@Param("weekAgo") LocalDateTime weekAgo,
+                                  @Param("viewWeight") double viewWeight,
+                                  @Param("likeWeight") double likeWeight,
+                                  Pageable pageable);
     /**
      * 주어진 태그 목록을 포함하는 루틴을, 태그 일치 개수가 많은 순으로 정렬하여 조회합니다.
      *
