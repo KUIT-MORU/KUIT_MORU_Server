@@ -293,7 +293,15 @@ public class DummyDataInitializer implements CommandLineRunner {
                 }
                 List<RoutineSchedule> schedules = new ArrayList<>();
                 for (DayOfWeek day : scheduledDays) {
-                    schedules.add(RoutineSchedule.builder().routine(routine).dayOfWeek(day).build());
+                    // Generate a random time for the schedule
+                    java.sql.Time randomTime = new java.sql.Time(faker.date().future(1, java.util.concurrent.TimeUnit.HOURS).getTime());
+
+                    schedules.add(RoutineSchedule.builder()
+                            .routine(routine)
+                            .dayOfWeek(day)
+                            .time(randomTime.toLocalTime()) // Set the non-null time value
+                            .alarmEnabled(random.nextBoolean()) // Also set a value for alarm_enabled
+                            .build());
                 }
                 routine.setRoutineSchedules(schedules);
                 // --- 로직 종료 ---
