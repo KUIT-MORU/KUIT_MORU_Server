@@ -21,24 +21,24 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
     List<Routine> findAllByUser(User user);
     int countByUserId(UUID userId);
 
-    /**
-     * 루틴 ID로 루틴과 관련된 스텝, 태그, 앱을 함께 조회
-     */
-    @Query("SELECT r FROM Routine r " +
-            "LEFT JOIN FETCH r.routineSteps " +
-            "LEFT JOIN FETCH r.routineTags t LEFT JOIN FETCH t.tag " +
-            "LEFT JOIN FETCH r.routineApps " +
-            "WHERE r.id = :id")
-    Optional<Routine> findByRoutineIdWithStepsTagsApps(@Param("id") UUID routineId);
-
-    /**
-     * 루틴 ID로 루틴과 관련된 태그, 앱을 함께 조회
-     */
-    @Query("SELECT r FROM Routine r " +
-            "LEFT JOIN FETCH r.routineTags t LEFT JOIN FETCH t.tag " +
-            "LEFT JOIN FETCH r.routineApps " +
-            "WHERE r.id = :id")
-    Optional<Routine> findByRoutineIdWithTagsApps(@Param("id") UUID routineId);
+//    /**
+//     * 루틴 ID로 루틴과 관련된 스텝, 태그, 앱을 함께 조회
+//     */
+//    @Query("SELECT r FROM Routine r " +
+//            "LEFT JOIN FETCH r.routineSteps " +
+//            "LEFT JOIN FETCH r.routineTags t LEFT JOIN FETCH t.tag " +
+//            "LEFT JOIN FETCH r.routineApps " +
+//            "WHERE r.id = :id")
+//    Optional<Routine> findByRoutineIdWithStepsTagsApps(@Param("id") UUID routineId);
+//
+//    /**
+//     * 루틴 ID로 루틴과 관련된 태그, 앱을 함께 조회
+//     */
+//    @Query("SELECT r FROM Routine r " +
+//            "LEFT JOIN FETCH r.routineTags t LEFT JOIN FETCH t.tag " +
+//            "LEFT JOIN FETCH r.routineApps " +
+//            "WHERE r.id = :id")
+//    Optional<Routine> findByRoutineIdWithTagsApps(@Param("id") UUID routineId);
 
     /**
      * 검색 기능 관련
@@ -76,10 +76,10 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
 
     /**
      * 내 루틴 정렬
-     * @param userId
-     * @param dayOfWeek
-     * @param pageable
-     * @return
+     * @param userId    조회할 사용자의 ID
+     * @param dayOfWeek 필터링할 요일 (e.g., MON, TUE)
+     * @param pageable  페이징 및 정렬 정보
+     * @return 조건에 맞는 루틴의 페이징된 목록
      */
     // 시간순으로 정렬된
     @Query("SELECT r FROM Routine r JOIN r.routineSchedules s WHERE r.user.id = :userId AND s.dayOfWeek = :dayOfWeek ORDER BY s.time ASC")
@@ -94,15 +94,36 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
     List<Routine> findAllByUserId(UUID userId);
 
     //====루틴 추천 정렬 기능====// 
-    // 지금 가장 핫한 루틴 
+    /**
+     * 최근 일주일간 생성된 루틴 중 조회수와 좋아요 수를 가중치로 계산하여 인기순으로 정렬합니다.
+     *
+     * @param weekAgo    조회 시작 시점 (일주일 전)
+     * @param viewWeight 조회수 가중치
+     * @param likeWeight 좋아요 수 가중치
+     * @param pageable   결과 개수 제한
+     * @return 인기 루틴 목록
+     */
     @Query(value = "SELECT * FROM routine r WHERE r.created_at >= :weekAgo ORDER BY (r.view_count * :viewWeight + r.like_count * :likeWeight) DESC, r.created_at DESC", nativeQuery = true)
     List<Routine> findHotRoutines(@Param("weekAgo") LocalDateTime weekAgo, @Param("viewWeight") double viewWeight, @Param("likeWeight") double likeWeight, Pageable pageable);
-    
-    // xx님에게 맞는 루틴 
+
+    /**
+     * 주어진 태그 목록을 포함하는 루틴을, 태그 일치 개수가 많은 순으로 정렬하여 조회합니다.
+     *
+     * @param tags     추천의 기반이 될 태그 이름 목록
+     * @param pageable 페이징 정보
+     * @return 추천 루틴 목록
+     */
     @Query("SELECT r FROM Routine r JOIN r.routineTags rt WHERE rt.tag.name IN :tags GROUP BY r.id ORDER BY COUNT(rt.tag.name) DESC, r.createdAt DESC")
     List<Routine> findRoutinesByTagsOrderByTagCount(@Param("tags") List<String> tags, Pageable pageable);
 
-    // 태그 쌍 조회
+    /**
+     * 두 개의 태그를 모두 포함하는 루틴을 인기순으로 정렬하여 조회합니다.
+     *
+     * @param tag1     첫 번째 태그 ID
+     * @param tag2     두 번째 태그 ID
+     * @param pageable 페이징 정보
+     * @return 태그 쌍 관련 루틴 목록
+     */
     @Query("""
         SELECT r FROM Routine r
         JOIN r.routineTags rt1
@@ -113,12 +134,23 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
     """)
     List<Routine> findRoutinesByTagPair(@Param("tag1") UUID tag1, @Param("tag2") UUID tag2, Pageable pageable);
 
-    // 조회수 증가 
+    /**
+     * 특정 루틴의 조회수를 1 증가시킵니다.
+     *
+     * @param id 조회수를 증가시킬 루틴의 ID
+     */
     @Modifying
     @Query("update Routine r set r.viewCount = r.viewCount + 1 where r.id = :id")
     void incrementViewCount(@Param("id") UUID id);
 
-    //====내 루틴에서 이 루틴과 비슷한 루틴 기능 반환====//
+    /**
+     * 특정 루틴과 비슷한 태그를 가진 다른 루틴들을 추천합니다.
+     *
+     * @param tagIds    기준 루틴이 가진 태그 ID 목록
+     * @param routineId 기준 루틴의 ID (결과에서 제외하기 위함)
+     * @param pageable  페이징 정보
+     * @return 유사 루틴 목록
+     */
     @Query("""
     SELECT r FROM Routine r
     JOIN r.routineTags rt
