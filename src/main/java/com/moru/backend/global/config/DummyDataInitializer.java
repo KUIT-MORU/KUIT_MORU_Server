@@ -63,13 +63,13 @@ public class DummyDataInitializer implements CommandLineRunner {
         List<App> allApps = dummyDataGenerator.createManualApps();
         log.info("[2/5] {}개의 앱을 생성함", allApps.size());
 
-        List<User> allUsers = dummyDataGenerator.createBulkUsers(400);
+        List<User> allUsers = dummyDataGenerator.createBulkUsers(10000);
         log.info("[3/5] {}명의 사용자를 생성했습니다.", allUsers.size());
 
-        List<Routine> allRoutines = dummyDataGenerator.createBulkRoutines(2000, allUsers, allTags, allApps);
+        List<Routine> allRoutines = dummyDataGenerator.createBulkRoutines(20000, allUsers, allTags, allApps);
         log.info("[4/5] {}개의 루틴과 관련 데이터(스텝, 태그연결, 스케줄)를 생성했습니다.", allRoutines.size());
 
-        dummyDataGenerator.createBulkRelationsAndLogs(5000, allUsers, allTags, allRoutines);
+        dummyDataGenerator.createBulkRelationsAndLogs(50000, allUsers, allTags, allRoutines);
         log.info("[5/5] 팔로우, 선호 태그, 루틴 로그 데이터를 생성했습니다.");
 
         log.info("===더미 데이터 생성 완료===");
@@ -100,34 +100,6 @@ public class DummyDataInitializer implements CommandLineRunner {
         private static final String COMMON_PASSWORD_HASH = "$2a$10$j5YhIig/vZwnhy1D61vdm.J9djNvHLjdZAx8xTccYpGabXA7S2MGi"; // password
         private static final int BATCH_SIZE = 200; // 배치 크기를 상수로 관리
 
-//        @Transactional
-//        public void generate() {
-//            if (userRepository.count() > 0) {
-//                log.info("더미 데이터가 이미 존재하므로 생성 건너뛰기");
-//                return;
-//            }
-//            log.info("===DataFaker을 사용해서 대규모 더미 데이터 생성 시작===");
-//
-//            // 수동 생성 : 태그, 앱와 같은 고정적인 데이터
-//            List<Tag> allTags = createManualTags();
-//            log.info("[1/5] {}개의 태그를 생성함", allTags.size());
-//
-//            List<App> allApps = createManualApps();
-//            log.info("[2/5] {}개의 앱을 생성함", allApps.size());
-//
-//            // 자동 생성 : 사용자, 루틴 등
-//            List<User> allUsers = createBulkUsers(400); // 10000명의 사용자를 생성
-//            log.info("[3/5] {}명의 사용자를 생성했습니다.", allUsers.size());
-//
-//            List<Routine> allRoutines = createBulkRoutines(2000, allUsers, allTags, allApps); // 약 2만개의 루틴 생성
-//            log.info("[4/5] {}개의 루틴과 관련 데이터(스텝, 태그연결, 스케줄)를 생성했습니다.", allRoutines.size());
-//
-//            // 3. 관계 데이터 생성 (팔로우, 선호 태그, 루틴 로그)
-//            createBulkRelationsAndLogs(5000, allUsers, allTags, allRoutines);
-//            log.info("[5/5] 팔로우, 선호 태그, 루틴 로그 데이터를 생성했습니다.");
-//
-//            log.info("===더미 데이터 생성 완료===");
-//        }
         @Transactional(readOnly = true)
         public boolean isDataPresent() {
             return userRepository.count() > 0;
@@ -174,8 +146,6 @@ public class DummyDataInitializer implements CommandLineRunner {
         public List<User> createBulkUsers(int count) {
             List<User> allGeneratedUsers = new ArrayList<>();
             List<User> userBatch = new ArrayList<>();
-            Set<String> generatedEmails = new HashSet<>();
-            Set<String> generatedNicknames = new HashSet<>();
 
             // 1. 테스트용 고정 사용자 추가 (data.sql 내용 반영)
             User testUser = User.builder()
@@ -189,24 +159,11 @@ public class DummyDataInitializer implements CommandLineRunner {
                     // status, createdAt, updatedAt은 자동 처리되므로 설정 불필요
                     .build();
             userBatch.add(testUser);
-            generatedEmails.add(testUser.getEmail());
-            generatedNicknames.add(testUser.getNickname());
 
-            for (int i = 0; i < count - 1; i++) {
-                // --- DB 조회 없이 메모리에서만 닉네임 중복 확인 ---
-                String nickname;
-                do {
-                    nickname = faker.name().lastName() + faker.name().firstName();
-                    if (nickname.length() > 20) {
-                        nickname = nickname.substring(0, 20);
-                    }
-                } while (!generatedNicknames.add(nickname)); // Set.add()는 추가 성공 시 true, 실패(중복) 시 false 반환
-
-                // --- DB 조회 없이 메모리에서만 이메일 중복 확인 ---
-                String email;
-                do {
-                    email = faker.internet().safeEmailAddress();
-                } while (!generatedEmails.add(email));
+            for (int i = 1; i < count; i++) {
+                // 예측 가능한 고유 이메일과 닉네임 생성
+                String email = "user" + i + "@moru.com";
+                String nickname = "모루유저" + i;
 
                 LocalDate birthday = faker.date().birthday(18, 65).toInstant()
                         .atZone(ZoneId.systemDefault()).toLocalDate();
