@@ -76,7 +76,8 @@ public class Routine {
     private Boolean status = true;
 
     @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL)
-    private List<RoutineTag> routineTags;
+    @Builder.Default
+    private List<RoutineTag> routineTags = new ArrayList<>();
 
     @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL)
     @Builder.Default
@@ -89,4 +90,30 @@ public class Routine {
     @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<RoutineSchedule> routineSchedules = new ArrayList<>();
+
+    /**
+     * 연관관계 편의 메서드: Routine에 Step을 추가하면서, Step에도 Routine을 설정해줍니다.
+     */
+    public void addRoutineStep(RoutineStep routineStep) {
+        this.routineSteps.add(routineStep);
+        routineStep.setRoutine(this); // 자식 객체에도 부모를 설정하여 양방향 관계를 완성합니다.
+    }
+
+    /**
+     * 연관관계 편의 메서드: Routine에 Schedule을 추가하면서, Schedule에도 Routine을 설정해줍니다.
+     */
+    public void addRoutineSchedule(RoutineSchedule routineSchedule) {
+        this.routineSchedules.add(routineSchedule);
+        routineSchedule.setRoutine(this); // 자식 객체에도 부모를 설정하여 양방향 관계를 완성합니다.
+    }
+
+    public void addRoutineTag(RoutineTag routineTag) {
+        this.routineTags.add(routineTag);
+        routineTag.setRoutine(this);
+    }
+
+    public void addRoutineApp(RoutineApp routineApp) {
+        this.routineApps.add(routineApp);
+        routineApp.setRoutine(this);
+    }
 }

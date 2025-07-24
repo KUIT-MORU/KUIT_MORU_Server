@@ -58,4 +58,7 @@ public class RoutineSchedule {
     public void setAlarmEnabled(boolean alarmEnabled) {
         this.alarmEnabled = alarmEnabled;
     }
+    public void setRoutine(Routine routine) {
+        this.routine = routine;
+    }
 }

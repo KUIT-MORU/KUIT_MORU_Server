@@ -71,4 +71,8 @@ public class RoutineStep {
     public void updateEstimatedTime(Duration estimatedTime) {
         this.estimatedTime = estimatedTime;
     }
+
+    public void setRoutine(Routine routine) {
+        this.routine = routine;
+    }
 }

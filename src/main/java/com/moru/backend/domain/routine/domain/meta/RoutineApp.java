@@ -39,4 +39,9 @@ public class RoutineApp {
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    // 이 메서드를 추가해주세요.
+    public void setRoutine(Routine routine) {
+        this.routine = routine;
+    }
 }

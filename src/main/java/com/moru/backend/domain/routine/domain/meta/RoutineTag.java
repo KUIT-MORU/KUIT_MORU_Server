@@ -44,4 +44,8 @@ public class RoutineTag {
     @LastModifiedDate
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    public void setRoutine(Routine routine) {
+        this.routine = routine;
+    }
 }

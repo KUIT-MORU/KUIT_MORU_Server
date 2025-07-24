@@ -24,7 +24,6 @@ import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.Gender;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.domain.user.domain.UserFavoriteTag;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.datafaker.Faker;
@@ -232,12 +231,10 @@ public class DummyDataInitializer implements CommandLineRunner {
 
                 // --- 스텝 생성 및 시간 계산 로직 ---
                 int stepCount = random.nextInt(5) + 1;
-                List<RoutineStep> steps = new ArrayList<>();
                 Duration totalRequiredTime = Duration.ZERO; // 총 소요시간 초기화
 
                 for (int j = 1; j <= stepCount; j++) {
                     RoutineStep.RoutineStepBuilder stepBuilder = RoutineStep.builder()
-                            .routine(routine)
                             .name(faker.lorem().word() + "하기")
                             .stepOrder(j);
 
@@ -248,9 +245,8 @@ public class DummyDataInitializer implements CommandLineRunner {
                         totalRequiredTime = totalRequiredTime.plus(estimatedTime); // 스텝 시간을 총 시간에 더함
                     }
                     // 단순 루틴의 경우 estimatedTime은 null로 유지됨
-                    steps.add(stepBuilder.build());
+                    routine.addRoutineStep(stepBuilder.build());
                 }
-                routine.setRoutineSteps(steps);
 
                 // 계산된 총 소요 시간을 루틴에 설정 (집중 루틴만)
                 if (!isSimpleRoutine) {
@@ -262,28 +258,26 @@ public class DummyDataInitializer implements CommandLineRunner {
                 if (!isSimpleRoutine && !apps.isEmpty()) {
                     Collections.shuffle(apps);
                     int appCount = random.nextInt(2) + 1; // 1~2개 앱 연결
-                    List<RoutineApp> routineApps = new ArrayList<>();
                     for (int j = 0; j < appCount; j++) {
                         if (j < apps.size()) {
-                            routineApps.add(RoutineApp.builder()
+                            RoutineApp routineApp = RoutineApp.builder()
                                     .routine(routine)
                                     .app(apps.get(j))
-                                    .build());
+                                    .build();
+                            routine.addRoutineApp(routineApp);
                         }
                     }
-                    routine.setRoutineApps(routineApps);
                 }
                 // 루틴 태그 자동 연결 (1~3개)
                 Collections.shuffle(tags);
                 int tagCount = random.nextInt(3) + 1;
-                List<RoutineTag> routineTags = new ArrayList<>();
                 for (int j = 0; j < tagCount; j++) {
-                    routineTags.add(RoutineTag.builder()
+                    RoutineTag routineTag = RoutineTag.builder()
                             .routine(routine)
                             .tag(tags.get(j))
-                            .build());
+                            .build();
+                    routine.addRoutineTag(routineTag);
                 }
-                routine.setRoutineTags(routineTags);
 
                 // 루틴 스케줄 자동 생성
                 Set<DayOfWeek> scheduledDays = new HashSet<>();
@@ -291,19 +285,18 @@ public class DummyDataInitializer implements CommandLineRunner {
                 for (int j = 0; j < dayCount; j++) {
                     scheduledDays.add(DayOfWeek.values()[random.nextInt(7)]);
                 }
-                List<RoutineSchedule> schedules = new ArrayList<>();
                 for (DayOfWeek day : scheduledDays) {
                     // Generate a random time for the schedule
                     java.sql.Time randomTime = new java.sql.Time(faker.date().future(1, java.util.concurrent.TimeUnit.HOURS).getTime());
 
-                    schedules.add(RoutineSchedule.builder()
-                            .routine(routine)
+                    RoutineSchedule schedule = RoutineSchedule.builder()
                             .dayOfWeek(day)
                             .time(randomTime.toLocalTime()) // Set the non-null time value
                             .alarmEnabled(random.nextBoolean()) // Also set a value for alarm_enabled
-                            .build());
+                            .build();
+                    // 편의 메서드를 사용하여 관계를 설정합니다.
+                    routine.addRoutineSchedule(schedule);
                 }
-                routine.setRoutineSchedules(schedules);
                 // --- 로직 종료 ---
                 routineBatch.add(routine);
 
