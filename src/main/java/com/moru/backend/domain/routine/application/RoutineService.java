@@ -21,6 +21,8 @@ import com.moru.backend.domain.social.dao.RoutineUserActionRepository;
 import com.moru.backend.domain.social.domain.RoutineUserAction;
 import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.global.exception.CustomException;
+import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.util.RedisKeyUtil;
 import com.moru.backend.global.util.S3Directory;
 import com.moru.backend.global.util.S3Service;
@@ -37,8 +39,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-import com.moru.backend.global.exception.CustomException;
-import com.moru.backend.global.exception.ErrorCode;
 
 @Service
 @RequiredArgsConstructor
@@ -47,7 +47,6 @@ public class RoutineService {
     private final RoutineStepRepository routineStepRepository;
     private final RoutineTagRepository routineTagRepository;
     private final RoutineAppRepository routineAppRepository;
-    private final RoutineScheduleRepository routineScheduleRepository;
     private final TagRepository tagRepository;
     private final AppRepository appRepository;
     private final RoutineValidator routineValidator;
