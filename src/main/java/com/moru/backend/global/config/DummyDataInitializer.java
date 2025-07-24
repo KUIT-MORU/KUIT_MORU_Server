@@ -49,8 +49,30 @@ public class DummyDataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // 실제 데이터 생성 로직을 별도의 @Transactional 클래스로 위임
-        dummyDataGenerator.generate();
+        // --- 기존 generate() 메서드의 내용을 여기로 옮겨옵니다. ---
+        if (dummyDataGenerator.isDataPresent()) {
+            log.info("더미 데이터가 이미 존재하므로 생성 건너뛰기");
+            return;
+        }
+        log.info("===DataFaker을 사용해서 대규모 더미 데이터 생성 시작===");
+
+        // 각 단계가 별도의 트랜잭션으로 실행됩니다.
+        List<Tag> allTags = dummyDataGenerator.createManualTags();
+        log.info("[1/5] {}개의 태그를 생성함", allTags.size());
+
+        List<App> allApps = dummyDataGenerator.createManualApps();
+        log.info("[2/5] {}개의 앱을 생성함", allApps.size());
+
+        List<User> allUsers = dummyDataGenerator.createBulkUsers(400);
+        log.info("[3/5] {}명의 사용자를 생성했습니다.", allUsers.size());
+
+        List<Routine> allRoutines = dummyDataGenerator.createBulkRoutines(2000, allUsers, allTags, allApps);
+        log.info("[4/5] {}개의 루틴과 관련 데이터(스텝, 태그연결, 스케줄)를 생성했습니다.", allRoutines.size());
+
+        dummyDataGenerator.createBulkRelationsAndLogs(5000, allUsers, allTags, allRoutines);
+        log.info("[5/5] 팔로우, 선호 태그, 루틴 로그 데이터를 생성했습니다.");
+
+        log.info("===더미 데이터 생성 완료===");
     }
 
     /**
@@ -78,36 +100,41 @@ public class DummyDataInitializer implements CommandLineRunner {
         private static final String COMMON_PASSWORD_HASH = "$2a$10$j5YhIig/vZwnhy1D61vdm.J9djNvHLjdZAx8xTccYpGabXA7S2MGi"; // password
         private static final int BATCH_SIZE = 200; // 배치 크기를 상수로 관리
 
-        @Transactional
-        public void generate() {
-            if (userRepository.count() > 0) {
-                log.info("더미 데이터가 이미 존재하므로 생성 건너뛰기");
-                return;
-            }
-            log.info("===DataFaker을 사용해서 대규모 더미 데이터 생성 시작===");
-
-            // 수동 생성 : 태그, 앱와 같은 고정적인 데이터
-            List<Tag> allTags = createManualTags();
-            log.info("[1/5] {}개의 태그를 생성함", allTags.size());
-
-            List<App> allApps = createManualApps();
-            log.info("[2/5] {}개의 앱을 생성함", allApps.size());
-
-            // 자동 생성 : 사용자, 루틴 등
-            List<User> allUsers = createBulkUsers(400); // 10000명의 사용자를 생성
-            log.info("[3/5] {}명의 사용자를 생성했습니다.", allUsers.size());
-
-            List<Routine> allRoutines = createBulkRoutines(2000, allUsers, allTags, allApps); // 약 2만개의 루틴 생성
-            log.info("[4/5] {}개의 루틴과 관련 데이터(스텝, 태그연결, 스케줄)를 생성했습니다.", allRoutines.size());
-
-            // 3. 관계 데이터 생성 (팔로우, 선호 태그, 루틴 로그)
-            createBulkRelationsAndLogs(5000, allUsers, allTags, allRoutines);
-            log.info("[5/5] 팔로우, 선호 태그, 루틴 로그 데이터를 생성했습니다.");
-
-            log.info("===더미 데이터 생성 완료===");
+//        @Transactional
+//        public void generate() {
+//            if (userRepository.count() > 0) {
+//                log.info("더미 데이터가 이미 존재하므로 생성 건너뛰기");
+//                return;
+//            }
+//            log.info("===DataFaker을 사용해서 대규모 더미 데이터 생성 시작===");
+//
+//            // 수동 생성 : 태그, 앱와 같은 고정적인 데이터
+//            List<Tag> allTags = createManualTags();
+//            log.info("[1/5] {}개의 태그를 생성함", allTags.size());
+//
+//            List<App> allApps = createManualApps();
+//            log.info("[2/5] {}개의 앱을 생성함", allApps.size());
+//
+//            // 자동 생성 : 사용자, 루틴 등
+//            List<User> allUsers = createBulkUsers(400); // 10000명의 사용자를 생성
+//            log.info("[3/5] {}명의 사용자를 생성했습니다.", allUsers.size());
+//
+//            List<Routine> allRoutines = createBulkRoutines(2000, allUsers, allTags, allApps); // 약 2만개의 루틴 생성
+//            log.info("[4/5] {}개의 루틴과 관련 데이터(스텝, 태그연결, 스케줄)를 생성했습니다.", allRoutines.size());
+//
+//            // 3. 관계 데이터 생성 (팔로우, 선호 태그, 루틴 로그)
+//            createBulkRelationsAndLogs(5000, allUsers, allTags, allRoutines);
+//            log.info("[5/5] 팔로우, 선호 태그, 루틴 로그 데이터를 생성했습니다.");
+//
+//            log.info("===더미 데이터 생성 완료===");
+//        }
+        @Transactional(readOnly = true)
+        public boolean isDataPresent() {
+            return userRepository.count() > 0;
         }
 
-        private List<Tag> createManualTags() {
+        @Transactional
+        public List<Tag> createManualTags() {
             Set<String> tagNames = new HashSet<>(Arrays.asList(
                     // rou_tag
                     "가족", "걷기", "계획", "공강", "공부", "귀가후", "글쓰기", "기록", "기분나쁠때", "기분좋을때",
@@ -132,7 +159,8 @@ public class DummyDataInitializer implements CommandLineRunner {
             return tagRepository.saveAll(tagsToCreate);
         }
 
-        private List<App> createManualApps() {
+        @Transactional
+        public List<App> createManualApps() {
             List<App> apps = Arrays.asList(
                     App.builder().name("카카오톡").packageName("com.kakao.talk").build(),
                     App.builder().name("인스타그램").packageName("com.instagram.android").build(),
@@ -142,7 +170,8 @@ public class DummyDataInitializer implements CommandLineRunner {
             return appRepository.saveAll(apps);
         }
 
-        private List<User> createBulkUsers(int count) {
+        @Transactional
+        public List<User> createBulkUsers(int count) {
             List<User> allGeneratedUsers = new ArrayList<>();
             List<User> userBatch = new ArrayList<>();
             Set<String> generatedEmails = new HashSet<>();
@@ -205,7 +234,8 @@ public class DummyDataInitializer implements CommandLineRunner {
             return allGeneratedUsers;
         }
 
-        private List<Routine> createBulkRoutines(int count, List<User> users, List<Tag> tags, List<App> apps) {
+        @Transactional
+        public List<Routine> createBulkRoutines(int count, List<User> users, List<Tag> tags, List<App> apps) {
             List<Routine> allGeneratedRoutines = new ArrayList<>();
             List<Routine> routineBatch = new ArrayList<>();
 
@@ -309,7 +339,8 @@ public class DummyDataInitializer implements CommandLineRunner {
             return allGeneratedRoutines;
         }
 
-        private void createBulkRelationsAndLogs(int count, List<User> users, List<Tag> tags, List<Routine> routines) {
+        @Transactional
+        public void createBulkRelationsAndLogs(int count, List<User> users, List<Tag> tags, List<Routine> routines) {
             // 팔로우 관계 생성
             Set<String> existingFollows = new HashSet<>();
             List<UserFollow> followsToSave = new ArrayList<>();
