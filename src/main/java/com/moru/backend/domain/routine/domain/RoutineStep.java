@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.GenericGenerator;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -23,7 +24,12 @@ import java.util.UUID;
 @Builder
 public class RoutineStep {
     @Id
-    @GeneratedValue
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(
+            name = "UUID",
+            strategy = "org.hibernate.id.UUIDGenerator"
+    )
+    @Column(columnDefinition = "BINARY(16)")
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -47,17 +53,6 @@ public class RoutineStep {
     @LastModifiedDate
     @Column(nullable = false)
     private LocalDateTime updatedAt;
-
-    /**
-     * 엔티티가 처음 영속화(Persist)되기 직전에 호출.
-     * id가 null일 경우에만 UUID를 생성해서 채워.
-     */
-    @PrePersist
-    public void assignIdIfNeeded() {
-        if (this.id == null) {
-            this.id = UUID.randomUUID();
-        }
-    }
 
 
     public void updateStepOrder(Integer stepOrder) {

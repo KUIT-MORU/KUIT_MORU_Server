@@ -150,7 +150,6 @@ public class DummyDataInitializer implements CommandLineRunner {
 
             // 1. 테스트용 고정 사용자 추가 (data.sql 내용 반영)
             User testUser = User.builder()
-                    .id(UUID.fromString("550e8400-e29b-41d4-a716-446655440000"))
                     .email("test@example.com")
                     .password("$2a$10$xUBrBGPuFIPdnDU2LCRLOeb3ML.vcGEen7NrughMZcQAs/i4cbxsy")
                     .nickname("테스트유저")
@@ -184,7 +183,6 @@ public class DummyDataInitializer implements CommandLineRunner {
                         .atZone(ZoneId.systemDefault()).toLocalDate();
 
                 userBatch.add(User.builder()
-                        .id(UUID.randomUUID())
                         .email(email)
                         .password(COMMON_PASSWORD_HASH)
                         .nickname(nickname)
@@ -217,7 +215,6 @@ public class DummyDataInitializer implements CommandLineRunner {
                 boolean isSimpleRoutine = random.nextBoolean(); // 단순/집중 루틴 랜덤 결정
 
                 Routine routine = Routine.builder()
-                        .id(UUID.randomUUID())
                         .user(owner)
                         .title(faker.lorem().characters(5, 10))
                         .content(String.join("\n", faker.lorem().paragraphs(2)))
@@ -322,8 +319,6 @@ public class DummyDataInitializer implements CommandLineRunner {
                 User following = users.get(random.nextInt(users.size()));
                 if (follower.getId().equals(following.getId())) continue;
 
-                if (follower.getId().equals(following.getId())) continue;
-
                 String followKey = follower.getId() + ":" + following.getId();
                 if (existingFollows.contains(followKey)) continue;
 
@@ -419,7 +414,15 @@ public class DummyDataInitializer implements CommandLineRunner {
                         .isCompleted(isCompleted)
                         .build());
             }
-            routineLogRepository.saveAll(logsToSave);
+            log.info("생성된 {}개의 루틴 로그를 배치 저장합니다...", logsToSave.size());
+            for (int i = 0; i < logsToSave.size(); i += BATCH_SIZE) {
+                int end = Math.min(i + BATCH_SIZE, logsToSave.size());
+                List<RoutineLog> batch = logsToSave.subList(i, end);
+                routineLogRepository.saveAll(batch);
+                log.info("▶ {}/{} 개의 루틴 로그 저장 완료", end, logsToSave.size());
+            }
+            // =================================================================
+
             log.info("루틴 로그 저장 완료");
         }
     }
