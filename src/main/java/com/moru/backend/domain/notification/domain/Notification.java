@@ -31,9 +31,6 @@ public class Notification {
     private UUID resourceId;
 
     @Column(nullable = false)
-    private String link;
-
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private NotificationType type;
 

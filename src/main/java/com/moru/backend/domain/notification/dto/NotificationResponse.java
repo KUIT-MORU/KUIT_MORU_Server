@@ -6,6 +6,5 @@ public record NotificationResponse(
         String senderNickname,
         String senderProfileImage,
         String message,
-        String link,
         String relativeTime
 ) {}
