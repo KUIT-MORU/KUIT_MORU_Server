@@ -7,6 +7,7 @@ import com.moru.backend.domain.notification.dto.NotificationCursor;
 import com.moru.backend.domain.notification.dto.NotificationResponse;
 import com.moru.backend.domain.notification.mapper.NotificationMapper;
 import com.moru.backend.domain.routine.application.RoutineService;
+import com.moru.backend.domain.social.application.FollowService;
 import com.moru.backend.domain.user.application.UserService;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
@@ -33,23 +34,29 @@ public class NotificationService {
     private final UserService userService;
     private final FcmService fcmService;
     private final RoutineService routineService;
+    private final FollowService followService;
 
     // 루틴 생성 알림
-    public void sendRoutineCreated(UUID receiverId, UUID senderId, UUID routineId) {
+    public void sendRoutineCreated(UUID senderId, UUID routineId) {
         // 루틴의 유저 공개 여부 확인
         if(!routineService.isUserVisibleById(routineId)) {
             return;
         }
 
-        // DB 저장
-        Notification notification = Notification.builder()
-                .receiverId(receiverId)
-                .senderId(senderId)
-                .resourceId(routineId)
-                .type(NotificationType.ROUTINE_CREATED)
-                .build();
+        // 발송자 팔로워 목록 조회
+        List<UUID> followerIds = followService.findFollowerIdsByUserId(senderId);
 
-        notificationRepository.save(notification);
+        // 알림 생성
+        for(UUID followerId : followerIds) {
+            Notification notification = Notification.builder()
+                    .receiverId(followerId)
+                    .senderId(senderId)
+                    .resourceId(routineId)
+                    .type(NotificationType.ROUTINE_CREATED)
+                    .build();
+
+            notificationRepository.save(notification);
+        }
     }
 
     // 팔로우 알림

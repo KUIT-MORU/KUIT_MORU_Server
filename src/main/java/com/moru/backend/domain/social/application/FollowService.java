@@ -136,4 +136,8 @@ public class FollowService {
                 .map(f -> f.getFollowing().getId())
                 .collect(Collectors.toSet());
     }
+
+    public List<UUID> findFollowerIdsByUserId(UUID senderId) {
+        return userFollowRepository.findFollowerIdsByUserId(senderId);
+    }
 }
