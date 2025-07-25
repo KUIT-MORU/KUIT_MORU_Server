@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static com.moru.backend.global.config.InsightConfig.INSIGHT_DAYS_RANGE;
 import static com.moru.backend.global.config.InsightConfig.MAX_LOOKBACK_DAYS;
 
 @Service
