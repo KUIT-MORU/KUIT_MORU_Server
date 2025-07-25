@@ -41,6 +41,7 @@ public class PreloadRoutineScheduler {
             ScheduledFcmMessage message = ScheduledFcmMessage.builder()
                     .receiverId(routine.getUser().getId())
                     .nickname(routine.getUser().getNickname())
+                    .routineId(routine.getId())
                     .routineTitle(routine.getTitle())
                     .fcmToken(fcmToken)
                     .scheduledTime(LocalDateTime.of(today, schedule.getTime()))

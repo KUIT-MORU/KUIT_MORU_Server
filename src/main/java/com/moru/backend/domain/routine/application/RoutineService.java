@@ -179,6 +179,10 @@ public class RoutineService {
         List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
         int likeCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.LIKE).intValue();
         int scrapCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.SCRAP).intValue();
+
+        // 루틴 수정에 따른 푸시 알림 예약 갱신
+        routineScheduleFcmPreloader.refreshRoutineScheduleFcm(routine);
+
         // update에서는 비슷한 루틴은 빈 리스트로 반환
         return RoutineDetailResponse.of(
                 routine,
