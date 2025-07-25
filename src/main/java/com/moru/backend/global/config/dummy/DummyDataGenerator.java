@@ -37,6 +37,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 @RequiredArgsConstructor
@@ -50,6 +51,7 @@ public class DummyDataGenerator {
     private final UserFavoriteTagRepository userFavoriteTagRepository;
     private final RoutineLogRepository routineLogRepository;
     private final RoutineSnapshotRepository routineSnapshotRepository;
+    private final DummyDataPool dummyDataPool;
 
     // Faker 인스턴스와 Random 객체를 필드로 선언해서 재사용하기
     private final Faker faker = new Faker(new Locale("ko"));
@@ -133,7 +135,7 @@ public class DummyDataGenerator {
                     .nickname(nickname)
                     .gender(random.nextBoolean() ? Gender.MALE : Gender.FEMALE)
                     .birthday(birthday)
-                    .bio(faker.lorem().sentence())
+                    .bio(dummyDataPool.getRandomBio())
                     // profileImageUrl은 faker로 직접 생성하여 설정
                     .profileImageUrl(faker.avatar().image())
                     // status, createdAt, updatedAt은 자동 처리되므로 설정 불필요
@@ -160,10 +162,15 @@ public class DummyDataGenerator {
             User owner = users.get(random.nextInt(users.size()));
             boolean isSimpleRoutine = random.nextBoolean(); // 단순/집중 루틴 랜덤 결정
 
+            DummyDataPool.RoutineRecipe recipe = dummyDataPool.getRandomRecipe();
+            String title = recipe.getTitles().get(random.nextInt(recipe.getTitles().size()));
+            String content = String.format(recipe.getContentTemplates().get(random.nextInt(recipe.getContentTemplates().size())), recipe.getTheme());
+
+
             Routine routine = Routine.builder()
                     .user(owner)
-                    .title(faker.lorem().characters(5, 10))
-                    .content(String.join("\n", faker.lorem().paragraphs(2)))
+                    .title(title)
+                    .content(content)
                     .isSimple(isSimpleRoutine)
                     .isUserVisible(true)
                     .likeCount(random.nextInt(500))
@@ -171,14 +178,14 @@ public class DummyDataGenerator {
                     // requiredTime은 아래에서 스텝 시간 합계로 계산되므로 여기서는 설정하지 않음
                     .status(true)
                     .build();
-            Duration totalRequiredTime = createAndAddSteps(routine, isSimpleRoutine);
+            Duration totalRequiredTime = createAndAddSteps(routine, isSimpleRoutine, recipe);
             // 계산된 총 소요 시간을 루틴에 설정 (집중 루틴만)
             if (!isSimpleRoutine) {
                 routine.setRequiredTime(totalRequiredTime);
                 // 집중 루틴일때만 앱 연결
                 connectAppsToRoutine(routine, apps);
             }
-            connectTagsToRoutine(routine, tags);
+            connectTagsToRoutine(routine, tags, recipe.getTheme());
             createAndAddSchedules(routine);
 
             routineBatch.add(routine);
@@ -267,23 +274,29 @@ public class DummyDataGenerator {
      * @param isSimpleRoutine   단순 루틴 여부
      * @return                  총 소요 시간 (단순 루틴이면 Duration.ZERO)
      */
-    private Duration createAndAddSteps(Routine routine, boolean isSimpleRoutine) {
+    private Duration createAndAddSteps(Routine routine, boolean isSimpleRoutine, DummyDataPool.RoutineRecipe recipe) {
         // --- 스텝 생성 및 시간 계산 로직 ---
-        int stepCount = random.nextInt(5) + 1;
+        List<String> allCategories = Stream.concat(
+                recipe.getCoreStepCategories().stream(),
+                recipe.getSecondaryStepCategories().stream()
+        ).collect(Collectors.toList());
+
+        int stepCount = random.nextInt(3) + 3;
+        Set<String> stepNames = dummyDataPool.getRandomStepsFromCategories(allCategories, stepCount);
+
         Duration totalRequiredTime = Duration.ZERO; // 총 소요시간 초기화
+        int stepOrder = 1;
 
-        for (int j = 1; j <= stepCount; j++) {
+        for (String stepName : stepNames) {
             RoutineStep.RoutineStepBuilder stepBuilder = RoutineStep.builder()
-                    .name(faker.lorem().word() + "하기")
-                    .stepOrder(j);
+                    .name(stepName)
+                    .stepOrder(stepOrder++);
 
-            // 집중 루틴(isSimple=false)일 경우에만 estimatedTime 설정
             if (!isSimpleRoutine) {
                 Duration estimatedTime = Duration.ofMinutes(random.nextInt(30) + 1);
                 stepBuilder.estimatedTime(estimatedTime);
-                totalRequiredTime = totalRequiredTime.plus(estimatedTime); // 스텝 시간을 총 시간에 더함
+                totalRequiredTime = totalRequiredTime.plus(estimatedTime);
             }
-            // 단순 루틴의 경우 estimatedTime은 null로 유지됨
             routine.addRoutineStep(stepBuilder.build());
         }
         return totalRequiredTime;
@@ -314,15 +327,30 @@ public class DummyDataGenerator {
      * @param routine   대상 루틴
      * @param tags      연결할 태그 리스트
      */
-    private void connectTagsToRoutine(Routine routine, List<Tag> tags) {
+    private void connectTagsToRoutine(Routine routine, List<Tag> tags, String theme) {
         if (tags.isEmpty()) return;
 
-        // 루틴 태그 자동 연결 (1~3개)
+        Set<Tag> tagsToConnect = new HashSet<>();
+
+        // 테마와 일치하는 태그를 우선적으로 추가
+        tags.stream()
+                .filter(tag -> tag.getName().equals(theme))
+                .findFirst()
+                .ifPresent(tagsToConnect::add);
+
+        // 나머지 태그를 랜덤하게 추가하여 총 1~3개를 맞춤
         Collections.shuffle(tags);
         int tagCount = random.nextInt(3) + 1;
-        for (int j = 0; j < Math.min(tagCount, tags.size()); j++) {
+        for (Tag tag : tags) {
+            if (tagsToConnect.size() >= tagCount) {
+                break;
+            }
+            tagsToConnect.add(tag);
+        }
+
+        for (Tag tag : tagsToConnect) {
             RoutineTag routineTag = RoutineTag.builder()
-                    .tag(tags.get(j))
+                    .tag(tag)
                     .build();
             routine.addRoutineTag(routineTag);
         }
