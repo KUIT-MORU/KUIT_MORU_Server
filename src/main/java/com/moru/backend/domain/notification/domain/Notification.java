@@ -34,17 +34,10 @@ public class Notification {
     private String link;
 
     @Column(nullable = false)
-    private boolean isRead = false;
-
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private NotificationType type;
 
     @CreatedDate
     @Column(nullable = false)
     private LocalDateTime createdAt;
-
-    public void markAsRead() {
-        this.isRead = true;
-    }
 }
