@@ -134,4 +134,8 @@ public class RedisQueueManager {
 
         return false;
     }
+
+    public Set<ZSetOperations.TypedTuple<String>> getAllScheduledMessages() {
+        return redisTemplate.opsForZSet().rangeWithScores(ROUTINE_SCHEDULE_QUEUE_KEY, 0, -1);
+    }
 }
