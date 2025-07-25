@@ -90,6 +90,15 @@ public class S3Service {
     }
 
     private String getFullUrl(String key) {
+        if (key == null || key.isBlank()) {
+            return key;
+        }
+
+        if (key.startsWith("http://") || key.startsWith("https://")) {
+            // 완전한 URL이면, 아무 처리 없이 그대로 반환
+            return key;
+        }
+
         StringBuilder url = new StringBuilder();
         url.append("https://")
                 .append(bucket)
