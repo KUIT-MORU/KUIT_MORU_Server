@@ -12,7 +12,6 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@EntityListeners(AuditingEntityListener.class)
 @Table(name = "notification")
 @Getter
 @NoArgsConstructor
@@ -34,7 +33,6 @@ public class Notification {
     @Enumerated(EnumType.STRING)
     private NotificationType type;
 
-    @CreatedDate
     @Column(nullable = false)
     private LocalDateTime createdAt;
 }

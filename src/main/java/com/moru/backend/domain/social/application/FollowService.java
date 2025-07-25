@@ -13,12 +13,14 @@ import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.util.S3Service;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cglib.core.Local;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -68,6 +70,7 @@ public class FollowService {
                 FollowedEvent.builder()
                         .receiverId(target.getId())
                         .senderId(me.getId())
+                        .createdAt(LocalDateTime.now())
                         .build()
         );
     }

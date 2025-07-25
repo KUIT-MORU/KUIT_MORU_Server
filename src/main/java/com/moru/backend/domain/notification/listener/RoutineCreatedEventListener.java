@@ -19,7 +19,11 @@ public class RoutineCreatedEventListener {
     @EventListener
     public void handleRoutineCreated(RoutineCreatedEvent event) {
         try {
-            notificationService.sendRoutineCreated(event.getSenderId(), event.getRoutineId());
+            notificationService.sendRoutineCreated(
+                    event.getSenderId(),
+                    event.getRoutineId(),
+                    event.getCreatedAt()
+            );
         } catch (Exception e) {
             log.warn("루틴 생성 알림 전송 실패: {}", e.getMessage());
         }

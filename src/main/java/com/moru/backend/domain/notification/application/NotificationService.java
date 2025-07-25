@@ -38,7 +38,7 @@ public class NotificationService {
     private final NotificationSender notificationSender;
 
     // 루틴 생성 알림
-    public void sendRoutineCreated(UUID senderId, UUID routineId) {
+    public void sendRoutineCreated(UUID senderId, UUID routineId, LocalDateTime createdAt) {
         // 루틴의 유저 공개 여부 확인
         if(!routineService.isUserVisibleById(routineId)) {
             return;
@@ -54,6 +54,7 @@ public class NotificationService {
                     .senderId(senderId)
                     .resourceId(routineId)
                     .type(NotificationType.ROUTINE_CREATED)
+                    .createdAt(createdAt)
                     .build();
 
             notificationRepository.save(notification);
@@ -61,12 +62,13 @@ public class NotificationService {
     }
 
     // 팔로우 알림
-    public void sendFollowReceived(UUID receiverId, UUID senderId) {
+    public void sendFollowReceived(UUID receiverId, UUID senderId, LocalDateTime createdAt) {
         //DB 저장
         Notification notification = Notification.builder()
                 .receiverId(receiverId)
                 .senderId(senderId)
                 .type(NotificationType.FOLLOW_RECEIVED)
+                .createdAt(createdAt)
                 .build();
         notificationRepository.save(notification);
     }

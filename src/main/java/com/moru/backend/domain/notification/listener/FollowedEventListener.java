@@ -19,7 +19,11 @@ public class FollowedEventListener {
     @EventListener
     public void handleFollowed(FollowedEvent event) {
         try {
-            notificationService.sendFollowReceived(event.getReceiverId(), event.getSenderId());
+            notificationService.sendFollowReceived(
+                    event.getReceiverId(),
+                    event.getSenderId(),
+                    event.getCreatedAt()
+            );
         } catch (Exception e) {
             log.warn("팔로우 알림 전송 실패: {}", e.getMessage());
         }
