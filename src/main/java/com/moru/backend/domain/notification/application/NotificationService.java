@@ -35,6 +35,7 @@ public class NotificationService {
     private final FcmService fcmService;
     private final RoutineService routineService;
     private final FollowService followService;
+    private final NotificationSender notificationSender;
 
     // 루틴 생성 알림
     public void sendRoutineCreated(UUID senderId, UUID routineId) {
@@ -73,16 +74,13 @@ public class NotificationService {
     // 루틴 스케줄 알림
     public void sendRoutineReminder(UUID receiverId, UUID routineId) {
         //FCM 발송
-        userRepository.findById(receiverId).ifPresent(receiver -> {
-            String fcmToken = receiver.getFcmToken();
-            if(fcmToken != null && !fcmToken.isBlank()) {
-                String routineTitle = routineService.getRoutineTitleById(routineId);
-                String nickname = userService.getNicknameById(receiverId);
-                String title = nickname + "님!";
-                String body = "\"" + routineTitle + "\", 지금 할 시간이에요.";
-                fcmService.sendMessage(fcmToken, title, body);
-            }
-        });
+        String routineTitle = routineService.getRoutineTitleById(routineId);
+        String nickname = userService.getNicknameById(receiverId);
+
+        String title = nickname + "님!";
+        String body = "\"" + routineTitle + "\", 지금 할 시간이에요.";
+
+        notificationSender.sendRoutineReminder(receiverId, title, body);
     }
 
     // 알림 목록 조회
