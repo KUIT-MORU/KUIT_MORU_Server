@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
 public class DummyDataInitializer implements CommandLineRunner {
     // 직접 호출할 서비스 클래스
     private final DummyDataGenerator dummyDataGenerator;
+    private final DummyDataProperties dummyDataProperties;
 
     @Override
     public void run(String... args) throws Exception {
@@ -63,13 +64,13 @@ public class DummyDataInitializer implements CommandLineRunner {
         List<App> allApps = dummyDataGenerator.createManualApps();
         log.info("[2/5] {}개의 앱을 생성함", allApps.size());
 
-        List<User> allUsers = dummyDataGenerator.createBulkUsers(10000);
+        List<User> allUsers = dummyDataGenerator.createBulkUsers(dummyDataProperties.getUserCount());
         log.info("[3/5] {}명의 사용자를 생성했습니다.", allUsers.size());
 
-        List<Routine> allRoutines = dummyDataGenerator.createBulkRoutines(20000, allUsers, allTags, allApps);
+        List<Routine> allRoutines = dummyDataGenerator.createBulkRoutines(dummyDataProperties.getRoutineCount(), allUsers, allTags, allApps);
         log.info("[4/5] {}개의 루틴과 관련 데이터(스텝, 태그연결, 스케줄)를 생성했습니다.", allRoutines.size());
 
-        dummyDataGenerator.createBulkRelationsAndLogs(50000, allUsers, allTags, allRoutines);
+        dummyDataGenerator.createBulkRelationsAndLogs(dummyDataProperties.getRelationCount(), allUsers, allTags, allRoutines);
         log.info("[5/5] 팔로우, 선호 태그, 루틴 로그 데이터를 생성했습니다.");
 
         log.info("===더미 데이터 생성 완료===");
