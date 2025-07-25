@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.moru.backend.global.fcm.dto.ScheduledFcmMessage;
 import com.moru.backend.global.util.RedisKeyUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Component;
@@ -14,6 +15,7 @@ import java.time.ZoneOffset;
 import java.util.Set;
 import java.util.UUID;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class RedisQueueManager {
@@ -27,6 +29,12 @@ public class RedisQueueManager {
      * Redis ZSET에 메시지 추가 (전송 예정 시간 기준)
      */
     public void enqueueScheduled(ScheduledFcmMessage message) {
+        if(isMessageAlreadyScheduled(message)) {
+            // 중복된 메시지는 등록 생략
+            log.info("🚫 중복된 FCM 메시지 - 등록 생략: {}", message.getRoutineId());
+            return;
+        }
+
         try {
             String json = objectMapper.writeValueAsString(message);
             long score = message.getScheduledTime().toEpochSecond(ZoneOffset.UTC);
@@ -90,6 +98,10 @@ public class RedisQueueManager {
         }
     }
 
+    /**
+     * 특정 루틴의 스케줄 예약 삭제
+     * @param routineId: 특정 루틴의 Id
+     */
     public void removeScheduledMessagesByRoutineId(UUID routineId) {
         Set<ZSetOperations.TypedTuple<String>> allMessages =
                 redisTemplate.opsForZSet().rangeWithScores(ROUTINE_SCHEDULE_QUEUE_KEY, 0, -1);
@@ -104,5 +116,22 @@ public class RedisQueueManager {
                 redisTemplate.opsForZSet().remove(ROUTINE_SCHEDULE_QUEUE_KEY, rawJson);
             }
         }
+    }
+
+    public boolean isMessageAlreadyScheduled(ScheduledFcmMessage message) {
+        Set<ZSetOperations.TypedTuple<String>> existing =
+                redisTemplate.opsForZSet().rangeWithScores(ROUTINE_SCHEDULE_QUEUE_KEY, 0, -1);
+
+        if (existing == null || existing.isEmpty()) return false;
+
+        for (ZSetOperations.TypedTuple<String> tuple : existing) {
+            ScheduledFcmMessage existingMsg = deserialize(tuple.getValue());
+            if (existingMsg.getRoutineId().equals(message.getRoutineId()) &&
+                    existingMsg.getScheduledTime().equals(message.getScheduledTime())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
