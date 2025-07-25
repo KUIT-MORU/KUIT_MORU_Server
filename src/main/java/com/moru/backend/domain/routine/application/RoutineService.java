@@ -440,4 +440,8 @@ public class RoutineService {
     public String getRoutineTitleById(UUID routineId) {
         return routineRepository.findTitleById(routineId);
     }
+
+    public boolean isUserVisibleById(UUID routineId) {
+        return routineRepository.getIsUserVisibleById(routineId);
+    }
 }

@@ -36,6 +36,7 @@ public class NotificationService {
 
     // 루틴 생성 알림
     public void sendRoutineCreated(UUID receiverId, UUID senderId, UUID routineId) {
+        // 루틴의 유저 공개 여부 확인
         if(!routineService.isUserVisibleById(routineId)) {
             return;
         }
@@ -60,37 +61,18 @@ public class NotificationService {
                 .type(NotificationType.FOLLOW_RECEIVED)
                 .build();
         notificationRepository.save(notification);
-
-        //FCM 발송
-        userRepository.findById(receiverId).ifPresent(receiver -> {
-            String fcmToken = receiver.getFcmToken();
-            if(fcmToken != null && !fcmToken.isBlank()) {
-                String receiverName = userService.getNicknameById(receiverId);
-                String senderName = userService.getNicknameById(senderId);
-                String body = senderName + "님이 회원님을 팔로우하기 시작했습니다.";
-                fcmService.sendMessage(fcmToken, receiverName, body);
-            }
-        });
     }
 
     // 루틴 스케줄 알림
     public void sendRoutineReminder(UUID receiverId, UUID routineId) {
-        // DB 저장
-        Notification notification = Notification.builder()
-                .receiverId(receiverId)
-                .senderId(null) // 시스템 알림
-                .resourceId(routineId)
-                .type(NotificationType.ROUTINE_REMINDER)
-                .build();
-        notificationRepository.save(notification);
-
         //FCM 발송
         userRepository.findById(receiverId).ifPresent(receiver -> {
             String fcmToken = receiver.getFcmToken();
             if(fcmToken != null && !fcmToken.isBlank()) {
                 String routineTitle = routineService.getRoutineTitleById(routineId);
-                String title = "루틴 알림";
-                String body = "지금 \"" + routineTitle + "\" 루틴을 실천해보세요!";
+                String nickname = userService.getNicknameById(receiverId);
+                String title = nickname + "님!";
+                String body = "\"" + routineTitle + "\", 지금 할 시간이에요.";
                 fcmService.sendMessage(fcmToken, title, body);
             }
         });
