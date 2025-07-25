@@ -36,13 +36,13 @@ public class NotificationController {
     }
 
     // 알림 읽음 처리
-    @Operation(summary = "알림 읽음 처리")
-    @PutMapping("/{notificationId}/read")
+    @Operation(summary = "알림 삭제 처리")
+    @DeleteMapping("/{notificationId}")
     public ResponseEntity<Void> markAsRead(
             @PathVariable UUID notificationId,
             @CurrentUser User user
     ) {
-        notificationService.markAsRead(notificationId, user.getId());
+        notificationService.delete(notificationId, user.getId());
         return ResponseEntity.noContent().build();
     }
 

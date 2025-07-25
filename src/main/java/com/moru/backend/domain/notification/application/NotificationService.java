@@ -36,6 +36,10 @@ public class NotificationService {
 
     // 루틴 생성 알림
     public void sendRoutineCreated(UUID receiverId, UUID senderId, UUID routineId) {
+        if(!routineService.isUserVisibleById(routineId)) {
+            return;
+        }
+
         // DB 저장
         Notification notification = Notification.builder()
                 .receiverId(receiverId)
@@ -46,17 +50,6 @@ public class NotificationService {
                 .build();
 
         notificationRepository.save(notification);
-
-        // FCM 발송
-        userRepository.findById(receiverId).ifPresent(receiver -> {
-            String fcmToken = receiver.getFcmToken();
-            if(fcmToken != null && !fcmToken.isBlank()) {
-                String senderName = userService.getNicknameById(senderId);
-                String title = "새 루틴 알림";
-                String body = senderName + "님이 루틴을 생성했습니다.";
-                fcmService.sendMessage(fcmToken, title, body);
-            }
-        });
     }
 
     // 팔로우 알림
@@ -131,28 +124,20 @@ public class NotificationService {
         return ScrollResponse.of(result, hasNext, nextCursor);
     }
 
-    // 알림 읽음 처리
-    @Transactional
-    public void markAsRead(UUID notificationId, UUID receiverId) {
-        Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND));
-
-        if(!notification.getReceiverId().equals(receiverId)) {
-            throw new CustomException(ErrorCode.FORBIDDEN_NOTIFICATION_ACCESS);
-        }
-
-        if(!notification.isRead()) {
-            notification.markAsRead();
-        }
-    }
-
-    @Transactional
-    public void markAllAsRead(UUID receiverId) {
-        notificationRepository.markAllAsRead(receiverId);
-    }
-
     @Transactional(readOnly = true)
     public int getUnreadCount(UUID receiverId) {
         return notificationRepository.countByReceiverIdAndIsReadFalse(receiverId);
+    }
+
+    @Transactional
+    public void delete(UUID notificationId, UUID userId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND));
+
+        if (!notification.getReceiverId().equals(userId)) {
+            throw new CustomException(ErrorCode.FORBIDDEN_NOTIFICATION_ACCESS);
+        }
+
+        notificationRepository.delete(notification);
     }
 }
