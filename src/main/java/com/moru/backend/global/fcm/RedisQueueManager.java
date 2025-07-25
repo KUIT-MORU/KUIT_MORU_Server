@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Set;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -86,6 +87,22 @@ public class RedisQueueManager {
             return objectMapper.readValue(json, ScheduledFcmMessage.class);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("FCM 메시지 역직렬화 실패", e);
+        }
+    }
+
+    public void removeScheduledMessagesByRoutineId(UUID routineId) {
+        Set<ZSetOperations.TypedTuple<String>> allMessages =
+                redisTemplate.opsForZSet().rangeWithScores(ROUTINE_SCHEDULE_QUEUE_KEY, 0, -1);
+
+        if(allMessages == null || allMessages.isEmpty()) { return; }
+
+        for(ZSetOperations.TypedTuple<String> tuple: allMessages) {
+            String rawJson = tuple.getValue();
+            ScheduledFcmMessage message = deserialize(rawJson);
+
+            if(routineId.equals(message.getRoutineId())) {
+                redisTemplate.opsForZSet().remove(ROUTINE_SCHEDULE_QUEUE_KEY, rawJson);
+            }
         }
     }
 }

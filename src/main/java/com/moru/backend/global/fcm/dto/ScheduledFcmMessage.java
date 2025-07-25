@@ -19,6 +19,7 @@ import java.util.UUID;
 public class ScheduledFcmMessage implements Serializable {
     private UUID receiverId;          // 수신자 ID
     private String nickname;          // 푸시 헤드 메시지 ("{닉네임}님!")
+    private UUID routineId;           // 루틴 ID
     private String routineTitle;      // 푸시 바디 메시지 ("{루틴명}, 지금 할 시간이에요.")
     private String fcmToken;          // FCM 토큰
     private LocalDateTime scheduledTime; // 전송 예정 시각
