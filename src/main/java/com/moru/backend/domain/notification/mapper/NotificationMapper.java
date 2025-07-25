@@ -46,8 +46,6 @@ public class NotificationMapper {
                 senderNickname,
                 s3Service.getImageUrl(profileImageUrl),
                 message,
-                notification.getLink(),
-                notification.isRead(),
                 formatRelativeTime(notification.getCreatedAt())
         );
     }
