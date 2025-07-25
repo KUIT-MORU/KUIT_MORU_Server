@@ -115,12 +115,20 @@ public class Routine {
     }
 
     public void addRoutineTag(RoutineTag routineTag) {
-        this.routineTags.add(routineTag);
-        routineTag.setRoutine(this);
+        boolean isDuplicate = this.routineTags.stream()
+                .anyMatch(existing -> existing.getTag().equals(routineTag.getTag()));
+        if (!isDuplicate) {
+            this.routineTags.add(routineTag);
+            routineTag.setRoutine(this);
+        }
     }
 
     public void addRoutineApp(RoutineApp routineApp) {
-        this.routineApps.add(routineApp);
-        routineApp.setRoutine(this);
+        boolean isDuplicate = this.routineApps.stream()
+                .anyMatch(existing -> existing.getApp().equals(routineApp.getApp()));
+        if (!isDuplicate) {
+            this.routineApps.add(routineApp);
+            routineApp.setRoutine(this);
+        }
     }
 }
