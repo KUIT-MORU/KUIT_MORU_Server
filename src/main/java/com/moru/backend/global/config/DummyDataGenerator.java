@@ -194,15 +194,70 @@ public class DummyDataGenerator {
         return allGeneratedRoutines;
     }
 
-
+    /**
+     * 팔로우 관계 생성 및 저장
+     * @param count 생성할 관계 수
+     * @param users 사용자 리스트
+     */
     @Transactional
-    public void createBulkRelationsAndLogs(int count, List<User> users, List<Tag> tags, List<Routine> routines) {
-        createFollowRelations(count, users);
-        createFavoriteTagRelations(count, users, tags);
+    public void createFollowRelations(int count, List<User> users) {
+        if (count <= 0 ) return;
+        // 팔로우 관계 생성
+        Set<String> existingFollows = new HashSet<>();
+        List<UserFollow> followsToSave = new ArrayList<>();
 
+        for (int i = 0; i < count; i++) {
+            User follower = users.get(random.nextInt(users.size()));
+            User following = users.get(random.nextInt(users.size()));
+            if (follower.getId().equals(following.getId())) continue;
+
+            String followKey = follower.getId() + ":" + following.getId();
+            if (existingFollows.contains(followKey)) continue;
+
+            followsToSave.add(UserFollow.builder().follower(follower).following(following).build());
+            existingFollows.add(followKey);
+        }
+        userFollowRepository.saveAll(followsToSave);
+        log.info("{}개의 팔로우 관계 저장 완료", followsToSave.size());
+    }
+
+    /**
+     * 선호 태그 관계 생성 및 저장
+     * @param count 생성할 관계 수
+     * @param users 사용자 리스트
+     * @param tags  태그 리스트
+     */
+    @Transactional
+    public void createFavoriteTagRelations(int count, List<User> users, List<Tag> tags) {
+        if (count <= 0 ) return;
+
+        // 선호 태그 관계 생성
+        Set<String> existingFavoriteTags = new HashSet<>();
+        List<UserFavoriteTag> favoriteTagsToSave = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            User user = users.get(random.nextInt(users.size()));
+            Tag tag = tags.get(random.nextInt(tags.size()));
+
+            String favoriteKey = user.getId() + ":" + tag.getId();
+            if (existingFavoriteTags.contains(favoriteKey)) continue;
+
+            favoriteTagsToSave.add(UserFavoriteTag.builder().user(user).tag(tag).build());
+            existingFavoriteTags.add(favoriteKey);
+        }
+        userFavoriteTagRepository.saveAll(favoriteTagsToSave);
+        log.info("{}개의 선호 태그 저장 완료", favoriteTagsToSave.size());
+    }
+
+    /**
+     * 루틴 로그와 스냅샷을 생성하고 저장
+     * @param routines 루틴 리스트
+     */
+    @Transactional
+    public void createLogs(List<Routine> routines) {
         List<RoutineSnapshot> savedSnapshots = createSnapshots(routines);
         createLogsFromSnapshots(savedSnapshots, routines);
     }
+
     //====헬퍼 메서드====//
 
     /**
@@ -296,55 +351,6 @@ public class DummyDataGenerator {
             routine.addRoutineSchedule(schedule);
         }
         // --- 로직 종료 ---
-    }
-
-    /**
-     * 팔로우 관계 생성 및 저장
-     * @param count 생성할 관계 수
-     * @param users 사용자 리스트
-     */
-    private void createFollowRelations(int count, List<User> users) {
-        // 팔로우 관계 생성
-        Set<String> existingFollows = new HashSet<>();
-        List<UserFollow> followsToSave = new ArrayList<>();
-
-        for (int i = 0; i < count; i++) {
-            User follower = users.get(random.nextInt(users.size()));
-            User following = users.get(random.nextInt(users.size()));
-            if (follower.getId().equals(following.getId())) continue;
-
-            String followKey = follower.getId() + ":" + following.getId();
-            if (existingFollows.contains(followKey)) continue;
-
-            followsToSave.add(UserFollow.builder().follower(follower).following(following).build());
-            existingFollows.add(followKey);
-        }
-        userFollowRepository.saveAll(followsToSave);
-        log.info("팔로우 관계 저장 완료");
-    }
-
-    /**
-     * 선호 태그 관계 생성 및 저장
-     * @param count 생성할 관계 수
-     * @param users 사용자 리스트
-     * @param tags  태그 리스트
-     */
-    private void createFavoriteTagRelations(int count, List<User> users, List<Tag> tags) {
-        // 선호 태그 관계 생성
-        Set<String> existingFavoriteTags = new HashSet<>();
-        List<UserFavoriteTag> favoriteTagsToSave = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            User user = users.get(random.nextInt(users.size()));
-            Tag tag = tags.get(random.nextInt(tags.size()));
-
-            String favoriteKey = user.getId() + ":" + tag.getId();
-            if (existingFavoriteTags.contains(favoriteKey)) continue;
-
-            favoriteTagsToSave.add(UserFavoriteTag.builder().user(user).tag(tag).build());
-            existingFavoriteTags.add(favoriteKey);
-        }
-        userFavoriteTagRepository.saveAll(favoriteTagsToSave);
-        log.info("선호 태그 저장 완료");
     }
 
     /**

@@ -12,5 +12,6 @@ import org.springframework.stereotype.Component;
 public class DummyDataProperties {
     private int userCount;
     private int routineCount;
-    private int relationCount;
+    private int followCount;
+    private int favoriteTagCount;
 }
