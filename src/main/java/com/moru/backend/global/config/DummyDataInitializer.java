@@ -212,76 +212,16 @@ public class DummyDataInitializer implements CommandLineRunner {
                         // requiredTime은 아래에서 스텝 시간 합계로 계산되므로 여기서는 설정하지 않음
                         .status(true)
                         .build();
-
-                // --- 스텝 생성 및 시간 계산 로직 ---
-                int stepCount = random.nextInt(5) + 1;
-                Duration totalRequiredTime = Duration.ZERO; // 총 소요시간 초기화
-
-                for (int j = 1; j <= stepCount; j++) {
-                    RoutineStep.RoutineStepBuilder stepBuilder = RoutineStep.builder()
-                            .name(faker.lorem().word() + "하기")
-                            .stepOrder(j);
-
-                    // 집중 루틴(isSimple=false)일 경우에만 estimatedTime 설정
-                    if (!isSimpleRoutine) {
-                        Duration estimatedTime = Duration.ofMinutes(random.nextInt(30) + 1);
-                        stepBuilder.estimatedTime(estimatedTime);
-                        totalRequiredTime = totalRequiredTime.plus(estimatedTime); // 스텝 시간을 총 시간에 더함
-                    }
-                    // 단순 루틴의 경우 estimatedTime은 null로 유지됨
-                    routine.addRoutineStep(stepBuilder.build());
-                }
-
+                Duration totalRequiredTime = createAndAddSteps(routine, isSimpleRoutine);
                 // 계산된 총 소요 시간을 루틴에 설정 (집중 루틴만)
                 if (!isSimpleRoutine) {
                     routine.setRequiredTime(totalRequiredTime);
+                    // 집중 루틴일때만 앱 연결
+                    connectAppsToRoutine(routine, apps);
                 }
-                // --- 로직 종료 ---
+                connectTagsToRoutine(routine, tags);
+                createAndAddSchedules(routine);
 
-                // 집중 루틴(isSimple=false)일 경우에만 앱 연결
-                if (!isSimpleRoutine && !apps.isEmpty()) {
-                    Collections.shuffle(apps);
-                    int appCount = random.nextInt(2) + 1; // 1~2개 앱 연결
-                    for (int j = 0; j < appCount; j++) {
-                        if (j < apps.size()) {
-                            RoutineApp routineApp = RoutineApp.builder()
-                                    .routine(routine)
-                                    .app(apps.get(j))
-                                    .build();
-                            routine.addRoutineApp(routineApp);
-                        }
-                    }
-                }
-                // 루틴 태그 자동 연결 (1~3개)
-                Collections.shuffle(tags);
-                int tagCount = random.nextInt(3) + 1;
-                for (int j = 0; j < tagCount; j++) {
-                    RoutineTag routineTag = RoutineTag.builder()
-                            .routine(routine)
-                            .tag(tags.get(j))
-                            .build();
-                    routine.addRoutineTag(routineTag);
-                }
-
-                // 루틴 스케줄 자동 생성
-                Set<DayOfWeek> scheduledDays = new HashSet<>();
-                int dayCount = random.nextInt(7) + 1;
-                for (int j = 0; j < dayCount; j++) {
-                    scheduledDays.add(DayOfWeek.values()[random.nextInt(7)]);
-                }
-                for (DayOfWeek day : scheduledDays) {
-                    // Generate a random time for the schedule
-                    java.sql.Time randomTime = new java.sql.Time(faker.date().future(1, java.util.concurrent.TimeUnit.HOURS).getTime());
-
-                    RoutineSchedule schedule = RoutineSchedule.builder()
-                            .dayOfWeek(day)
-                            .time(randomTime.toLocalTime()) // Set the non-null time value
-                            .alarmEnabled(random.nextBoolean()) // Also set a value for alarm_enabled
-                            .build();
-                    // 편의 메서드를 사용하여 관계를 설정합니다.
-                    routine.addRoutineSchedule(schedule);
-                }
-                // --- 로직 종료 ---
                 routineBatch.add(routine);
 
                 if (routineBatch.size() >= BATCH_SIZE) {
@@ -296,8 +236,116 @@ public class DummyDataInitializer implements CommandLineRunner {
             return allGeneratedRoutines;
         }
 
+
         @Transactional
         public void createBulkRelationsAndLogs(int count, List<User> users, List<Tag> tags, List<Routine> routines) {
+            createFollowRelations(count, users);
+            createFavoriteTagRelations(count, users, tags);
+
+            List<RoutineSnapshot> savedSnapshots = createSnapshots(routines);
+            createLogsFromSnapshots(savedSnapshots, routines);
+        }
+        //====헬퍼 메서드====//
+
+        /**
+         * routine에 스텝 생성 & 추가 -> 총 소요시간을 계산하여 반환.
+         * @param routine           대상 루틴
+         * @param isSimpleRoutine   단순 루틴 여부
+         * @return                  총 소요 시간 (단순 루틴이면 Duration.ZERO)
+         */
+        private Duration createAndAddSteps(Routine routine, boolean isSimpleRoutine) {
+            // --- 스텝 생성 및 시간 계산 로직 ---
+            int stepCount = random.nextInt(5) + 1;
+            Duration totalRequiredTime = Duration.ZERO; // 총 소요시간 초기화
+
+            for (int j = 1; j <= stepCount; j++) {
+                RoutineStep.RoutineStepBuilder stepBuilder = RoutineStep.builder()
+                        .name(faker.lorem().word() + "하기")
+                        .stepOrder(j);
+
+                // 집중 루틴(isSimple=false)일 경우에만 estimatedTime 설정
+                if (!isSimpleRoutine) {
+                    Duration estimatedTime = Duration.ofMinutes(random.nextInt(30) + 1);
+                    stepBuilder.estimatedTime(estimatedTime);
+                    totalRequiredTime = totalRequiredTime.plus(estimatedTime); // 스텝 시간을 총 시간에 더함
+                }
+                // 단순 루틴의 경우 estimatedTime은 null로 유지됨
+                routine.addRoutineStep(stepBuilder.build());
+            }
+            return totalRequiredTime;
+        }
+
+        /**
+         * 루틴에 1-4개의 앱 연결 (앱이 없으면 사용 가능한 앱이 없으면 그냥 반환)
+         * @param routine   대상 루틴
+         * @param apps      연결할 앱 리스트
+         */
+        private void connectAppsToRoutine(Routine routine, List<App> apps) {
+            if (apps.isEmpty()) return;
+
+            Collections.shuffle(apps);
+            int appCount = random.nextInt(4) + 1; // 1~4개 앱 연결
+            for (int j = 0; j < Math.min(appCount, apps.size()); j++) {
+                if (j < apps.size()) {
+                    RoutineApp routineApp = RoutineApp.builder()
+                            .app(apps.get(j))
+                            .build();
+                    routine.addRoutineApp(routineApp);
+                }
+            }
+        }
+
+        /**
+         * 루틴에 1-3개의 태그 연결 (사용 가능한 태그가 없으면 그냥 반환)
+         * @param routine   대상 루틴
+         * @param tags      연결할 태그 리스트
+         */
+        private void connectTagsToRoutine(Routine routine, List<Tag> tags) {
+            if (tags.isEmpty()) return;
+
+            // 루틴 태그 자동 연결 (1~3개)
+            Collections.shuffle(tags);
+            int tagCount = random.nextInt(3) + 1;
+            for (int j = 0; j < Math.min(tagCount, tags.size()); j++) {
+                RoutineTag routineTag = RoutineTag.builder()
+                        .tag(tags.get(j))
+                        .build();
+                routine.addRoutineTag(routineTag);
+            }
+        }
+
+        /**
+         * 루틴에 무작위 스케쥴 생성 및 추가
+         * @param routine   대상 루틴
+         */
+        private void createAndAddSchedules(Routine routine) {
+            // 루틴 스케줄 자동 생성
+            Set<DayOfWeek> scheduledDays = new HashSet<>();
+            int dayCount = random.nextInt(7) + 1;
+            for (int j = 0; j < dayCount; j++) {
+                scheduledDays.add(DayOfWeek.values()[random.nextInt(7)]);
+            }
+            for (DayOfWeek day : scheduledDays) {
+                // Generate a random time for the schedule
+                java.sql.Time randomTime = new java.sql.Time(faker.date().future(1, java.util.concurrent.TimeUnit.HOURS).getTime());
+
+                RoutineSchedule schedule = RoutineSchedule.builder()
+                        .dayOfWeek(day)
+                        .time(randomTime.toLocalTime()) // Set the non-null time value
+                        .alarmEnabled(random.nextBoolean()) // Also set a value for alarm_enabled
+                        .build();
+                // 편의 메서드를 사용하여 관계를 설정합니다.
+                routine.addRoutineSchedule(schedule);
+            }
+            // --- 로직 종료 ---
+        }
+
+        /**
+         * 팔로우 관계 생성 및 저장
+         * @param count 생성할 관계 수
+         * @param users 사용자 리스트
+         */
+        private void createFollowRelations(int count, List<User> users) {
             // 팔로우 관계 생성
             Set<String> existingFollows = new HashSet<>();
             List<UserFollow> followsToSave = new ArrayList<>();
@@ -315,8 +363,15 @@ public class DummyDataInitializer implements CommandLineRunner {
             }
             userFollowRepository.saveAll(followsToSave);
             log.info("팔로우 관계 저장 완료");
+        }
 
-
+        /**
+         * 선호 태그 관계 생성 및 저장
+         * @param count 생성할 관계 수
+         * @param users 사용자 리스트
+         * @param tags  태그 리스트
+         */
+        private void createFavoriteTagRelations(int count, List<User> users, List<Tag> tags) {
             // 선호 태그 관계 생성
             Set<String> existingFavoriteTags = new HashSet<>();
             List<UserFavoriteTag> favoriteTagsToSave = new ArrayList<>();
@@ -332,7 +387,14 @@ public class DummyDataInitializer implements CommandLineRunner {
             }
             userFavoriteTagRepository.saveAll(favoriteTagsToSave);
             log.info("선호 태그 저장 완료");
+        }
 
+        /**
+         * 루틴 스냅샷을 생성하고 저장
+         * @param routines  루틴 리스트
+         * @return          생성 및 저장된 루틴 스냅샷 리스트
+         */
+        private List<RoutineSnapshot> createSnapshots(List<Routine> routines) {
             // 1. 로그를 생성할 루틴들로부터 스냅샷을 먼저 만듭니다.
             List<RoutineSnapshot> snapshotsToSave = new ArrayList<>();
             for (Routine routine : routines) {
@@ -348,31 +410,41 @@ public class DummyDataInitializer implements CommandLineRunner {
                             .build();
 
                     // 스텝 스냅샷 생성 및 연결
-                    List<RoutineStepSnapshot> stepSnapshots = routine.getRoutineSteps().stream()
+                    snapshot.getStepSnapshots().addAll(routine.getRoutineSteps().stream()
                             .map(step -> RoutineStepSnapshot.builder()
-                                    .routineSnapshot(snapshot) // 부모-자식 관계 설정
+                                    .routineSnapshot(snapshot)
                                     .name(step.getName())
                                     .stepOrder(step.getStepOrder())
                                     .estimatedTime(step.getEstimatedTime())
                                     .build())
-                            .collect(Collectors.toList());
-                    snapshot.getStepSnapshots().addAll(stepSnapshots);
+                            .collect(Collectors.toList()));
 
                     // 태그 스냅샷 생성 및 연결
-                    List<RoutineTagSnapshot> tagSnapshots = routine.getRoutineTags().stream()
-                            .map(routineTag -> RoutineTagSnapshot.builder()
-                                    .routineSnapshot(snapshot) // 부모-자식 관계 설정
-                                    .tagName(routineTag.getTag().getName())
+                    snapshot.getTagSnapshots().addAll(routine.getRoutineTags().stream()
+                            .map(rt -> RoutineTagSnapshot.builder()
+                                    .routineSnapshot(snapshot)
+                                    .tagName(rt.getTag().getName())
                                     .build())
-                            .collect(Collectors.toList());
-                    snapshot.getTagSnapshots().addAll(tagSnapshots);
+                            .collect(Collectors.toList()));
 
                     snapshotsToSave.add(snapshot);
                 }
             }
             List<RoutineSnapshot> savedSnapshots = routineSnapshotRepository.saveAll(snapshotsToSave);
-            log.info("루틴 스냅샷 저장 완료");
+            log.info("루틴 스냅샷 {}개 저장 완료", savedSnapshots.size());
+            return savedSnapshots;
+        }
 
+        /**
+         * 저장된 스냅샷을 기반으로 로그를 생성 및 저장
+         * @param savedSnapshots    저장된 스냅샷 리스트
+         * @param routines          원본 루틴 리스트
+         */
+        private void createLogsFromSnapshots(List<RoutineSnapshot> savedSnapshots, List<Routine> routines) {
+            if (savedSnapshots.isEmpty()) {
+                log.info("생성된 스냅샷이 없음 -> 루틴 로그 생성 x");
+                return;
+            }
             // 2. 저장된 스냅샷을 기반으로 실제 로그를 생성합니다.
             List<RoutineLog> logsToSave = new ArrayList<>();
             Map<UUID, User> routineUserMap = routines.stream()
