@@ -126,7 +126,7 @@ public class NotificationService {
 
     @Transactional(readOnly = true)
     public int getUnreadCount(UUID receiverId) {
-        return notificationRepository.countByReceiverIdAndIsReadFalse(receiverId);
+        return notificationRepository.countByReceiverId(receiverId);
     }
 
     @Transactional
