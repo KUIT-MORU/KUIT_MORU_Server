@@ -10,6 +10,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
@@ -21,7 +22,7 @@ import java.util.List;
 public class RoutineScheduleHistory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private UUID id;
 
     // 어떤 루틴의 스케줄 히스토리인지
     @ManyToOne(fetch = FetchType.LAZY)
