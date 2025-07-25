@@ -47,6 +47,7 @@ public class RoutineScheduleFcmPreloader {
             ScheduledFcmMessage message = ScheduledFcmMessage.builder()
                     .receiverId(user.getId())
                     .nickname(user.getNickname())
+                    .routineId(routine.getId())
                     .routineTitle(routine.getTitle())
                     .fcmToken(user.getFcmToken())
                     .scheduledTime(scheduledTime)
@@ -56,5 +57,13 @@ public class RoutineScheduleFcmPreloader {
             redisQueueManager.enqueueScheduled(message);
         }
 
+    }
+
+    public void refreshRoutineScheduleFcm(Routine routine) {
+        // 해당 루틴에 대해 설정된 기존 알림을 모두 삭제
+        redisQueueManager.removeScheduledMessagesByRoutineId(routine.getId());
+
+        // 현재 설정된 스케줄 기준으로 다시 등록
+        preloadRoutineScheduleFcm(routine);
     }
 }
