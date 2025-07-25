@@ -20,13 +20,9 @@ public class NotificationMapper {
     private final RoutineService routineService;
 
     public NotificationResponse toResponse(Notification notification) {
-        String senderNickname = notification.getSenderId() != null
-                ? userService.getNicknameById(notification.getSenderId())
-                : "시스템";
+        String senderNickname = userService.getNicknameById(notification.getSenderId());
 
-        String profileImageUrl = notification.getSenderId() != null
-                ? userService.getProfileImageUrlById(notification.getSenderId())
-                : "/img/system-default.png";
+        String profileImageUrl = userService.getProfileImageUrlById(notification.getSenderId());
 
         String routineTitle = notification.getResourceId() != null
                 ? routineService.getRoutineTitleById(notification.getResourceId())
@@ -38,7 +34,6 @@ public class NotificationMapper {
                 String receiverName = userService.getNicknameById(notification.getReceiverId());
                 yield senderNickname + "님이 " + receiverName + "님을 팔로우했습니다.";
             }
-            case NotificationType.ROUTINE_REMINDER -> "지금은 " + routineTitle + "을 할 시간!";
         };
 
         return new NotificationResponse(
