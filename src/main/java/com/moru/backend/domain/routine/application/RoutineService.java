@@ -24,6 +24,7 @@ import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
+import com.moru.backend.global.fcm.RoutineScheduleFcmPreloader;
 import com.moru.backend.global.util.RedisKeyUtil;
 import com.moru.backend.global.util.S3Directory;
 import com.moru.backend.global.util.S3Service;
@@ -59,6 +60,7 @@ public class RoutineService {
     private final RedisTemplate<String, String> redisTemplate;
     private final S3Service s3Service;
     private final ApplicationEventPublisher eventPublisher;
+    private final RoutineScheduleFcmPreloader routineScheduleFcmPreloader;
 
     // ========================= 루틴 생성/수정/삭제 =========================
 
@@ -102,6 +104,9 @@ public class RoutineService {
                             .build()
             );
         }
+
+        // 스케줄 알림 설정하기
+        routineScheduleFcmPreloader.preloadRoutineScheduleFcm(savedRoutine);
 
         return new RoutineCreateResponse(savedRoutine.getId(), savedRoutine.getTitle(), savedRoutine.getCreatedAt());
     }
