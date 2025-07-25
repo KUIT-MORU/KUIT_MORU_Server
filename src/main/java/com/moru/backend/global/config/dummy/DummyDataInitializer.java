@@ -1,43 +1,16 @@
-package com.moru.backend.global.config;
+package com.moru.backend.global.config.dummy;
 
-import com.moru.backend.domain.log.dao.RoutineLogRepository;
-import com.moru.backend.domain.log.dao.RoutineSnapshotRepository;
-import com.moru.backend.domain.log.domain.RoutineLog;
-import com.moru.backend.domain.log.domain.snapshot.RoutineSnapshot;
-import com.moru.backend.domain.log.domain.snapshot.RoutineStepSnapshot;
-import com.moru.backend.domain.log.domain.snapshot.RoutineTagSnapshot;
-import com.moru.backend.domain.meta.dao.AppRepository;
-import com.moru.backend.domain.meta.dao.TagRepository;
 import com.moru.backend.domain.meta.domain.Tag;
 import com.moru.backend.domain.meta.domain.App;
-import com.moru.backend.domain.routine.dao.RoutineRepository;
 import com.moru.backend.domain.routine.domain.Routine;
-import com.moru.backend.domain.routine.domain.RoutineStep;
-import com.moru.backend.domain.routine.domain.meta.RoutineApp;
-import com.moru.backend.domain.routine.domain.meta.RoutineTag;
-import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
-import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
-import com.moru.backend.domain.social.dao.UserFollowRepository;
-import com.moru.backend.domain.social.domain.UserFollow;
-import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
-import com.moru.backend.domain.user.dao.UserRepository;
-import com.moru.backend.domain.user.domain.Gender;
 import com.moru.backend.domain.user.domain.User;
-import com.moru.backend.domain.user.domain.UserFavoriteTag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.datafaker.Faker;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component

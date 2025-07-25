@@ -1,4 +1,4 @@
-package com.moru.backend.global.config;
+package com.moru.backend.global.config.dummy;
 
 import com.moru.backend.domain.log.dao.RoutineLogRepository;
 import com.moru.backend.domain.log.dao.RoutineSnapshotRepository;
