@@ -1,5 +1,6 @@
 package com.moru.backend.domain.social.application;
 
+import com.moru.backend.domain.notification.event.FollowedEvent;
 import com.moru.backend.domain.social.dao.UserFollowRepository;
 import com.moru.backend.domain.social.domain.UserFollow;
 import com.moru.backend.domain.social.dto.FollowCountResponse;
@@ -12,6 +13,7 @@ import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.util.S3Service;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,7 @@ public class FollowService {
     private final UserRepository userRepository;
     private final UserFollowRepository userFollowRepository;
     private final S3Service s3Service;
+    private final ApplicationEventPublisher eventPublisher;
 
     public FollowCountResponse countFollow(UUID userId) {
         Long followingCount = userFollowRepository.countByFollowerId(userId);
@@ -59,6 +62,14 @@ public class FollowService {
                 .build();
 
         userFollowRepository.save(userFollow);
+
+        // 이벤트 발행
+        eventPublisher.publishEvent(
+                FollowedEvent.builder()
+                        .receiverId(target.getId())
+                        .senderId(me.getId())
+                        .build()
+        );
     }
 
     @Transactional

@@ -4,6 +4,7 @@ import com.moru.backend.domain.meta.dao.AppRepository;
 import com.moru.backend.domain.meta.dao.TagRepository;
 import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.meta.domain.Tag;
+import com.moru.backend.domain.notification.event.RoutineCreatedEvent;
 import com.moru.backend.domain.routine.dao.*;
 import com.moru.backend.domain.routine.domain.ActionType;
 import com.moru.backend.domain.routine.domain.Routine;
@@ -26,6 +27,7 @@ import com.moru.backend.global.util.S3Directory;
 import com.moru.backend.global.util.S3Service;
 import com.moru.backend.global.validator.RoutineValidator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -57,6 +59,7 @@ public class RoutineService {
     private final UserFavoriteTagRepository userFavoriteTagRepository;
     private final RedisTemplate<String, String> redisTemplate;
     private final S3Service s3Service;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ========================= 루틴 생성/수정/삭제 =========================
 
@@ -90,6 +93,16 @@ public class RoutineService {
         saveRoutineTags(savedRoutine, request.tags());
         saveRoutineSteps(savedRoutine, request.steps(), isSimple);
         saveRoutineApps(savedRoutine, request.selectedApps());
+
+        // 공개 루틴인 경우에만 알림 이벤트 발행
+        if(routine.isUserVisible()) {
+            eventPublisher.publishEvent(
+                    RoutineCreatedEvent.builder()
+                            .routineId(savedRoutine.getId())
+                            .senderId(user.getId())
+                            .build()
+            );
+        }
 
         return new RoutineCreateResponse(savedRoutine.getId(), savedRoutine.getTitle(), savedRoutine.getCreatedAt());
     }
