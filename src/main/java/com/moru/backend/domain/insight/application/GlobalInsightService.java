@@ -39,15 +39,7 @@ public class GlobalInsightService {
             }
         }
 
-        // 모두 없으면 새로 계산
-        LocalDate startDate = LocalDate.now().minusDays(INSIGHT_DAYS_RANGE);
-        GlobalInsight globalInsight = recalculateAndCacheGlobalInsight(startDate);
-
-        if(globalInsight == null) {
-            throw new CustomException(ErrorCode.GLOBAL_INSIGHT_CALCULATE_FAILED);
-        }
-
-        return globalInsight;
+        throw new CustomException(ErrorCode.GLOBAL_INSIGHT_CALCULATE_FAILED);
     }
 
     public GlobalInsight recalculateAndCacheGlobalInsight(LocalDate startDate) {
