@@ -45,7 +45,6 @@ public class NotificationService {
                 .receiverId(receiverId)
                 .senderId(senderId)
                 .resourceId(routineId)
-                .link("/routines/" + routineId)
                 .type(NotificationType.ROUTINE_CREATED)
                 .build();
 
@@ -58,7 +57,6 @@ public class NotificationService {
         Notification notification = Notification.builder()
                 .receiverId(receiverId)
                 .senderId(senderId)
-                .link("/user/" + senderId)
                 .type(NotificationType.FOLLOW_RECEIVED)
                 .build();
         notificationRepository.save(notification);
@@ -82,7 +80,6 @@ public class NotificationService {
                 .receiverId(receiverId)
                 .senderId(null) // 시스템 알림
                 .resourceId(routineId)
-                .link("/routines/" + routineId)
                 .type(NotificationType.ROUTINE_REMINDER)
                 .build();
         notificationRepository.save(notification);
