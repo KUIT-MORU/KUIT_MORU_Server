@@ -66,4 +66,8 @@ public class RoutineScheduleFcmPreloader {
         // 현재 설정된 스케줄 기준으로 다시 등록
         preloadRoutineScheduleFcm(routine);
     }
+
+    public void removeRoutineScheduleFcm(Routine routine) {
+        redisQueueManager.removeScheduledMessagesByRoutineId(routine.getId());
+    }
 }

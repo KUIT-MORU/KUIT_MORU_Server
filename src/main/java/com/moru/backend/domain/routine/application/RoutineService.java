@@ -200,6 +200,10 @@ public class RoutineService {
     @Transactional
     public void deleteRoutine(UUID routineId, User currentUser) {
         Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
+
+        // 루틴 삭제에 따른 푸시 알림 예약 삭제
+        routineScheduleFcmPreloader.removeRoutineScheduleFcm(routine);
+
         routineRepository.delete(routine);
     }
 
