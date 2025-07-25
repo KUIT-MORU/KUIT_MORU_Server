@@ -68,7 +68,6 @@ public class RoutineCloner {
         }
 
         // 스케줄 복제
-        // TODO: 루틴에 루틴 스케쥴 필드가 정의되어 있지 않음. 추후 추가시 이곳 점검 요망.
         List<RoutineSchedule> schedules = routineScheduleRepository
                 .findAllByRoutineId(origin.getId());
         for (RoutineSchedule rs : schedules) {
