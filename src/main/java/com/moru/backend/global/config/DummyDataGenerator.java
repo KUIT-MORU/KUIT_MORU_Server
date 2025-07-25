@@ -3,6 +3,7 @@ package com.moru.backend.global.config;
 import com.moru.backend.domain.log.dao.RoutineLogRepository;
 import com.moru.backend.domain.log.dao.RoutineSnapshotRepository;
 import com.moru.backend.domain.log.domain.RoutineLog;
+import com.moru.backend.domain.log.domain.snapshot.RoutineAppSnapshot;
 import com.moru.backend.domain.log.domain.snapshot.RoutineSnapshot;
 import com.moru.backend.domain.log.domain.snapshot.RoutineStepSnapshot;
 import com.moru.backend.domain.log.domain.snapshot.RoutineTagSnapshot;
@@ -360,43 +361,64 @@ public class DummyDataGenerator {
      */
     private List<RoutineSnapshot> createSnapshots(List<Routine> routines) {
         // 1. 로그를 생성할 루틴들로부터 스냅샷을 먼저 만듭니다.
-        List<RoutineSnapshot> snapshotsToSave = new ArrayList<>();
-        for (Routine routine : routines) {
-            if (random.nextInt(10) == 0) { // 10% 확률로 스냅샷 생성
-                RoutineSnapshot snapshot = RoutineSnapshot.builder()
-                        .originalRoutineId(routine.getId())
-                        .title(routine.getTitle())
-                        .content(routine.getContent())
-                        .imageUrl(routine.getImageUrl())
-                        .isSimple(routine.isSimple())
-                        .isUserVisible(routine.isUserVisible())
-                        .requiredTime(routine.getRequiredTime())
-                        .build();
-
-                // 스텝 스냅샷 생성 및 연결
-                snapshot.getStepSnapshots().addAll(routine.getRoutineSteps().stream()
-                        .map(step -> RoutineStepSnapshot.builder()
-                                .routineSnapshot(snapshot)
-                                .name(step.getName())
-                                .stepOrder(step.getStepOrder())
-                                .estimatedTime(step.getEstimatedTime())
-                                .build())
-                        .collect(Collectors.toList()));
-
-                // 태그 스냅샷 생성 및 연결
-                snapshot.getTagSnapshots().addAll(routine.getRoutineTags().stream()
-                        .map(rt -> RoutineTagSnapshot.builder()
-                                .routineSnapshot(snapshot)
-                                .tagName(rt.getTag().getName())
-                                .build())
-                        .collect(Collectors.toList()));
-
-                snapshotsToSave.add(snapshot);
-            }
-        }
+        List<RoutineSnapshot> snapshotsToSave = routines.stream()
+                .filter(routine -> random.nextInt(10) == 0) // 10% 확률로 스냅샷 생성 결정
+                .map(this::buildSnapshotFromRoutine)      // 실제 생성 로직은 헬퍼 메서드에 위임
+                .collect(Collectors.toList());
         List<RoutineSnapshot> savedSnapshots = routineSnapshotRepository.saveAll(snapshotsToSave);
         log.info("루틴 스냅샷 {}개 저장 완료", savedSnapshots.size());
         return savedSnapshots;
+    }
+
+    /**
+     * Routine 객체에 스텝, 태그, 앱을 포함하는
+     * 완전한 RoutineSnapshot 객체 생성
+     * @param routine   원본 루틴
+     * @return          생성된 RoutineSnapshot 객체
+     */
+    private RoutineSnapshot buildSnapshotFromRoutine(Routine routine) {
+        // 부모 스냅샷 객체를 먼저 생성
+        RoutineSnapshot snapshot = RoutineSnapshot.builder()
+                .originalRoutineId(routine.getId())
+                .title(routine.getTitle())
+                .content(routine.getContent())
+                .imageUrl(routine.getImageUrl())
+                .isSimple(routine.isSimple())
+                .isUserVisible(routine.isUserVisible())
+                .requiredTime(routine.getRequiredTime())
+                .build();
+
+        // 자식 스냅샷(스텝)을 생성하고 부모에 연결
+        List<RoutineStepSnapshot> stepSnapshots = routine.getRoutineSteps().stream()
+                .map(step -> RoutineStepSnapshot.builder()
+                        .routineSnapshot(snapshot) // 양방향 관계 설정
+                        .name(step.getName())
+                        .stepOrder(step.getStepOrder())
+                        .estimatedTime(step.getEstimatedTime())
+                        .build())
+                .collect(Collectors.toList());
+        snapshot.getStepSnapshots().addAll(stepSnapshots);
+
+        // 자식 스냅샷(태그)을 생성하고 부모에 연결
+        List<RoutineTagSnapshot> tagSnapshots = routine.getRoutineTags().stream()
+                .map(rt -> RoutineTagSnapshot.builder()
+                        .routineSnapshot(snapshot) // 양방향 관계 설정
+                        .tagName(rt.getTag().getName())
+                        .build())
+                .collect(Collectors.toList());
+        snapshot.getTagSnapshots().addAll(tagSnapshots);
+
+        // 자식 스냅샷(앱)을 생성하고 부모에 연결
+        List<RoutineAppSnapshot> appSnapshots = routine.getRoutineApps().stream()
+                .map(ra -> RoutineAppSnapshot.builder()
+                        .routineSnapshot(snapshot) // 양방향 관계 설정
+                        .name(ra.getApp().getName())
+                        .packageName(ra.getApp().getPackageName())
+                        .build())
+                .collect(Collectors.toList());
+        snapshot.getAppSnapshots().addAll(appSnapshots);
+
+        return snapshot;
     }
 
     /**
@@ -409,34 +431,56 @@ public class DummyDataGenerator {
             log.info("생성된 스냅샷이 없음 -> 루틴 로그 생성 x");
             return;
         }
-        // 2. 저장된 스냅샷을 기반으로 실제 로그를 생성합니다.
-        List<RoutineLog> logsToSave = new ArrayList<>();
+        // 데이터 준비
         Map<UUID, User> routineUserMap = routines.stream()
                 .collect(Collectors.toMap(Routine::getId, Routine::getUser, (u1, u2) -> u1));
 
+        // 개별 로그 생성
+        List<RoutineLog> logsToSave = new ArrayList<>();
         for (RoutineSnapshot snapshot : savedSnapshots) {
             User user = routineUserMap.get(snapshot.getOriginalRoutineId());
-            if (user == null) continue;
-
-            LocalDateTime startedAt = LocalDateTime.now().minusDays(random.nextInt(30)).minusHours(random.nextInt(24));
-            boolean isCompleted = random.nextBoolean();
-            LocalDateTime endedAt = null;
-            Duration totalTime = null;
-
-            if (isCompleted && snapshot.getRequiredTime() != null) {
-                endedAt = startedAt.plus(snapshot.getRequiredTime()).plusMinutes(random.nextInt(10) - 5); // 약간의 오차
-                totalTime = Duration.between(startedAt, endedAt);
+            if (user != null) {
+                logsToSave.add(buildRoutineLog(snapshot, user));
             }
+        }
+        batchSaveLogs(logsToSave);
+    }
 
-            logsToSave.add(RoutineLog.builder()
-                    .user(user)
-                    .routineSnapshot(snapshot)
-                    .startedAt(startedAt)
-                    .endedAt(endedAt)
-                    .totalTime(totalTime)
-                    .isSimple(snapshot.isSimple())
-                    .isCompleted(isCompleted)
-                    .build());
+    /**
+     * 스냅샷과 사용자 기반으로 단일 ROutineLog 객체 생성
+     * @param snapshot  로그의 기반이 될 스냅샷
+     * @param user      로그의 소유자
+     * @return          생성된 RoutineLog 객체
+     */
+    private RoutineLog buildRoutineLog(RoutineSnapshot snapshot, User user) {
+        LocalDateTime startedAt = LocalDateTime.now().minusDays(random.nextInt(30)).minusHours(random.nextInt(24));
+        boolean isCompleted = random.nextBoolean();
+        LocalDateTime endedAt = null;
+        Duration totalTime = null;
+
+        if (isCompleted && snapshot.getRequiredTime() != null) {
+            endedAt = startedAt.plus(snapshot.getRequiredTime()).plusMinutes(random.nextInt(10) - 5); // 약간의 오차
+            totalTime = Duration.between(startedAt, endedAt);
+        }
+
+        return RoutineLog.builder()
+                .user(user)
+                .routineSnapshot(snapshot)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .totalTime(totalTime)
+                .isSimple(snapshot.isSimple())
+                .isCompleted(isCompleted)
+                .build();
+    }
+
+    /**
+     * 주어진 RoutineLog 리스트를 배치 단위로 나누어 저장
+     * @param logsToSave    저장할 로그 리스트
+     */
+    private void batchSaveLogs(List<RoutineLog> logsToSave) {
+        if (logsToSave.isEmpty()) {
+            return;
         }
         log.info("생성된 {}개의 루틴 로그를 배치 저장합니다...", logsToSave.size());
         for (int i = 0; i < logsToSave.size(); i += BATCH_SIZE) {
@@ -445,8 +489,6 @@ public class DummyDataGenerator {
             routineLogRepository.saveAll(batch);
             log.info("▶ {}/{} 개의 루틴 로그 저장 완료", end, logsToSave.size());
         }
-        // =================================================================
-
         log.info("루틴 로그 저장 완료");
     }
 }
