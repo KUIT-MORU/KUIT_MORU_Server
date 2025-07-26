@@ -2,6 +2,7 @@ package com.moru.backend.global.fcm.api;
 
 import com.moru.backend.global.fcm.RedisQueueManager;
 import com.moru.backend.global.fcm.dto.ScheduledFcmMessage;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.http.ResponseEntity;
@@ -14,13 +15,14 @@ import java.util.List;
 import java.util.Set;
 
 @RestController
-@RequestMapping("/api/fcm/debug")
+@RequestMapping("/api/admin/fcm")
 @RequiredArgsConstructor
-//@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('ADMIN')")
 
 public class FcmDebugController {
     private final RedisQueueManager redisQueueManager;
 
+    @Operation(summary = "FCM 루틴 큐 목록 조회")
     @GetMapping("/scheduled")
     public ResponseEntity<List<ScheduledFcmMessage>> getAllScheduledMessages() {
         Set<ZSetOperations.TypedTuple<String>> entries = redisQueueManager.getAllScheduledMessages();
