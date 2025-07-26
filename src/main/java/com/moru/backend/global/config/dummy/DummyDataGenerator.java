@@ -137,7 +137,7 @@ public class DummyDataGenerator {
                     .birthday(birthday)
                     .bio(dummyDataPool.getRandomBio())
                     // profileImageUrl은 faker로 직접 생성하여 설정
-                    .profileImageUrl(faker.avatar().image())
+                    .profileImageUrl(random.nextInt(10) < 7 ? faker.avatar().image() : null)
                     // status, createdAt, updatedAt은 자동 처리되므로 설정 불필요
                     .build());
             if (userBatch.size() >= BATCH_SIZE) {
@@ -172,10 +172,11 @@ public class DummyDataGenerator {
                     .title(title)
                     .content(content)
                     .isSimple(isSimpleRoutine)
-                    .isUserVisible(true)
+                    .isUserVisible(random.nextBoolean())
                     .likeCount(random.nextInt(500))
                     .viewCount(random.nextInt(2000))
                     // requiredTime은 아래에서 스텝 시간 합계로 계산되므로 여기서는 설정하지 않음
+                    .imageUrl(random.nextInt(10) < 3 ? faker.avatar().image() : null) // 30% 확률로 이미지 URL 추가
                     .status(true)
                     .build();
             Duration totalRequiredTime = createAndAddSteps(routine, isSimpleRoutine, recipe);

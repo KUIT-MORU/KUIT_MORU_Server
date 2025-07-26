@@ -14,7 +14,7 @@ import java.util.*;
 
 @Slf4j
 @Component
-@Profile("init-dev") // 개발 환경에서만 더미 데이터 생성하도록
+@Profile("init-db") // 개발 환경에서만 더미 데이터 생성하도록
 @RequiredArgsConstructor
 public class DummyDataInitializer implements CommandLineRunner {
     // 직접 호출할 서비스 클래스
