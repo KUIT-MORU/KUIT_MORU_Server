@@ -61,7 +61,7 @@ springdoc:
     tags-sorter: alpha
 
 jwt:
-  secret: w9X37H8oCdKf4Blh5Mv2N5QwU9YeT4F2t4WJ0jB9FpE
+  secret: ${JWT_SECRET}
 fcm:
   service-account-file: firebase/firebase-service-account.json
 
