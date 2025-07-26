@@ -36,7 +36,8 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
      */
     // 최신순으로 정렬된
     @Query("select distinct r from Routine r " +
-            "left join r.routineTags rt " +
+            "left join fetch r.routineTags rt " + // fetch 추가
+            "left join fetch rt.tag " + // fetch 추가
             "where (:titleKeyword is null or r.title like %:titleKeyword%) " +
             "and (:tagNames is null or rt.tag.name in :tagNames) " +
             "order by r.createdAt desc")
@@ -48,7 +49,8 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
 
     // 인기순으로 정렬된
     @Query("select distinct r from Routine r " +
-            "left join r.routineTags rt " +
+            "left join fetch r.routineTags rt " + // fetch 추가
+            "left join fetch rt.tag " + // fetch 추가
             "where (:titleKeyword is null or r.title like %:titleKeyword%) " +
             "and (:tagNames is null or rt.tag.name in :tagNames) " +
             "order by r.likeCount desc, r.createdAt desc")
@@ -73,13 +75,13 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
      * @return 조건에 맞는 루틴의 페이징된 목록
      */
     // 시간순으로 정렬된
-    @Query("SELECT r FROM Routine r JOIN r.routineSchedules s WHERE r.user.id = :userId AND s.dayOfWeek = :dayOfWeek ORDER BY s.time ASC")
+    @Query("SELECT DISTINCT r FROM Routine r JOIN r.routineSchedules s LEFT JOIN FETCH r.routineTags rt LEFT JOIN FETCH rt.tag WHERE r.user.id = :userId AND s.dayOfWeek = :dayOfWeek ORDER BY s.time ASC")
     Page<Routine> findByUserIdAndDayOfWeekOrderByScheduleTimeAsc(@Param("userId") UUID userId, @Param("dayOfWeek") DayOfWeek dayOfWeek, Pageable pageable);
 
-    @Query("select distinct r from Routine r left join r.routineTags rt where r.user = :user order by r.likeCount desc, r.createdAt desc")
+    @Query("select distinct r from Routine r left join fetch r.routineTags rt left join fetch rt.tag where r.user = :user order by r.likeCount desc, r.createdAt desc")
     Page<Routine> findByUserOrderByLikeCountDescCreatedAtDesc(@Param("user") User user, Pageable pageable);
 
-    @Query("select distinct r from Routine r left join r.routineTags rt where r.user = :user order by r.createdAt desc")
+    @Query("select distinct r from Routine r left join fetch r.routineTags rt left join fetch rt.tag where r.user = :user order by r.createdAt desc")
     Page<Routine> findByUserOrderByCreatedAtDesc(@Param("user") User user, Pageable pageable);
 
     List<Routine> findAllByUserId(UUID userId);
@@ -94,7 +96,7 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
      * @param pageable   결과 개수 제한
      * @return 인기 루틴 목록
      */
-    @Query("SELECT r FROM Routine r " +
+    @Query("SELECT DISTINCT r FROM Routine r LEFT JOIN FETCH r.routineTags rt LEFT JOIN FETCH rt.tag " +
             "WHERE r.createdAt >= :weekAgo " +
             "ORDER BY (r.viewCount * :viewWeight + r.likeCount * :likeWeight) DESC, r.createdAt DESC")
     List<Routine> findHotRoutines(@Param("weekAgo") LocalDateTime weekAgo,
@@ -108,7 +110,7 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
      * @param pageable 페이징 정보
      * @return 추천 루틴 목록
      */
-    @Query("SELECT r FROM Routine r JOIN r.routineTags rt WHERE rt.tag.name IN :tags GROUP BY r.id ORDER BY COUNT(rt.tag.name) DESC, r.createdAt DESC")
+    @Query("SELECT DISTINCT r FROM Routine r JOIN r.routineTags rt LEFT JOIN FETCH rt.tag WHERE rt.tag.name IN :tags GROUP BY r.id ORDER BY COUNT(rt.tag.name) DESC, r.createdAt DESC")
     List<Routine> findRoutinesByTagsOrderByTagCount(@Param("tags") List<String> tags, Pageable pageable);
 
     /**
@@ -120,9 +122,11 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
      * @return 태그 쌍 관련 루틴 목록
      */
     @Query("""
-        SELECT r FROM Routine r
+        SELECT DISTINCT r FROM Routine r
         JOIN r.routineTags rt1
         JOIN r.routineTags rt2
+        LEFT JOIN FETCH r.routineTags rt
+        LEFT JOIN FETCH rt.tag
         WHERE rt1.tag.id = :tag1 AND rt2.tag.id = :tag2
         GROUP BY r.id
         ORDER BY (r.viewCount * 0.5 + r.likeCount * 0.5) DESC, r.createdAt DESC
