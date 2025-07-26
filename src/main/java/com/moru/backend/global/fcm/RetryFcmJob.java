@@ -35,6 +35,6 @@ public class RetryFcmJob {
 
         }
 
-        log.info("🔁 재전송 작업 완료: 총 {}건 시도", retryMessages.size());
+//        log.info("🔁 재전송 작업 완료: 총 {}건 시도", retryMessages.size());
     }
 }
