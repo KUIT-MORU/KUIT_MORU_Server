@@ -4,6 +4,7 @@ import com.moru.backend.domain.auth.dto.SignupRequest;
 import com.moru.backend.domain.user.application.UserFavoriteTagService;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.domain.user.domain.UserRole;
 import com.moru.backend.domain.user.dto.FavoriteTagRequest;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
@@ -31,6 +32,7 @@ public class SignupService {
         User user = User.builder()
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
+                .role(UserRole.USER)
                 .status(true)
                 .build();
 
