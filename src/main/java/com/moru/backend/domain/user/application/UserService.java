@@ -1,6 +1,7 @@
 package com.moru.backend.domain.user.application;
 
 import com.moru.backend.domain.user.dao.UserRepository;
+import com.moru.backend.domain.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,5 +18,10 @@ public class UserService {
 
     public String getProfileImageUrlById(UUID userId) {
         return userRepository.findProfileImageUrlById(userId);
+    }
+
+    public User getUserById(UUID userId) {
+        return userRepository.findById(userId)
+                .orElse(null);
     }
 }
