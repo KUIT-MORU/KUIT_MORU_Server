@@ -2,6 +2,8 @@ package com.moru.backend.domain.auth.application;
 
 import com.moru.backend.domain.auth.dto.TokenRefreshRequest;
 import com.moru.backend.domain.auth.dto.TokenResponse;
+import com.moru.backend.domain.user.application.UserService;
+import com.moru.backend.domain.user.domain.UserRole;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.jwt.JwtProvider;
@@ -16,6 +18,7 @@ import java.util.UUID;
 public class RefreshService {
     private final JwtProvider jwtProvider;
     private final RefreshTokenRepositoryImpl refreshTokenRepository;
+    private final UserService userService;
 
     public TokenResponse refreshToken(TokenRefreshRequest request) {
         String refreshToken = request.refreshToken();
@@ -34,8 +37,10 @@ public class RefreshService {
             throw new CustomException(ErrorCode.REFRESH_TOKEN_MISMATCH);
         }
 
-        String newAccessToken = jwtProvider.createAccessToken(userId);
-        String newRefreshToken = jwtProvider.createRefreshToken(userId);
+        UserRole role = userService.getUserById(userId).getRole();
+
+        String newAccessToken = jwtProvider.createAccessToken(userId, role);
+        String newRefreshToken = jwtProvider.createRefreshToken(userId, role);
 
         // Redis 갱신
         refreshTokenRepository.save(
