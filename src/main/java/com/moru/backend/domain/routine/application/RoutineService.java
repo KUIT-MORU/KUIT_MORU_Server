@@ -130,15 +130,6 @@ public class RoutineService {
         return new RecommendFeedResponse(hotRoutines, personalRoutines, tagPairSection1, tagPairSection2);
     }
 
-    @Transactional
-    public List<RoutineListResponse> getHotRoutines(int limit) {
-        LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
-        double viewWeight = 0.5; // 기본값, 추후 외부에서 주입 가능
-        double likeWeight = 0.5; // 기본값, 추후 외부에서 주입 가능
-        return routineRepository.findHotRoutines(weekAgo, viewWeight, likeWeight, PageRequest.of(0, limit)).stream()
-                .map(this::toRoutineListResponse)
-                .toList();
-    }
 
     @Transactional
     public List<RoutineListResponse> getPersonalRoutines(User user, int limit) {
@@ -219,20 +210,6 @@ public class RoutineService {
         return null;
     }
 
-    @Transactional
-    public Page<RoutineListResponse> getRoutineList(User user, String sortType, DayOfWeek dayOfWeek, Pageable pageable) {
-        Page<Routine> routines;
-        if ("TIME".equals(sortType) && dayOfWeek != null) {
-            routines = routineRepository.findByUserIdAndDayOfWeekOrderByScheduleTimeAsc(user.getId(), dayOfWeek, pageable);
-        } else if ("POPULAR".equals(sortType)) {
-            routines = routineRepository.findByUserOrderByLikeCountDescCreatedAtDesc(user, pageable);
-        } else {
-            routines = routineRepository.findByUserOrderByCreatedAtDesc(user, pageable);
-        }
-        return routines.map(this::toRoutineListResponse);
-    }
-
-
     // ========================= 유틸/헬퍼 ========================= //
 
     private List<String> getFavoriteTagNames(User user) {
@@ -298,65 +275,6 @@ public class RoutineService {
         }
     }
 
-    private RoutineListResponse toRoutineListResponse(Routine routine) {
-        List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
-        return RoutineListResponse.fromRoutine(
-                routine,
-                s3Service.getImageUrl(routine.getImageUrl()),
-                tags
-        );
-    }
-
-    private void saveRoutineTags(Routine routine, List<String> tagNames) {
-        List<RoutineTag> routineTags = tagNames.stream()
-                .map(tagName -> {
-                    Tag tag = tagRepository.findByName(tagName)
-                            .orElseGet(() -> tagRepository.save(Tag.builder().name(tagName).build()));
-                    return RoutineTag.builder().routine(routine).tag(tag).build();
-                }).toList();
-        routineTagRepository.saveAll(routineTags);
-    }
-
-    private void saveRoutineSteps(Routine routine, List<RoutineStepRequest> steps, boolean isSimple) {
-        List<RoutineStep> routineSteps = steps.stream()
-                .map(stepReq -> {
-                    RoutineStep.RoutineStepBuilder builder = RoutineStep.builder()
-                            .routine(routine)
-                            .name(stepReq.name())
-                            .stepOrder(stepReq.stepOrder());
-                    if (!isSimple && stepReq.estimatedTime() != null) {
-                        builder.estimatedTime(stepReq.estimatedTime());
-                    }
-                    return builder.build();
-                }).toList();
-        routineStepRepository.saveAll(routineSteps);
-    }
-
-    private void saveRoutineApps(Routine routine, List<String> selectedApps) {
-        if (selectedApps == null || selectedApps.isEmpty()) return;
-        List<RoutineApp> routineApps = selectedApps.stream()
-                .map(pkg -> {
-                    App app = appRepository.findByPackageName(pkg)
-                            .orElseGet(() -> appRepository.save(
-                                    App.builder().packageName(pkg).name(pkg).build()
-                            ));
-                    return RoutineApp.builder().routine(routine).app(app).build();
-                }).toList();
-        routineAppRepository.saveAll(routineApps);
-    }
-
-    private void updateSimpleFields(Routine routine, RoutineUpdateRequest request) {
-        if (request.title() != null) routine.setTitle(request.title());
-        if (request.description() != null) routine.setContent(request.description());
-        // === 이미지 이동 처리 ===
-        String imageKey = null;
-        if(request.imageUrl() != null && !request.imageUrl().isBlank()) {
-            imageKey = s3Service.moveToRealLocation(request.imageUrl(), S3Directory.PROFILE);
-        }
-        routine.setImageUrl(imageKey);
-        if (request.isUserVisible() != null) routine.setUserVisible(request.isUserVisible());
-        if (request.isSimple() != null) routine.setSimple(request.isSimple());
-    }
 
 
     public String getRoutineTitleById(UUID routineId) {

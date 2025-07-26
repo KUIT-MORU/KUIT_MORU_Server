@@ -20,6 +20,16 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
 
     List<Routine> findAllByUser(User user);
     int countByUserId(UUID userId);
+    @Query("""
+             SELECT DISTINCT r FROM Routine r
+             LEFT JOIN FETCH r.routineTags rt
+             LEFT JOIN FETCH rt.tag
+             LEFT JOIN FETCH r.routineSteps
+             LEFT JOIN FETCH r.routineApps ra
+             LEFT JOIN FETCH ra.app
+             WHERE r.id = :routineId
+             """)
+    Optional<Routine> findByIdWithDetails(@Param("routineId") UUID routineId);
 
     /**
      * 검색 기능 관련
@@ -137,11 +147,12 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
      * @return 유사 루틴 목록
      */
     @Query("""
-    SELECT r FROM Routine r
-    JOIN r.routineTags rt
-    WHERE rt.tag.id IN :tagIds AND r.id <> :routineId
-    GROUP BY r.id
-    ORDER BY COUNT(rt.tag.id) DESC, r.createdAt DESC
+         SELECT DISTINCT r FROM Routine r
+         LEFT JOIN FETCH r.routineTags rt
+         LEFT JOIN FETCH rt.tag
+         WHERE rt.tag.id IN :tagIds AND r.id <> :routineId
+         GROUP BY r.id
+         ORDER BY COUNT(rt.tag.id) DESC, r.createdAt DESC
     """)
     List<Routine> findSimilarRoutinesByTagIds(@Param("tagIds") List<UUID> tagIds, @Param("routineId") UUID routineId, Pageable pageable);
 
