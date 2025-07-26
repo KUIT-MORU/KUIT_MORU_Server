@@ -120,7 +120,7 @@ public class RoutineCommandService {
         // === 이미지 이동 처리 ===
         String imageKey = null;
         if(request.imageUrl() != null && !request.imageUrl().isBlank()) {
-            imageKey = s3Service.moveToRealLocation(request.imageUrl(), S3Directory.PROFILE);
+            imageKey = s3Service.moveToRealLocation(request.imageUrl(), S3Directory.ROUTINE);
         }
 
         routine.setImageUrl(imageKey);
