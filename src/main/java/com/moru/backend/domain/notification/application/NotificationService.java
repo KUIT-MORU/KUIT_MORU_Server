@@ -6,7 +6,6 @@ import com.moru.backend.domain.notification.domain.NotificationType;
 import com.moru.backend.domain.notification.dto.NotificationCursor;
 import com.moru.backend.domain.notification.dto.NotificationResponse;
 import com.moru.backend.domain.notification.mapper.NotificationMapper;
-import com.moru.backend.domain.routine.application.RoutineService;
 import com.moru.backend.domain.social.application.FollowService;
 import com.moru.backend.domain.user.application.UserService;
 import com.moru.backend.domain.user.dao.UserRepository;

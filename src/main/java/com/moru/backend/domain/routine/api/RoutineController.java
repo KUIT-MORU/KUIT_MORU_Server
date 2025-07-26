@@ -5,7 +5,6 @@ import com.moru.backend.domain.log.dto.LiveUserResponse;
 import com.moru.backend.domain.meta.dto.response.TagResponse;
 import com.moru.backend.domain.routine.application.RoutineAppService;
 import com.moru.backend.domain.routine.application.RoutineScheduleService;
-import com.moru.backend.domain.routine.application.RoutineService;
 import com.moru.backend.domain.routine.application.RoutineTagService;
 import com.moru.backend.domain.routine.dto.request.*;
 import com.moru.backend.domain.routine.dto.response.*;
