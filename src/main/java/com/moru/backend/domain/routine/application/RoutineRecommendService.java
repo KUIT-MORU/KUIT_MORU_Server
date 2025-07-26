@@ -13,10 +13,12 @@ import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.util.S3Service;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -30,16 +32,31 @@ public class RoutineRecommendService {
     private final RoutineTagRepository routineTagRepository;
     private final UserFavoriteTagRepository userFavoriteTagRepository;
     private final TagRepository tagRepository;
-    private final RoutineQueryService routineQueryService;
     private final S3Service s3Service;
 
+    @Value("${moru.routine.recommend.hot-score.view-weight}")
+    private double viewWeight;
+
+    @Value("${moru.routine.recommend.hot-score.like-weight}")
+    private double likeWeight;
+
     public RecommendFeedResponse getRecommendFeed(User user) {
-        List<RoutineListResponse> hotRoutines = routineQueryService.getHotRoutines(10);
+        List<RoutineListResponse> hotRoutines = getHotRoutines(10);
         List<RoutineListResponse> personalRoutines = getPersonalRoutines(user, 10);
         TagPairSection tagPairSection1 = getTopTagPairSection(10);
         TagPairSection tagPairSection2 = getInterestTagPairSection(user, 10);
 
         return new RecommendFeedResponse(hotRoutines, personalRoutines, tagPairSection1, tagPairSection2);
+    }
+
+    /**
+     * 지금 가장 핫한 루틴
+     */
+    public List<RoutineListResponse> getHotRoutines(int limit) {
+        LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
+        return routineRepository.findHotRoutines(weekAgo, viewWeight, likeWeight, PageRequest.of(0, limit)).stream()
+                .map(this::toRoutineListResponse)
+                .toList();
     }
 
     /**
@@ -78,8 +95,6 @@ public class RoutineRecommendService {
     /**
      * 태그 조합 추천
      * 함께 자주 사용되는 태그 조합을 찾아 해당 루틴 보여준다.
-     * @param limit
-     * @return
      */
     public TagPairSection getTopTagPairSection(int limit) {
         List<TagPairCount> topPairs = routineTagRepository.findTopTagPairs();
@@ -149,7 +164,7 @@ public class RoutineRecommendService {
         }
 
         // 중복을 고려하여 넉넉하게 조회
-        List<RoutineListResponse> hotRoutines = routineQueryService.getHotRoutines(limit * 2);
+        List<RoutineListResponse> hotRoutines = getHotRoutines(limit * 2);
         for (RoutineListResponse routine : hotRoutines) {
             if (results.size() >= limit) break;
             if (existingIds.add(routine.id())) {

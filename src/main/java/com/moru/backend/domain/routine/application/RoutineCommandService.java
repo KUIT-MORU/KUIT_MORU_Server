@@ -23,6 +23,7 @@ import com.moru.backend.global.util.S3Directory;
 import com.moru.backend.global.util.S3Service;
 import com.moru.backend.global.validator.RoutineValidator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

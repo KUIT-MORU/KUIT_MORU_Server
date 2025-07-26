@@ -23,7 +23,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,12 +35,6 @@ public class RoutineQueryService {
     private final ScrapService scrapService;
     private final RedisTemplate<String, String> redisTemplate;
     private final S3Service s3Service;
-
-    @Value("${moru.routine.recommend.hot-score.view-weight}")
-    private double viewWeight;
-
-    @Value("${moru.routine.recommend.hot-score.like-weight}")
-    private double likeWeight;
 
     @Value("${moru.routine.recommend.similar-fetch-size}")
     private int similarFetchSize;
@@ -96,13 +89,6 @@ public class RoutineQueryService {
         return routines.map(this::toRoutineListResponse);
     }
 
-
-    public List<RoutineListResponse> getHotRoutines(int limit) {
-        LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
-        return routineRepository.findHotRoutines(weekAgo, viewWeight, likeWeight, PageRequest.of(0, limit)).stream()
-                .map(this::toRoutineListResponse)
-                .toList();
-    }
 
     private List<RoutineListResponse> findSimilarRoutines(Routine routine, User currentUser) {
         if (routine.getRoutineTags().isEmpty()) {
