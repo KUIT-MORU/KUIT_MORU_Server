@@ -442,7 +442,7 @@ public class DummyDataGenerator {
                 .originalRoutineId(routine.getId())
                 .title(routine.getTitle())
                 .content(routine.getContent())
-                .imageUrl(routine.getImageUrl())
+                .imageUrl(Optional.ofNullable(routine.getImageUrl()).orElse(""))
                 .isSimple(routine.isSimple())
                 .isUserVisible(routine.isUserVisible())
                 .requiredTime(routine.getRequiredTime())
