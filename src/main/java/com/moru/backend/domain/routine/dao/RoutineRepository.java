@@ -103,15 +103,29 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
                                   @Param("viewWeight") double viewWeight,
                                   @Param("likeWeight") double likeWeight,
                                   Pageable pageable);
+
     /**
-     * 주어진 태그 목록을 포함하는 루틴을, 태그 일치 개수가 많은 순으로 정렬하여 조회합니다.
      *
      * @param tags     추천의 기반이 될 태그 이름 목록
      * @param pageable 페이징 정보
-     * @return 추천 루틴 목록
+     * @return 정렬된 루틴 ID의 Page 객체
      */
-    @Query("SELECT DISTINCT r FROM Routine r JOIN r.routineTags rt LEFT JOIN FETCH rt.tag WHERE rt.tag.name IN :tags GROUP BY r.id ORDER BY COUNT(rt.tag.name) DESC, r.createdAt DESC")
-    List<Routine> findRoutinesByTagsOrderByTagCount(@Param("tags") List<String> tags, Pageable pageable);
+    @Query(value = "SELECT r.id FROM Routine r JOIN r.routineTags rt WHERE rt.tag.name IN :tags GROUP BY r.id ORDER BY COUNT(r.id) DESC, r.createdAt DESC",
+            countQuery = "SELECT COUNT(DISTINCT r.id) FROM Routine r JOIN r.routineTags rt WHERE rt.tag.name IN :tags")
+    Page<UUID> findRoutineIdsByTagsOrderByTagCount(@Param("tags") List<String> tags, Pageable pageable);
+
+    /**
+     *
+     * @param routineIds 조회할 루틴의 ID 목록
+     * @return 상세 정보가 포함된 루틴 목록
+     */
+    @Query("SELECT DISTINCT r FROM Routine r " +
+            "LEFT JOIN FETCH r.user " + // 사용자 정보도 함께 가져오도록 추가
+            "LEFT JOIN FETCH r.routineTags rt " +
+            "LEFT JOIN FETCH rt.tag " +
+            "LEFT JOIN FETCH r.routineSteps " +
+            "WHERE r.id IN :routineIds")
+    List<Routine> findAllWithDetailsByIds(@Param("routineIds") List<UUID> routineIds);
 
     /**
      * 두 개의 태그를 모두 포함하는 루틴을 인기순으로 정렬하여 조회합니다.

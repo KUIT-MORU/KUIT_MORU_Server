@@ -14,12 +14,14 @@ import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.util.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -139,9 +141,28 @@ public class RoutineRecommendService {
         }
 
         List<String> sortedTags = sortTagsByFrequency(tagNames);
-        List<Routine> routines = routineRepository.findRoutinesByTagsOrderByTagCount(sortedTags, PageRequest.of(0, limit));
 
-        for (Routine routine : routines) {
+        // 1단계: 정렬된 루틴 ID 목록을 페이지네이션 정보와 함께 조회
+        Page<UUID> routineIdPage = routineRepository.findRoutineIdsByTagsOrderByTagCount(sortedTags, PageRequest.of(0, limit));
+        List<UUID> routineIds = routineIdPage.getContent();
+
+        if (routineIds.isEmpty()) {
+            return;
+        }
+
+        // 2단계: 조회된 ID 목록으로 루틴의 모든 상세 정보를 한 번에 조회
+        List<Routine> routines = routineRepository.findAllWithDetailsByIds(routineIds);
+
+        // [중요] DB의 IN 절은 순서를 보장하지 않으므로, ID 목록의 순서대로 다시 정렬합니다.
+        Map<UUID, Routine> routineMap = routines.stream()
+                .collect(Collectors.toMap(Routine::getId, Function.identity()));
+
+        List<Routine> sortedRoutines = routineIds.stream()
+                .map(routineMap::get)
+                .filter(Objects::nonNull)
+                .toList();
+
+        for (Routine routine : sortedRoutines) {
             if (result.size() >= limit) break;
             if (existingIds.add(routine.getId())) {
                 result.add(toRoutineListResponse(routine));
