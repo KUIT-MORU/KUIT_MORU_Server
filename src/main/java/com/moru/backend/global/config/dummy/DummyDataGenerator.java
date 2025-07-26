@@ -58,7 +58,7 @@ public class DummyDataGenerator {
     private final Random random = new Random();
 
     // 테스트용 공통 비밀번호 (실제 암호화된 값)
-    private static final String COMMON_PASSWORD_HASH = "$2a$10$j5YhIig/vZwnhy1D61vdm.J9djNvHLjdZAx8xTccYpGabXA7S2MGi"; // password
+    private static final String COMMON_PASSWORD_HASH = "$2a$12$/OXNM8oYy5chh/iOUA3j3.XjIEYi9Zbg/kiVT3.D/.zP2cev/5EDq"; // 1234abcde!@
     private static final int BATCH_SIZE = 200; // 배치 크기를 상수로 관리
 
     @Transactional(readOnly = true)

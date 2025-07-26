@@ -67,6 +67,6 @@ dummy:
   data:
     user-count: 10000
     routine-count: 20000
-    follow-count: 1000000
+    follow-count: 100000
     favorite-tag-count: 30000
 
