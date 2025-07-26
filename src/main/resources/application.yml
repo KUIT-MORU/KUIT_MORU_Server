@@ -4,7 +4,7 @@ server:
 spring:
   # 'dev' 프로필을 활성화하여 DummyDataInitializer가 실행되도록 합니다.
   profiles:
-    active: dev
+    active: dev 
 
   devtools:
     restart:
