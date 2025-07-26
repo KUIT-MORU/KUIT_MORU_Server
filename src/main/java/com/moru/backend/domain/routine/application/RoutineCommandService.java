@@ -5,10 +5,7 @@ import com.moru.backend.domain.meta.dao.TagRepository;
 import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.meta.domain.Tag;
 import com.moru.backend.domain.notification.event.RoutineCreatedEvent;
-import com.moru.backend.domain.routine.dao.RoutineAppRepository;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
-import com.moru.backend.domain.routine.dao.RoutineStepRepository;
-import com.moru.backend.domain.routine.dao.RoutineTagRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.meta.RoutineApp;
@@ -23,7 +20,7 @@ import com.moru.backend.global.util.S3Directory;
 import com.moru.backend.global.util.S3Service;
 import com.moru.backend.global.validator.RoutineValidator;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,9 +35,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class RoutineCommandService {
     private final RoutineRepository routineRepository;
-    private final RoutineStepRepository routineStepRepository;
-    private final RoutineTagRepository routineTagRepository;
-    private final RoutineAppRepository routineAppRepository;
     private final TagRepository tagRepository;
     private final AppRepository appRepository;
     private final RoutineValidator routineValidator;
@@ -55,10 +49,7 @@ public class RoutineCommandService {
                 .reduce(Duration.ZERO, Duration::plus);
 
         // === 이미지 이동 처리 ===
-        String imageKey = null;
-        if(request.imageKey() != null && !request.imageKey().isBlank()) {
-            imageKey = s3Service.moveToRealLocation(request.imageKey(), S3Directory.ROUTINE);
-        }
+        String imageKey = processImageKey(request.imageKey());
 
         Routine routine = Routine.builder()
                 .user(user)
@@ -105,7 +96,6 @@ public class RoutineCommandService {
         routineScheduleFcmPreloader.refreshRoutineScheduleFcm(routine);
     }
 
-    @Transactional
     public void deleteRoutine(UUID routineId, User currentUser) {
         Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
         // 루틴 삭제에 따른 푸시 알림 예약 삭제
@@ -119,10 +109,7 @@ public class RoutineCommandService {
         if (request.description() != null) routine.setContent(request.description());
 
         // === 이미지 이동 처리 ===
-        String imageKey = null;
-        if(request.imageUrl() != null && !request.imageUrl().isBlank()) {
-            imageKey = s3Service.moveToRealLocation(request.imageUrl(), S3Directory.ROUTINE);
-        }
+        String imageKey = processImageKey(request.imageUrl());
 
         routine.setImageUrl(imageKey);
 
@@ -160,5 +147,13 @@ public class RoutineCommandService {
                 .map(pkg -> appRepository.findByPackageName(pkg)
                         .orElseGet(() -> appRepository.save(App.builder().packageName(pkg).name(pkg).build())))
                 .forEach(app -> routine.addRoutineApp(RoutineApp.builder().app(app).build()));
+    }
+
+    @Nullable
+    private String processImageKey(String imageKey) {
+        if (imageKey != null && !imageKey.isBlank()) {
+            return s3Service.moveToRealLocation(imageKey, S3Directory.ROUTINE);
+        }
+        return null;
     }
 }
