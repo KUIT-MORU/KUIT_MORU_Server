@@ -118,6 +118,7 @@ public class RoutineCommandService {
     }
 
     private void updateTags(Routine routine, List<String> tagNames) {
+        if (tagNames == null) return;
         // JPA의 변경 감지(Dirty Checking)와 orphanRemoval=true를 활용하기 위해 clear 후 add
         routine.getRoutineTags().clear();
         tagNames.stream()
@@ -127,6 +128,7 @@ public class RoutineCommandService {
     }
 
     private void updateSteps(Routine routine, List<RoutineStepRequest> steps) {
+        if (steps == null) return;
         routine.getRoutineSteps().clear();
         steps.forEach(stepReq -> {
             RoutineStep.RoutineStepBuilder builder = RoutineStep.builder()
