@@ -62,6 +62,8 @@ springdoc:
 
 jwt:
   secret: w9X37H8oCdKf4Blh5Mv2N5QwU9YeT4F2t4WJ0jB9FpE
+fcm:
+  service-account-file: firebase/firebase-service-account.json
 
 dummy:
   data:

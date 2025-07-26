@@ -1,4 +1,4 @@
-package com.moru.backend.global.config.dummy;
+package com.moru.backend.global.dummydata;
 
 import com.moru.backend.domain.meta.domain.Tag;
 import com.moru.backend.domain.meta.domain.App;

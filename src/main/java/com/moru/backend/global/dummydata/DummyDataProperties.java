@@ -1,4 +1,4 @@
-package com.moru.backend.global.config.dummy;
+package com.moru.backend.global.dummydata;
 
 import lombok.Getter;
 import lombok.Setter;
