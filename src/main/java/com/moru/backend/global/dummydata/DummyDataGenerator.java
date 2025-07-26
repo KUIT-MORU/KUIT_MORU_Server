@@ -57,7 +57,14 @@ public class DummyDataGenerator {
     private final Faker faker = new Faker(new Locale("ko"));
     private final Random random = new Random();
 
+    private enum UserLifestyle {
+        WEEKDAY_WARRIOR, //평일에 더 성실
+        WEEKEND_RELAXER, // 주말에 더 성실
+        BALANCED        // 균등
+    }
+
     private final Map<UUID, Double> userDiligenceScores = new HashMap<>();
+    private final Map<UUID, UserLifestyle> userLifestyles = new HashMap<>();
 
     // 테스트용 공통 비밀번호 (실제 암호화된 값)
     private static final String COMMON_PASSWORD_HASH = "$2a$12$/OXNM8oYy5chh/iOUA3j3.XjIEYi9Zbg/kiVT3.D/.zP2cev/5EDq"; // 1234abcde!@
@@ -270,10 +277,12 @@ public class DummyDataGenerator {
             return;
         }
         assignDiligenceScoresToUsers(users);
+        assignLifestylesToUsers(users);
 
         List<RoutineSnapshot> savedSnapshots = createSnapshots(routines);
         createLogsFromSnapshots(savedSnapshots, users);
     }
+
 
     //====헬퍼 메서드====//
 
@@ -509,8 +518,36 @@ public class DummyDataGenerator {
         // 사용자의 미리 할당된 '성실도 점수'를 가져오기
         double diligenceScore = userDiligenceScores.getOrDefault(user.getId(), 0.5); // 점수가 없으면 50% 확률
 
+        // 사용자의 라이프스타일을 가져와 완료 확률을 조정.
+        UserLifestyle lifestyle = userLifestyles.getOrDefault(user.getId(), UserLifestyle.BALANCED);
+        java.time.DayOfWeek dayOfWeek = startedAt.getDayOfWeek();
+        double finalCompletionProbability = diligenceScore;
+        double modifier = 0.25; // 확률 보정값 (25%p)
+
+        switch (lifestyle) {
+            case WEEKDAY_WARRIOR:
+                if (dayOfWeek != java.time.DayOfWeek.SATURDAY && dayOfWeek != java.time.DayOfWeek.SUNDAY) {
+                    finalCompletionProbability += modifier; // 평일 보너스
+                } else {
+                    finalCompletionProbability -= modifier; // 주말 페널티
+                }
+                break;
+            case WEEKEND_RELAXER:
+                if (dayOfWeek == java.time.DayOfWeek.SATURDAY || dayOfWeek == java.time.DayOfWeek.SUNDAY) {
+                    finalCompletionProbability += modifier; // 주말 보너스
+                } else {
+                    finalCompletionProbability -= modifier; // 평일 페널티
+                }
+                break;
+            case BALANCED:
+                // 확률 변경 없음
+                break;
+        }
+
+        finalCompletionProbability = Math.max(0.05, Math.min(finalCompletionProbability, 0.95));
+
         // 성실도 점수를 기반으로 이 로그의 완료 여부를 확률적으로 결정
-        boolean isCompleted = random.nextDouble() < diligenceScore;
+        boolean isCompleted = random.nextDouble() < finalCompletionProbability;
 
         // 완료된 경우에만 종료 시간과 소요 시간을 기록
         if (isCompleted) {
@@ -564,5 +601,18 @@ public class DummyDataGenerator {
             userDiligenceScores.put(user.getId(), diligence);
         }
         log.info("{}명의 사용자에게 정규분포를 따르는 실천율 점수(diligence) 할당 완료", users.size());
+    }
+
+    private void assignLifestylesToUsers(List<User> users) {
+        for (User user : users) {
+            int choice = random.nextInt(3);
+            UserLifestyle lifestyle = switch (choice) {
+                case 0 -> UserLifestyle.WEEKDAY_WARRIOR;
+                case 1 -> UserLifestyle.WEEKEND_RELAXER;
+                default -> UserLifestyle.BALANCED;
+            };
+            userLifestyles.put(user.getId(), lifestyle);
+        }
+        log.info("{}명의 사용자에게 라이프스타일 유형 할당 완료", users.size());
     }
 }
