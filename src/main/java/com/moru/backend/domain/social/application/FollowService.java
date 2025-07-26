@@ -1,5 +1,6 @@
 package com.moru.backend.domain.social.application;
 
+import com.moru.backend.domain.notification.event.FollowedEvent;
 import com.moru.backend.domain.social.dao.UserFollowRepository;
 import com.moru.backend.domain.social.domain.UserFollow;
 import com.moru.backend.domain.social.dto.FollowCountResponse;
@@ -11,12 +12,15 @@ import com.moru.backend.global.common.dto.ScrollResponse;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.util.S3Service;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cglib.core.Local;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -28,6 +32,7 @@ public class FollowService {
     private final UserRepository userRepository;
     private final UserFollowRepository userFollowRepository;
     private final S3Service s3Service;
+    private final ApplicationEventPublisher eventPublisher;
 
     public FollowCountResponse countFollow(UUID userId) {
         Long followingCount = userFollowRepository.countByFollowerId(userId);
@@ -59,6 +64,15 @@ public class FollowService {
                 .build();
 
         userFollowRepository.save(userFollow);
+
+        // 이벤트 발행
+        eventPublisher.publishEvent(
+                FollowedEvent.builder()
+                        .receiverId(target.getId())
+                        .senderId(me.getId())
+                        .createdAt(LocalDateTime.now())
+                        .build()
+        );
     }
 
     @Transactional
@@ -135,5 +149,9 @@ public class FollowService {
                 .stream()
                 .map(f -> f.getFollowing().getId())
                 .collect(Collectors.toSet());
+    }
+
+    public List<UUID> findFollowerIdsByUserId(UUID senderId) {
+        return userFollowRepository.findFollowerIdsByUserId(senderId);
     }
 }

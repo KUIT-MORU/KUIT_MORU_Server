@@ -4,6 +4,7 @@ import com.moru.backend.domain.meta.dao.AppRepository;
 import com.moru.backend.domain.meta.dao.TagRepository;
 import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.meta.domain.Tag;
+import com.moru.backend.domain.notification.event.RoutineCreatedEvent;
 import com.moru.backend.domain.routine.dao.*;
 import com.moru.backend.domain.routine.domain.ActionType;
 import com.moru.backend.domain.routine.domain.Routine;
@@ -23,17 +24,19 @@ import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
+import com.moru.backend.global.fcm.RoutineScheduleFcmPreloader;
 import com.moru.backend.global.util.RedisKeyUtil;
 import com.moru.backend.global.util.S3Directory;
 import com.moru.backend.global.util.S3Service;
 import com.moru.backend.global.validator.RoutineValidator;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -56,6 +59,8 @@ public class RoutineService {
     private final UserFavoriteTagRepository userFavoriteTagRepository;
     private final RedisTemplate<String, String> redisTemplate;
     private final S3Service s3Service;
+    private final ApplicationEventPublisher eventPublisher;
+    private final RoutineScheduleFcmPreloader routineScheduleFcmPreloader;
 
     // ========================= 루틴 생성/수정/삭제 =========================
 
@@ -89,6 +94,19 @@ public class RoutineService {
         saveRoutineTags(savedRoutine, request.tags());
         saveRoutineSteps(savedRoutine, request.steps(), isSimple);
         saveRoutineApps(savedRoutine, request.selectedApps());
+
+        // 공개 루틴인 경우에만 알림 이벤트 발행
+        if(routine.isUserVisible()) {
+            eventPublisher.publishEvent(
+                    RoutineCreatedEvent.builder()
+                            .routineId(savedRoutine.getId())
+                            .senderId(user.getId())
+                            .build()
+            );
+        }
+
+        // 스케줄 알림 설정하기
+        routineScheduleFcmPreloader.preloadRoutineScheduleFcm(savedRoutine);
 
         return new RoutineCreateResponse(savedRoutine.getId(), savedRoutine.getTitle(), savedRoutine.getCreatedAt());
     }
@@ -161,6 +179,10 @@ public class RoutineService {
         List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
         int likeCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.LIKE).intValue();
         int scrapCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.SCRAP).intValue();
+
+        // 루틴 수정에 따른 푸시 알림 예약 갱신
+        routineScheduleFcmPreloader.refreshRoutineScheduleFcm(routine);
+
         // update에서는 비슷한 루틴은 빈 리스트로 반환
         return RoutineDetailResponse.of(
                 routine,
@@ -178,6 +200,10 @@ public class RoutineService {
     @Transactional
     public void deleteRoutine(UUID routineId, User currentUser) {
         Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
+
+        // 루틴 삭제에 따른 푸시 알림 예약 삭제
+        routineScheduleFcmPreloader.removeRoutineScheduleFcm(routine);
+
         routineRepository.delete(routine);
     }
 
@@ -433,5 +459,13 @@ public class RoutineService {
     private void updateApps(Routine routine, List<String> selectedApps) {
         routineAppRepository.deleteByRoutine(routine);
         saveRoutineApps(routine, selectedApps);
+    }
+
+    public String getRoutineTitleById(UUID routineId) {
+        return routineRepository.findTitleById(routineId);
+    }
+
+    public boolean isUserVisibleById(UUID routineId) {
+        return routineRepository.getIsUserVisibleById(routineId);
     }
 }

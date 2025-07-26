@@ -38,3 +38,4 @@ out/
 
 ### application secret ###
 .env
+/src/main/resources/firebase/moru-fcm-firebase-adminsdk-fbsvc-ede7c4e455.json

@@ -19,4 +19,12 @@ public class RedisKeyUtil {
     public static String globalInsightKey(LocalDate localDate ) {
         return "insight:global:" + localDate;
     }
+
+    // 루틴 FCM 스케줄 큐
+    public static final String ROUTINE_SCHEDULE_QUEUE = "fcm:routine:scheduled";
+
+    // 루틴 FCM 재시도 큐
+    public static final String RETRY_QUEUE = "fcm:routine:retry";
+
+    private RedisKeyUtil() {} // 클래스 생성 방지
 } 

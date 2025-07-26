@@ -7,9 +7,8 @@ import com.moru.backend.domain.routine.domain.meta.RoutineApp;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
 import com.moru.backend.domain.user.domain.User;
-import com.moru.backend.global.util.S3Directory;
 import com.moru.backend.global.util.S3Service;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -69,7 +68,6 @@ public class RoutineCloner {
         }
 
         // 스케줄 복제
-        // TODO: 루틴에 루틴 스케쥴 필드가 정의되어 있지 않음. 추후 추가시 이곳 점검 요망.
         List<RoutineSchedule> schedules = routineScheduleRepository
                 .findAllByRoutineId(origin.getId());
         for (RoutineSchedule rs : schedules) {

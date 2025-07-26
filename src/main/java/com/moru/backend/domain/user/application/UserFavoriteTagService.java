@@ -9,7 +9,7 @@ import com.moru.backend.domain.user.dto.FavoriteTagRequest;
 import com.moru.backend.domain.user.dto.FavoriteTagResponse;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

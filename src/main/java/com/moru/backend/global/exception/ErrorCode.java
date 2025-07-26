@@ -70,7 +70,11 @@ public enum ErrorCode {
     HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "검색 기록을 찾을 수 없습니다."),
 
     // 인사이트 관련 예외
-    GLOBAL_INSIGHT_CALCULATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "전역 인사이트를 계산을 실패하였습니다.");
+    GLOBAL_INSIGHT_CALCULATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "전역 인사이트를 계산을 실패하였습니다."),
+
+    // 알림 관련 예외
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 알림입니다."),
+    FORBIDDEN_NOTIFICATION_ACCESS(HttpStatus.FORBIDDEN, "해당 알림에 대한 권한이 없습니다.");
     private final HttpStatus status;
     private final String message;
 
