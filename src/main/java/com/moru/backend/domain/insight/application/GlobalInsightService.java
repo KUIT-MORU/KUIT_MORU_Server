@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static com.moru.backend.global.config.InsightConfig.INSIGHT_DAYS_RANGE;
 import static com.moru.backend.global.config.InsightConfig.MAX_LOOKBACK_DAYS;
 
 @Service
@@ -39,15 +38,7 @@ public class GlobalInsightService {
             }
         }
 
-        // 모두 없으면 새로 계산
-        LocalDate startDate = LocalDate.now().minusDays(INSIGHT_DAYS_RANGE);
-        GlobalInsight globalInsight = recalculateAndCacheGlobalInsight(startDate);
-
-        if(globalInsight == null) {
-            throw new CustomException(ErrorCode.GLOBAL_INSIGHT_CALCULATE_FAILED);
-        }
-
-        return globalInsight;
+        throw new CustomException(ErrorCode.GLOBAL_INSIGHT_CALCULATE_FAILED);
     }
 
     public GlobalInsight recalculateAndCacheGlobalInsight(LocalDate startDate) {

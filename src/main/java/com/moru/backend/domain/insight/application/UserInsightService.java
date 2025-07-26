@@ -14,7 +14,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.moru.backend.global.config.InsightConfig.INSIGHT_DAYS_RANGE;
 
@@ -65,8 +67,23 @@ public class UserInsightService {
         // 시간대별 실천 수
         Map<TimeSlot, Integer> countByTimeSlot = routineInsightCalculator.calculateCompletionCountByTimeSlot(user, startDate, endDate);
 
+        // 이미 있는지 확인
+        Optional<UserInsight> userInsight = userInsightRepository.findByUserId(user.getId());
+
         // 인사이트 저장
         try {
+            if(userInsight.isPresent()) {
+                // 이미 있으면 업데이트
+                UserInsight insight = userInsight.get();
+                insight.setPaceGrade(PaceGrade.fromRate(completionRate));
+                insight.setRoutineCompletionRate(completionRate);
+                insight.setWeekdayRoutineAvgCount(avgCounts.getOrDefault("weekday", 0.0));
+                insight.setWeekendRoutineAvgCount(avgCounts.getOrDefault("weekend", 0.0));
+                insight.setRoutineCompletionCountByTimeSlotJson(objectMapper.writeValueAsString(countByTimeSlot));
+                insight.setUpdatedAt(LocalDateTime.now());
+                return insight;
+            }
+            // 없으면 새로 저장
             UserInsight insight = UserInsight.builder()
                     .user(user)
                     .paceGrade(PaceGrade.fromRate(completionRate))

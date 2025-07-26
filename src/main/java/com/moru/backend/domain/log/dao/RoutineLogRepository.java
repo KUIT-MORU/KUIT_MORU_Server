@@ -6,7 +6,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -60,13 +59,13 @@ public interface RoutineLogRepository extends JpaRepository<RoutineLog, UUID> {
         FROM RoutineLog rl
         JOIN FETCH rl.routineSnapshot rs
         WHERE rl.user.id = :userId
-          AND rl.startedAt BETWEEN :startDate AND :endDate
+          AND rl.startedAt BETWEEN :startDateTime AND :endDateTime
           AND rl.isCompleted = true
     """)
     List<RoutineLog> findCompletedByUserIdAndPeriodWithSnapshot(
             @Param("userId") UUID userId,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate
+            @Param("startDateTime") LocalDateTime startDateTime,
+            @Param("endDateTime") LocalDateTime endDateTime
     );
 
     // 실행 중인 루틴 로그들 조회하기기

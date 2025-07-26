@@ -13,10 +13,13 @@ public interface RoutineScheduleHistoryRepository extends JpaRepository<RoutineS
     @Query("""
         SELECT h FROM RoutineScheduleHistory h
         WHERE h.routine.id = :routineId
-          AND h.effectiveStartDateTime <= :date
-          AND (h.effectiveEndDateTime IS NULL OR h.effectiveEndDateTime >= :date)
+          AND h.effectiveStartDateTime <= :dateTime
+          AND (h.effectiveEndDateTime IS NULL OR h.effectiveEndDateTime >= :dateTime)
     """)
-    List<RoutineScheduleHistory> findValidHistoryByRoutineIdAndDate(UUID routineId, LocalDateTime dateTime);
+    List<RoutineScheduleHistory> findValidHistoryByRoutineIdAndDate(
+            UUID routineId,
+            LocalDateTime dateTime
+    );
 
     // 현재 유효한 히스토리 1개만 조회
     @Query("""
