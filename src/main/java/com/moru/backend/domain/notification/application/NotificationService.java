@@ -6,14 +6,12 @@ import com.moru.backend.domain.notification.domain.NotificationType;
 import com.moru.backend.domain.notification.dto.NotificationCursor;
 import com.moru.backend.domain.notification.dto.NotificationResponse;
 import com.moru.backend.domain.notification.mapper.NotificationMapper;
+import com.moru.backend.domain.routine.application.RoutineQueryService;
 import com.moru.backend.domain.social.application.FollowService;
-import com.moru.backend.domain.user.application.UserService;
-import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.common.dto.ScrollResponse;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
-import com.moru.backend.global.fcm.FcmService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,17 +27,13 @@ import java.util.UUID;
 public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationMapper notificationMapper;
-    private final UserRepository userRepository;
-    private final UserService userService;
-    private final FcmService fcmService;
-    private final RoutineService routineService;
+    private final RoutineQueryService routineQueryService;
     private final FollowService followService;
-    private final NotificationSender notificationSender;
 
     // 루틴 생성 알림
     public void sendRoutineCreated(UUID senderId, UUID routineId, LocalDateTime createdAt) {
         // 루틴의 유저 공개 여부 확인
-        if(!routineService.isUserVisibleById(routineId)) {
+        if(!routineQueryService.isUserVisibleById(routineId)) {
             return;
         }
 
@@ -70,18 +64,6 @@ public class NotificationService {
                 .createdAt(createdAt)
                 .build();
         notificationRepository.save(notification);
-    }
-
-    // 루틴 스케줄 알림
-    public void sendRoutineReminder(UUID receiverId, UUID routineId) {
-        //FCM 발송
-        String routineTitle = routineService.getRoutineTitleById(routineId);
-        String nickname = userService.getNicknameById(receiverId);
-
-        String title = nickname + "님!";
-        String body = "\"" + routineTitle + "\", 지금 할 시간이에요.";
-
-        notificationSender.sendRoutineReminder(receiverId, title, body);
     }
 
     // 알림 목록 조회

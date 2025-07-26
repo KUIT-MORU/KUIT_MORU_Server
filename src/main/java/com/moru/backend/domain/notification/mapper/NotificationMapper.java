@@ -3,6 +3,7 @@ package com.moru.backend.domain.notification.mapper;
 import com.moru.backend.domain.notification.domain.Notification;
 import com.moru.backend.domain.notification.domain.NotificationType;
 import com.moru.backend.domain.notification.dto.NotificationResponse;
+import com.moru.backend.domain.routine.application.RoutineQueryService;
 import com.moru.backend.domain.user.application.UserService;
 import com.moru.backend.global.util.S3Service;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,7 @@ import java.time.LocalDateTime;
 public class NotificationMapper {
     private final UserService userService;
     private final S3Service s3Service;
-    private final RoutineService routineService;
+    private final RoutineQueryService routineQueryService;
 
     public NotificationResponse toResponse(Notification notification) {
         String senderNickname = userService.getNicknameById(notification.getSenderId());
@@ -24,7 +25,7 @@ public class NotificationMapper {
         String profileImageUrl = userService.getProfileImageUrlById(notification.getSenderId());
 
         String routineTitle = notification.getResourceId() != null
-                ? routineService.getRoutineTitleById(notification.getResourceId())
+                ? routineQueryService.getRoutineTitleById(notification.getResourceId())
                 : null;
 
         String message = switch(notification.getType()) {

@@ -116,4 +116,12 @@ public class RoutineQueryService {
                 routine.getRoutineTags()
         );
     }
+
+    public boolean isUserVisibleById(UUID routineId) {
+        return routineRepository.getIsUserVisibleById(routineId);
+    }
+
+    public String getRoutineTitleById(UUID routineId) {
+        return routineRepository.findTitleById(routineId);
+    }
 }

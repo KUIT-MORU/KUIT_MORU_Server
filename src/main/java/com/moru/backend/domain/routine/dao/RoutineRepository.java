@@ -160,7 +160,8 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
     """)
     List<Routine> findSimilarRoutinesByTagIds(@Param("tagIds") List<UUID> tagIds, @Param("routineId") UUID routineId, Pageable pageable);
 
-    String findTitleById(UUID routineId);
+    @Query("SELECT r.title FROM Routine r WHERE r.id =: routineId")
+    String findTitleById(@Param("routineId") UUID routineId);
 
     @Query("SELECT r.isUserVisible FROM Routine r WHERE r.id = :routineId")
     boolean getIsUserVisibleById(@Param("routineId") UUID routineId);
