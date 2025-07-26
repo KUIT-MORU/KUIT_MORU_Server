@@ -70,3 +70,12 @@ dummy:
     follow-count: 100000
     favorite-tag-count: 30000
 
+moru:
+  routine:
+    recommend:
+      hot-score:
+        view-weight: 0.5
+        like-weight: 0.5
+      similar-fetch-size: 20
+      similar-limit-size: 10
+

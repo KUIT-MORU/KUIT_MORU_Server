@@ -1,10 +1,9 @@
 package com.moru.backend.domain.routine.application;
 
-import com.moru.backend.domain.routine.dao.RoutineAppRepository;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
-import com.moru.backend.domain.routine.dao.RoutineStepRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
+import com.moru.backend.domain.routine.domain.search.SortType;
 import com.moru.backend.domain.routine.dto.response.RoutineDetailResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 import com.moru.backend.domain.social.application.LikeService;
@@ -15,6 +14,7 @@ import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.util.RedisKeyUtil;
 import com.moru.backend.global.util.S3Service;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,12 +32,22 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class RoutineQueryService {
     private final RoutineRepository routineRepository;
-    private final RoutineStepRepository routineStepRepository;
-    private final RoutineAppRepository routineAppRepository;
     private final LikeService likeService;
     private final ScrapService scrapService;
     private final RedisTemplate<String, String> redisTemplate;
     private final S3Service s3Service;
+
+    @Value("${moru.routine.recommend.hot-score.view-weight}")
+    private double viewWeight;
+
+    @Value("${moru.routine.recommend.hot-score.like-weight}")
+    private double likeWeight;
+
+    @Value("${moru.routine.recommend.similar-fetch-size}")
+    private int similarFetchSize;
+
+    @Value("${moru.routine.recommend.similar-limit-size}")
+    private int similarLimitSize;
 
     @Transactional // 조회수 증가 때문에 쓰기 트랜잭션 필요
     public RoutineDetailResponse getRoutineDetail(UUID routineId, User currentUser) {
@@ -74,13 +84,13 @@ public class RoutineQueryService {
         );
     }
 
-    public Page<RoutineListResponse> getRoutineList(User user, String sortType, DayOfWeek dayOfWeek, Pageable pageable) {
+    public Page<RoutineListResponse> getRoutineList(User user, SortType sortType, DayOfWeek dayOfWeek, Pageable pageable) {
         Page<Routine> routines;
-        if ("TIME".equals(sortType) && dayOfWeek != null) {
+        if (sortType == SortType.TIME && dayOfWeek != null) {
             routines = routineRepository.findByUserIdAndDayOfWeekOrderByScheduleTimeAsc(user.getId(), dayOfWeek, pageable);
-        } else if ("POPULAR".equals(sortType)) {
+        } else if (sortType == SortType.POPULAR) {
             routines = routineRepository.findByUserOrderByLikeCountDescCreatedAtDesc(user, pageable);
-        } else {
+        } else { // LATEST
             routines = routineRepository.findByUserOrderByCreatedAtDesc(user, pageable);
         }
         return routines.map(this::toRoutineListResponse);
@@ -89,8 +99,6 @@ public class RoutineQueryService {
 
     public List<RoutineListResponse> getHotRoutines(int limit) {
         LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
-        double viewWeight = 0.5; // 기본값, 추후 외부에서 주입 가능
-        double likeWeight = 0.5; // 기본값, 추후 외부에서 주입 가능
         return routineRepository.findHotRoutines(weekAgo, viewWeight, likeWeight, PageRequest.of(0, limit)).stream()
                 .map(this::toRoutineListResponse)
                 .toList();
@@ -103,14 +111,14 @@ public class RoutineQueryService {
         List<UUID> tagIds = routine.getRoutineTags().stream()
                 .map(rt -> rt.getTag().getId())
                 .toList();
-        Pageable pageable = PageRequest.of(0, 20); // 넉넉히 조회
+        Pageable pageable = PageRequest.of(0, similarFetchSize); // 넉넉히 조회
 
         // 이 Repository 메서드도 JOIN FETCH를 사용하도록 수정하면 성능이 더 좋아짐
         List<Routine> routines = routineRepository.findSimilarRoutinesByTagIds(tagIds, routine.getId(), pageable);
 
         return routines.stream()
                 .filter(r -> !r.getUser().getId().equals(currentUser.getId()))
-                .limit(10)
+                .limit(similarLimitSize)
                 .map(this::toRoutineListResponse)
                 .toList();
     }
