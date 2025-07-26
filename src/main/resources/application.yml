@@ -4,7 +4,7 @@ server:
 spring:
   # 'dev' 프로필을 활성화하여 DummyDataInitializer가 실행되도록 합니다.
   profiles:
-    active: dev
+    active: dev 
 
   devtools:
     restart:
@@ -71,4 +71,13 @@ dummy:
     routine-count: 20000
     follow-count: 100000
     favorite-tag-count: 30000
+
+moru:
+  routine:
+    recommend:
+      hot-score:
+        view-weight: 0.5
+        like-weight: 0.5
+      similar-fetch-size: 20
+      similar-limit-size: 10
 

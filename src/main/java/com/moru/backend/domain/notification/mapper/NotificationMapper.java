@@ -3,7 +3,6 @@ package com.moru.backend.domain.notification.mapper;
 import com.moru.backend.domain.notification.domain.Notification;
 import com.moru.backend.domain.notification.domain.NotificationType;
 import com.moru.backend.domain.notification.dto.NotificationResponse;
-import com.moru.backend.domain.routine.application.RoutineService;
 import com.moru.backend.domain.user.application.UserService;
 import com.moru.backend.global.util.S3Service;
 import lombok.RequiredArgsConstructor;

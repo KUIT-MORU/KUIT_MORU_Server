@@ -2,8 +2,10 @@ package com.moru.backend.domain.routine.dao;
 
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
+import com.moru.backend.domain.user.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,4 +28,11 @@ public interface RoutineTagRepository extends JpaRepository<RoutineTag, UUID> {
         LIMIT 10
     """, nativeQuery = true)
     List<TagPairCount> findTopTagPairs();
+
+    // RoutineTagRepository.java 인터페이스에 아래 두 메서드를 추가하세요.
+    @Query("SELECT t.name FROM RoutineTag rt JOIN rt.tag t WHERE rt.routine.user = :user")
+    List<String> findTagNamesByUserRoutines(@Param("user") User user);
+
+    @Query("SELECT t.name FROM RoutineUserAction rua JOIN rua.routine.routineTags rt JOIN rt.tag t WHERE rua.user = :user AND rua.actionType = 'SCRAP'")
+    List<String> findTagNamesByUserScrappedRoutines(@Param("user") User user);
 } 

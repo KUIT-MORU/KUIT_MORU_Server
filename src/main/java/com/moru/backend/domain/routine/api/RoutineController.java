@@ -3,10 +3,8 @@ package com.moru.backend.domain.routine.api;
 import com.moru.backend.domain.log.application.RoutineLogService;
 import com.moru.backend.domain.log.dto.LiveUserResponse;
 import com.moru.backend.domain.meta.dto.response.TagResponse;
-import com.moru.backend.domain.routine.application.RoutineAppService;
-import com.moru.backend.domain.routine.application.RoutineScheduleService;
-import com.moru.backend.domain.routine.application.RoutineService;
-import com.moru.backend.domain.routine.application.RoutineTagService;
+import com.moru.backend.domain.routine.application.*;
+import com.moru.backend.domain.routine.domain.search.SortType;
 import com.moru.backend.domain.routine.dto.request.*;
 import com.moru.backend.domain.routine.dto.response.*;
 import com.moru.backend.domain.user.domain.User;
@@ -28,7 +26,9 @@ import org.springframework.data.domain.PageRequest;
 @RequiredArgsConstructor
 @Tag(name = "루틴", description = "루틴 관련 API")
 public class RoutineController {
-    private final RoutineService routineService;
+    private final RoutineCommandService routineCommandService;
+    private final RoutineQueryService routineQueryService;
+    private final RoutineRecommendService routineRecommendService;
     private final RoutineAppService routineAppService;
     private final RoutineTagService routineTagService;
     private final RoutineScheduleService routineScheduleService;
@@ -39,19 +39,19 @@ public class RoutineController {
     public ResponseEntity<RoutineCreateResponse> createRoutine(
             @CurrentUser User currentUser,
             @Valid @RequestBody RoutineCreateRequest request) {
-        return ResponseEntity.ok(routineService.createRoutine(request, currentUser));
+        return ResponseEntity.ok(routineCommandService.createRoutine(request, currentUser));
     }
 
     @Operation(summary = "내 루틴 목록 조회", description = "현재 로그인된 사용자의 루틴 목록을 조회합니다. sortType: LATEST(최신순), POPULAR(인기순), TIME(시간순, dayOfWeek 필요)")
     @GetMapping
     public ResponseEntity<Page<RoutineListResponse>> getRoutineList(
             @CurrentUser User currentUser,
-            @RequestParam(value = "sortType", defaultValue = "TIME") String sortType,
+            @RequestParam(value = "sortType", defaultValue = "TIME") SortType sortType,
             @RequestParam(value = "dayOfWeek", required = false) DayOfWeek dayOfWeek,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size
     ) {
-        return ResponseEntity.ok(routineService.getRoutineList(currentUser, sortType, dayOfWeek, PageRequest.of(page, size)));
+        return ResponseEntity.ok(routineQueryService.getRoutineList(currentUser, sortType, dayOfWeek, PageRequest.of(page, size)));
     }
 
     @Operation(summary = "루틴 상세 조회", description = "특정 루틴의 상세 정보를 조회합니다.")
@@ -59,7 +59,7 @@ public class RoutineController {
     public ResponseEntity<RoutineDetailResponse> getRoutineDetail(
             @CurrentUser User currentUser,
             @PathVariable UUID routineId) {
-        return ResponseEntity.ok(routineService.getRoutineDetail(routineId, currentUser));
+        return ResponseEntity.ok(routineQueryService.getRoutineDetail(routineId, currentUser));
     }
 
     @Operation(summary = "루틴에 앱 연결 추가", description = "루틴에 앱을 연결")
@@ -171,12 +171,13 @@ public class RoutineController {
 
     @Operation(summary = "루틴 수정", description = "특정 루틴의 정보를 수정합니다.")
     @PatchMapping("/{routineId}")
-    public ResponseEntity<RoutineDetailResponse> updateRoutine(
+    public ResponseEntity<Void> updateRoutine(
         @CurrentUser User currentUser,
         @PathVariable UUID routineId,
         @Valid @RequestBody RoutineUpdateRequest request
     ) {
-        return ResponseEntity.ok(routineService.updateRoutine(routineId, request, currentUser));
+        routineCommandService.updateRoutine(routineId, request, currentUser);
+        return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "루틴 삭제", description = "특정 루틴을 삭제합니다.")
@@ -185,7 +186,7 @@ public class RoutineController {
         @CurrentUser User currentUser,
         @PathVariable UUID routineId
     ) {
-        routineService.deleteRoutine(routineId, currentUser);
+        routineCommandService.deleteRoutine(routineId, currentUser);
         return ResponseEntity.ok().build();
     }
 
@@ -193,7 +194,7 @@ public class RoutineController {
     @Operation(summary = "루틴 피드 추천", description = "루틴 피드 추천을 받습니다.")
     @GetMapping("/recommend/feed")
     public ResponseEntity<RecommendFeedResponse> getRecommendFeed(@CurrentUser User currentUser) {
-        RecommendFeedResponse response = routineService.getRecommendFeed(currentUser);
+        RecommendFeedResponse response = routineRecommendService.getRecommendFeed(currentUser);
         return ResponseEntity.ok(response);
     }
 
