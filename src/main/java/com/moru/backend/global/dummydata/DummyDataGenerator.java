@@ -57,6 +57,8 @@ public class DummyDataGenerator {
     private final Faker faker = new Faker(new Locale("ko"));
     private final Random random = new Random();
 
+    private final Map<UUID, Double> userDiligenceScores = new HashMap<>();
+
     // 테스트용 공통 비밀번호 (실제 암호화된 값)
     private static final String COMMON_PASSWORD_HASH = "$2a$12$/OXNM8oYy5chh/iOUA3j3.XjIEYi9Zbg/kiVT3.D/.zP2cev/5EDq"; // 1234abcde!@
     private static final int BATCH_SIZE = 200; // 배치 크기를 상수로 관리
@@ -262,9 +264,15 @@ public class DummyDataGenerator {
      * @param routines 루틴 리스트
      */
     @Transactional
-    public void createLogs(List<Routine> routines) {
+    public void createLogs(List<Routine> routines, List<User> users) {
+        if (routines.isEmpty() || users.isEmpty()) {
+            log.warn("루틴 또는 사용자가 없어 로그를 생성할 수 없습니다.");
+            return;
+        }
+        assignDiligenceScoresToUsers(users);
+
         List<RoutineSnapshot> savedSnapshots = createSnapshots(routines);
-        createLogsFromSnapshots(savedSnapshots, routines);
+        createLogsFromSnapshots(savedSnapshots, users);
     }
 
     //====헬퍼 메서드====//
@@ -389,12 +397,26 @@ public class DummyDataGenerator {
      * @return          생성 및 저장된 루틴 스냅샷 리스트
      */
     private List<RoutineSnapshot> createSnapshots(List<Routine> routines) {
-        // 1. 로그를 생성할 루틴들로부터 스냅샷을 먼저 만듭니다.
-        List<RoutineSnapshot> snapshotsToSave = routines.stream()
-                .filter(routine -> random.nextInt(10) == 0) // 10% 확률로 스냅샷 생성 결정
-                .map(this::buildSnapshotFromRoutine)      // 실제 생성 로직은 헬퍼 메서드에 위임
-                .collect(Collectors.toList());
-        List<RoutineSnapshot> savedSnapshots = routineSnapshotRepository.saveAll(snapshotsToSave);
+        List<RoutineSnapshot> snapshotsToSave = new ArrayList<>();
+
+        for (Routine routine : routines) {
+            // 각 루틴마다 0~5개의 로그를 무작위로 생성합니다.
+            int logCount = random.nextInt(6); // 0, 1, 2, 3, 4, 5 중 하나
+            if (logCount == 0) continue;
+
+            // 로그를 생성할 횟수만큼 스냅샷을 만듭니다.
+            for (int i = 0; i < logCount; i++) {
+                snapshotsToSave.add(buildSnapshotFromRoutine(routine));
+            }
+        }
+
+        // 배치 저장을 위해 saveAll 사용
+        List<RoutineSnapshot> savedSnapshots = new ArrayList<>();
+        for (int i = 0; i < snapshotsToSave.size(); i += BATCH_SIZE) {
+            int end = Math.min(i + BATCH_SIZE, snapshotsToSave.size());
+            savedSnapshots.addAll(routineSnapshotRepository.saveAll(snapshotsToSave.subList(i, end)));
+        }
+
         log.info("루틴 스냅샷 {}개 저장 완료", savedSnapshots.size());
         return savedSnapshots;
     }
@@ -453,45 +475,56 @@ public class DummyDataGenerator {
     /**
      * 저장된 스냅샷을 기반으로 로그를 생성 및 저장
      * @param savedSnapshots    저장된 스냅샷 리스트
-     * @param routines          원본 루틴 리스트
+     * @param users          사용자들
      */
-    private void createLogsFromSnapshots(List<RoutineSnapshot> savedSnapshots, List<Routine> routines) {
+    private void createLogsFromSnapshots(List<RoutineSnapshot> savedSnapshots, List<User> users) {
         if (savedSnapshots.isEmpty()) {
             log.info("생성된 스냅샷이 없음 -> 루틴 로그 생성 x");
             return;
         }
-        // 데이터 준비
-        Map<UUID, User> routineUserMap = routines.stream()
-                .collect(Collectors.toMap(Routine::getId, Routine::getUser, (u1, u2) -> u1));
 
         // 개별 로그 생성
         List<RoutineLog> logsToSave = new ArrayList<>();
         for (RoutineSnapshot snapshot : savedSnapshots) {
-            User user = routineUserMap.get(snapshot.getOriginalRoutineId());
-            if (user != null) {
-                logsToSave.add(buildRoutineLog(snapshot, user));
-            }
+            // 각 로그에 대해 무작위 사용자를 할당
+            User owner = routineRepository.findById(snapshot.getOriginalRoutineId())
+                    .map(Routine::getUser)
+                    .orElse(users.get(random.nextInt(users.size()))); // 혹시 못찾으면 랜덤 유저
+            logsToSave.add(buildRoutineLog(snapshot, owner));
         }
         batchSaveLogs(logsToSave);
     }
 
     /**
-     * 스냅샷과 사용자 기반으로 단일 ROutineLog 객체 생성
+     * 스냅샷과 사용자 기반으로 단일 RoutineLog 객체 생성
      * @param snapshot  로그의 기반이 될 스냅샷
      * @param user      로그의 소유자
      * @return          생성된 RoutineLog 객체
      */
     private RoutineLog buildRoutineLog(RoutineSnapshot snapshot, User user) {
         LocalDateTime startedAt = LocalDateTime.now().minusDays(random.nextInt(30)).minusHours(random.nextInt(24));
-        boolean isCompleted = random.nextBoolean();
         LocalDateTime endedAt = null;
         Duration totalTime = null;
 
-        if (isCompleted && snapshot.getRequiredTime() != null) {
-            endedAt = startedAt.plus(snapshot.getRequiredTime()).plusMinutes(random.nextInt(10) - 5); // 약간의 오차
-            totalTime = Duration.between(startedAt, endedAt);
-        }
+        // 사용자의 미리 할당된 '성실도 점수'를 가져오기
+        double diligenceScore = userDiligenceScores.getOrDefault(user.getId(), 0.5); // 점수가 없으면 50% 확률
 
+        // 성실도 점수를 기반으로 이 로그의 완료 여부를 확률적으로 결정
+        boolean isCompleted = random.nextDouble() < diligenceScore;
+
+        // 완료된 경우에만 종료 시간과 소요 시간을 기록
+        if (isCompleted) {
+            if (!snapshot.isSimple() && snapshot.getRequiredTime() != null && !snapshot.getRequiredTime().isZero()) {
+                // 집중 루틴: 예상 시간에 약간의 오차를 더해 현실적인 소요 시간 생성
+                endedAt = startedAt.plus(snapshot.getRequiredTime()).plusMinutes(random.nextInt(10) - 5);
+                totalTime = Duration.between(startedAt, endedAt);
+            } else {
+                // 간편 루틴: 1~5분 사이의 짧은 소요 시간 생성
+                totalTime = Duration.ofMinutes(random.nextInt(5) + 1);
+                endedAt = startedAt.plus(totalTime);
+            }
+        }
+        // 완료되지 않은 경우, endedAt과 totalTime은 null로 유지
         return RoutineLog.builder()
                 .user(user)
                 .routineSnapshot(snapshot)
@@ -519,5 +552,17 @@ public class DummyDataGenerator {
             log.info("▶ {}/{} 개의 루틴 로그 저장 완료", end, logsToSave.size());
         }
         log.info("루틴 로그 저장 완료");
+    }
+
+    private void assignDiligenceScoresToUsers(List<User> users) {
+        double mean = 0.65;   // 목표 평균 실천율: 65%
+        double stdDev = 0.20; // 표준 편차: 20% (점수 분포를 더 넓게 하여 다양한 사용자 유형 생성)
+        for (User user : users) {
+            double diligence = (random.nextGaussian() * stdDev) + mean;
+            // 생성된 값이 5% ~ 95% 범위를 벗어나지 않도록 보정합니다.
+            diligence = Math.max(0.05, Math.min(diligence, 0.95));
+            userDiligenceScores.put(user.getId(), diligence);
+        }
+        log.info("{}명의 사용자에게 정규분포를 따르는 실천율 점수(diligence) 할당 완료", users.size());
     }
 }

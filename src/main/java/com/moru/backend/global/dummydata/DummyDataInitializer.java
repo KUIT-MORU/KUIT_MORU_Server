@@ -51,7 +51,7 @@ public class DummyDataInitializer implements CommandLineRunner {
         dummyDataGenerator.createFavoriteTagRelations(dummyDataProperties.getFavoriteTagCount(), allUsers, allTags);
         log.info("[6/7] 선호 태그 관계를 생성했습니다.");
 
-        dummyDataGenerator.createLogs(allRoutines);
+        dummyDataGenerator.createLogs(allRoutines, allUsers);
         log.info("[7/7] 루틴 로그를 생성했습니다.");
 
         log.info("===더미 데이터 생성 완료===");
