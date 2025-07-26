@@ -35,16 +35,16 @@ public class User {
     private String password;
 
     @Setter
-    @Column(nullable = false, unique = true, length = 50)
+    @Column(unique = true, length = 50)
     private String nickname;
 
     @Setter
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "ENUM('MALE','FEMALE')")
+    @Column(columnDefinition = "ENUM('MALE','FEMALE')")
     private Gender gender;
 
     @Setter
-    @Column(name = "birthday", nullable = false)
+    @Column(name = "birthday")
     private LocalDate birthday;
 
     @Setter

@@ -15,24 +15,5 @@ public record SignupRequest (
         @Email @NotBlank String email,
 
         @Schema(description = "비밀번호", example = "1234abcde!@")
-        @Password @NotBlank String password,
-
-        @Schema(description = "닉네임", example = "MORU")
-        @NotBlank @Size(max = 10) String nickname,
-
-        @Schema(description = "성별", example = "MALE")
-        @NotNull Gender gender,
-
-        @Schema(description = "생년월일", example = "2000-01-01")
-        @NotNull @Past LocalDate birthday,
-
-        @Schema(description = "자기소개", example = "나는 모루 유저입니다.")
-        @Size(max = 100) String bio,
-
-        @Schema(description = "프로필 이미지", example = "https://your-cdn.com/profile.jpg")
-        String profileImageUrl,
-
-        @Schema(description = "관심 태그 ID 목록")
-        List<UUID> tagIds
-
+        @Password @NotBlank String password
 ) {}
