@@ -65,53 +65,6 @@ public class RoutineService {
     // ========================= 루틴 생성/수정/삭제 =========================
 
     @Transactional
-    public RoutineCreateResponse createRoutine(RoutineCreateRequest request, User user) {
-        boolean isSimple = request.isSimple();
-        Duration totalTime = isSimple ? null : request.steps().stream()
-                .map(step -> Optional.ofNullable(step.estimatedTime()).orElse(Duration.ZERO))
-                .reduce(Duration.ZERO, Duration::plus);
-        
-        // === 이미지 이동 처리 ===
-        String imageKey = null;
-        if(request.imageKey() != null && !request.imageKey().isBlank()) {
-            imageKey = s3Service.moveToRealLocation(request.imageKey(), S3Directory.ROUTINE);
-        }
-        
-        Routine routine = Routine.builder()
-                .id(UUID.randomUUID())
-                .user(user)
-                .title(request.title())
-                .isSimple(isSimple)
-                .isUserVisible(request.isUserVisible())
-                .likeCount(0)
-                .content(Optional.ofNullable(request.description()).orElse(""))
-                .requiredTime(totalTime)
-                .status(true)
-                .imageUrl(imageKey)
-                .build();
-        Routine savedRoutine = routineRepository.save(routine);
-
-        saveRoutineTags(savedRoutine, request.tags());
-        saveRoutineSteps(savedRoutine, request.steps(), isSimple);
-        saveRoutineApps(savedRoutine, request.selectedApps());
-
-        // 공개 루틴인 경우에만 알림 이벤트 발행
-        if(routine.isUserVisible()) {
-            eventPublisher.publishEvent(
-                    RoutineCreatedEvent.builder()
-                            .routineId(savedRoutine.getId())
-                            .senderId(user.getId())
-                            .build()
-            );
-        }
-
-        // 스케줄 알림 설정하기
-        routineScheduleFcmPreloader.preloadRoutineScheduleFcm(savedRoutine);
-
-        return new RoutineCreateResponse(savedRoutine.getId(), savedRoutine.getTitle(), savedRoutine.getCreatedAt());
-    }
-
-    @Transactional
     public RoutineDetailResponse getRoutineDetail(UUID routineId, User currentUser) {
         Routine routine = routineRepository.findById(routineId)
             .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
@@ -164,47 +117,6 @@ public class RoutineService {
                 currentUser,
                 similarRoutines
         );
-    }
-
-    @Transactional
-    public RoutineDetailResponse updateRoutine(UUID routineId, RoutineUpdateRequest request, User currentUser) {
-        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
-        updateSimpleFields(routine, request);
-        if (request.tags() != null) updateTags(routine, request.tags());
-        if (request.steps() != null) updateSteps(routine, request.steps());
-        if (request.selectedApps() != null) updateApps(routine, request.selectedApps());
-
-        List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
-        List<RoutineStep> steps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
-        List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
-        int likeCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.LIKE).intValue();
-        int scrapCount = routineUserActionRepository.countByRoutineIdAndActionType(routine.getId(), ActionType.SCRAP).intValue();
-
-        // 루틴 수정에 따른 푸시 알림 예약 갱신
-        routineScheduleFcmPreloader.refreshRoutineScheduleFcm(routine);
-
-        // update에서는 비슷한 루틴은 빈 리스트로 반환
-        return RoutineDetailResponse.of(
-                routine,
-                s3Service.getImageUrl(routine.getImageUrl()),
-                tags,
-                steps,
-                apps,
-                likeCount,
-                scrapCount,
-                currentUser,
-                List.of()
-        );
-    }
-
-    @Transactional
-    public void deleteRoutine(UUID routineId, User currentUser) {
-        Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, currentUser);
-
-        // 루틴 삭제에 따른 푸시 알림 예약 삭제
-        routineScheduleFcmPreloader.removeRoutineScheduleFcm(routine);
-
-        routineRepository.delete(routine);
     }
 
     // ========================= 추천 피드 =========================
@@ -446,20 +358,6 @@ public class RoutineService {
         if (request.isSimple() != null) routine.setSimple(request.isSimple());
     }
 
-    private void updateTags(Routine routine, List<String> tags) {
-        routineTagRepository.deleteByRoutine(routine);
-        saveRoutineTags(routine, tags);
-    }
-
-    private void updateSteps(Routine routine, List<RoutineStepRequest> steps) {
-        routineStepRepository.deleteByRoutine(routine);
-        saveRoutineSteps(routine, steps, routine.isSimple());
-    }
-
-    private void updateApps(Routine routine, List<String> selectedApps) {
-        routineAppRepository.deleteByRoutine(routine);
-        saveRoutineApps(routine, selectedApps);
-    }
 
     public String getRoutineTitleById(UUID routineId) {
         return routineRepository.findTitleById(routineId);

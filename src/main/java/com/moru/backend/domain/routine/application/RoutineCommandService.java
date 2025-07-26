@@ -70,11 +70,11 @@ public class RoutineCommandService {
                 .status(true)
                 .imageUrl(imageKey)
                 .build();
-        Routine savedRoutine = routineRepository.save(routine);
 
-        updateTags(savedRoutine, request.tags());
-        updateSteps(savedRoutine, request.steps());
-        updateApps(savedRoutine, request.selectedApps());
+        updateTags(routine, request.tags());
+        updateSteps(routine, request.steps());
+        updateApps(routine, request.selectedApps());
+        Routine savedRoutine = routineRepository.save(routine);
 
         // 공개 루틴인 경우에만 알림 이벤트 발행
         if(routine.isUserVisible()) {
@@ -99,10 +99,6 @@ public class RoutineCommandService {
         if (request.tags() != null) updateTags(routine, request.tags());
         if (request.steps() != null) updateSteps(routine, request.steps());
         if (request.selectedApps() != null) updateApps(routine, request.selectedApps());
-
-        List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
-        List<RoutineStep> steps = routineStepRepository.findByRoutineOrderByStepOrder(routine);
-        List<RoutineApp> apps = routineAppRepository.findByRoutine(routine);
 
         // 루틴 수정에 따른 푸시 알림 예약 갱신
         routineScheduleFcmPreloader.refreshRoutineScheduleFcm(routine);
