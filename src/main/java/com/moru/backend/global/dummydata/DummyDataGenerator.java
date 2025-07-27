@@ -11,6 +11,9 @@ import com.moru.backend.domain.meta.dao.AppRepository;
 import com.moru.backend.domain.meta.dao.TagRepository;
 import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.meta.domain.Tag;
+import com.moru.backend.domain.notification.dao.NotificationRepository;
+import com.moru.backend.domain.notification.domain.Notification;
+import com.moru.backend.domain.notification.domain.NotificationType;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.RoutineStep;
@@ -51,11 +54,21 @@ public class DummyDataGenerator {
     private final UserFavoriteTagRepository userFavoriteTagRepository;
     private final RoutineLogRepository routineLogRepository;
     private final RoutineSnapshotRepository routineSnapshotRepository;
+    private final NotificationRepository notificationRepository;
     private final DummyDataPool dummyDataPool;
 
     // Faker 인스턴스와 Random 객체를 필드로 선언해서 재사용하기
     private final Faker faker = new Faker(new Locale("ko"));
     private final Random random = new Random();
+
+    private enum UserLifestyle {
+        WEEKDAY_WARRIOR, //평일에 더 성실
+        WEEKEND_RELAXER, // 주말에 더 성실
+        BALANCED        // 균등
+    }
+
+    private final Map<UUID, Double> userDiligenceScores = new HashMap<>();
+    private final Map<UUID, UserLifestyle> userLifestyles = new HashMap<>();
 
     // 테스트용 공통 비밀번호 (실제 암호화된 값)
     private static final String COMMON_PASSWORD_HASH = "$2a$12$/OXNM8oYy5chh/iOUA3j3.XjIEYi9Zbg/kiVT3.D/.zP2cev/5EDq"; // 1234abcde!@
@@ -209,8 +222,8 @@ public class DummyDataGenerator {
      * @param users 사용자 리스트
      */
     @Transactional
-    public void createFollowRelations(int count, List<User> users) {
-        if (count <= 0 ) return;
+    public List<UserFollow> createFollowRelations(int count, List<User> users) {
+        if (count <= 0 ) return Collections.emptyList();
         // 팔로우 관계 생성
         Set<String> existingFollows = new HashSet<>();
         List<UserFollow> followsToSave = new ArrayList<>();
@@ -226,8 +239,9 @@ public class DummyDataGenerator {
             followsToSave.add(UserFollow.builder().follower(follower).following(following).build());
             existingFollows.add(followKey);
         }
-        userFollowRepository.saveAll(followsToSave);
-        log.info("{}개의 팔로우 관계 저장 완료", followsToSave.size());
+        List<UserFollow> savedFollows = userFollowRepository.saveAll(followsToSave);
+        log.info("{}개의 팔로우 관계 저장 완료", savedFollows.size());
+        return savedFollows;
     }
 
     /**
@@ -262,10 +276,93 @@ public class DummyDataGenerator {
      * @param routines 루틴 리스트
      */
     @Transactional
-    public void createLogs(List<Routine> routines) {
+    public void createLogs(List<Routine> routines, List<User> users) {
+        if (routines.isEmpty() || users.isEmpty()) {
+            log.warn("루틴 또는 사용자가 없어 로그를 생성할 수 없습니다.");
+            return;
+        }
+        assignDiligenceScoresToUsers(users);
+        assignLifestylesToUsers(users);
+
         List<RoutineSnapshot> savedSnapshots = createSnapshots(routines);
-        createLogsFromSnapshots(savedSnapshots, routines);
+        createLogsFromSnapshots(savedSnapshots, users);
     }
+
+
+    /**
+     * [핵심] 팔로우 및 루틴 생성에 대한 알림 더미 데이터를 생성합니다.
+     * @param allFollows    생성된 모든 팔로우 관계 리스트
+     * @param allRoutines   생성된 모든 루틴 리스트
+     */
+    @Transactional
+    public void createBulkNotifications(List<UserFollow> allFollows, List<Routine> allRoutines) {
+        log.info("알림 더미 데이터 생성을 시작합니다...");
+        List<Notification> notificationsToSave = new ArrayList<>();
+
+        // 1. 팔로우 알림 생성
+        // 생성된 전체 팔로우 관계 중 10%에 대해서만 알림을 생성하여 현실성을 높입니다.
+        Collections.shuffle(allFollows);
+        int followNotificationCount = allFollows.size() / 10;
+        List<UserFollow> followsForNotification = allFollows.subList(0, Math.min(followNotificationCount, allFollows.size()));
+
+        for (UserFollow follow : followsForNotification) {
+            Notification notification = Notification.builder()
+                    .receiverId(follow.getFollowing().getId())
+                    .senderId(follow.getFollower().getId())
+                    .type(NotificationType.FOLLOW_RECEIVED)
+                    .createdAt(LocalDateTime.now().minusDays(random.nextInt(30))) // 최근 30일 내 무작위 시간
+                    .build();
+            notificationsToSave.add(notification);
+        }
+        log.info("{}개의 팔로우 알림 생성 완료.", notificationsToSave.size());
+
+        // 2. 루틴 생성 알림 생성 (Fan-out 방식)
+        // Key: 유저 ID, Value: 해당 유저를 팔로우하는 사람들의 ID 리스트
+        Map<UUID, List<UUID>> followersMap = new HashMap<>();
+        for (UserFollow follow : allFollows) {
+            followersMap.computeIfAbsent(follow.getFollowing().getId(), k -> new ArrayList<>()).add(follow.getFollower().getId());
+        }
+
+        // 전체 루틴 중 10%에 대해서만 알림을 생성
+        Collections.shuffle(allRoutines);
+        int routineNotificationCount = allRoutines.size() / 10;
+        List<Routine> routinesForNotification = allRoutines.subList(0, Math.min(routineNotificationCount, allRoutines.size()));
+        int createdRoutineNotifications = 0;
+
+        for (Routine routine : routinesForNotification) {
+            if (!routine.isUserVisible()) {
+                continue; // 비공개 루틴은 알림을 보내지 않음
+            }
+
+            UUID senderId = routine.getUser().getId();
+            List<UUID> followerIds = followersMap.getOrDefault(senderId, Collections.emptyList());
+
+            for (UUID followerId : followerIds) {
+                Notification notification = Notification.builder()
+                        .receiverId(followerId)
+                        .senderId(senderId)
+                        .resourceId(routine.getId())
+                        .type(NotificationType.ROUTINE_CREATED)
+                        .createdAt(routine.getCreatedAt()) // 루틴 생성 시점과 동일하게
+                        .build();
+                notificationsToSave.add(notification);
+                createdRoutineNotifications++;
+            }
+        }
+        log.info("{}개의 루틴 생성 알림(Fan-out) 생성 완료.", createdRoutineNotifications);
+
+        // 3. 생성된 모든 알림을 배치 저장
+        if (!notificationsToSave.isEmpty()) {
+            log.info("총 {}개의 알림을 배치 저장합니다...", notificationsToSave.size());
+            for (int i = 0; i < notificationsToSave.size(); i += BATCH_SIZE) {
+                int end = Math.min(i + BATCH_SIZE, notificationsToSave.size());
+                notificationRepository.saveAll(notificationsToSave.subList(i, end));
+                log.info("▶ {}/{} 개의 알림 저장 완료", end, notificationsToSave.size());
+            }
+            log.info("알림 더미 데이터 저장 완료.");
+        }
+    }
+
 
     //====헬퍼 메서드====//
 
@@ -389,12 +486,26 @@ public class DummyDataGenerator {
      * @return          생성 및 저장된 루틴 스냅샷 리스트
      */
     private List<RoutineSnapshot> createSnapshots(List<Routine> routines) {
-        // 1. 로그를 생성할 루틴들로부터 스냅샷을 먼저 만듭니다.
-        List<RoutineSnapshot> snapshotsToSave = routines.stream()
-                .filter(routine -> random.nextInt(10) == 0) // 10% 확률로 스냅샷 생성 결정
-                .map(this::buildSnapshotFromRoutine)      // 실제 생성 로직은 헬퍼 메서드에 위임
-                .collect(Collectors.toList());
-        List<RoutineSnapshot> savedSnapshots = routineSnapshotRepository.saveAll(snapshotsToSave);
+        List<RoutineSnapshot> snapshotsToSave = new ArrayList<>();
+
+        for (Routine routine : routines) {
+            // 각 루틴마다 0~5개의 로그를 무작위로 생성합니다.
+            int logCount = random.nextInt(6); // 0, 1, 2, 3, 4, 5 중 하나
+            if (logCount == 0) continue;
+
+            // 로그를 생성할 횟수만큼 스냅샷을 만듭니다.
+            for (int i = 0; i < logCount; i++) {
+                snapshotsToSave.add(buildSnapshotFromRoutine(routine));
+            }
+        }
+
+        // 배치 저장을 위해 saveAll 사용
+        List<RoutineSnapshot> savedSnapshots = new ArrayList<>();
+        for (int i = 0; i < snapshotsToSave.size(); i += BATCH_SIZE) {
+            int end = Math.min(i + BATCH_SIZE, snapshotsToSave.size());
+            savedSnapshots.addAll(routineSnapshotRepository.saveAll(snapshotsToSave.subList(i, end)));
+        }
+
         log.info("루틴 스냅샷 {}개 저장 완료", savedSnapshots.size());
         return savedSnapshots;
     }
@@ -411,7 +522,7 @@ public class DummyDataGenerator {
                 .originalRoutineId(routine.getId())
                 .title(routine.getTitle())
                 .content(routine.getContent())
-                .imageUrl(routine.getImageUrl())
+                .imageUrl(Optional.ofNullable(routine.getImageUrl()).orElse(""))
                 .isSimple(routine.isSimple())
                 .isUserVisible(routine.isUserVisible())
                 .requiredTime(routine.getRequiredTime())
@@ -453,45 +564,84 @@ public class DummyDataGenerator {
     /**
      * 저장된 스냅샷을 기반으로 로그를 생성 및 저장
      * @param savedSnapshots    저장된 스냅샷 리스트
-     * @param routines          원본 루틴 리스트
+     * @param users          사용자들
      */
-    private void createLogsFromSnapshots(List<RoutineSnapshot> savedSnapshots, List<Routine> routines) {
+    private void createLogsFromSnapshots(List<RoutineSnapshot> savedSnapshots, List<User> users) {
         if (savedSnapshots.isEmpty()) {
             log.info("생성된 스냅샷이 없음 -> 루틴 로그 생성 x");
             return;
         }
-        // 데이터 준비
-        Map<UUID, User> routineUserMap = routines.stream()
-                .collect(Collectors.toMap(Routine::getId, Routine::getUser, (u1, u2) -> u1));
 
         // 개별 로그 생성
         List<RoutineLog> logsToSave = new ArrayList<>();
         for (RoutineSnapshot snapshot : savedSnapshots) {
-            User user = routineUserMap.get(snapshot.getOriginalRoutineId());
-            if (user != null) {
-                logsToSave.add(buildRoutineLog(snapshot, user));
-            }
+            // 각 로그에 대해 무작위 사용자를 할당
+            User owner = routineRepository.findById(snapshot.getOriginalRoutineId())
+                    .map(Routine::getUser)
+                    .orElse(users.get(random.nextInt(users.size()))); // 혹시 못찾으면 랜덤 유저
+            logsToSave.add(buildRoutineLog(snapshot, owner));
         }
         batchSaveLogs(logsToSave);
     }
 
     /**
-     * 스냅샷과 사용자 기반으로 단일 ROutineLog 객체 생성
+     * 스냅샷과 사용자 기반으로 단일 RoutineLog 객체 생성
      * @param snapshot  로그의 기반이 될 스냅샷
      * @param user      로그의 소유자
      * @return          생성된 RoutineLog 객체
      */
     private RoutineLog buildRoutineLog(RoutineSnapshot snapshot, User user) {
         LocalDateTime startedAt = LocalDateTime.now().minusDays(random.nextInt(30)).minusHours(random.nextInt(24));
-        boolean isCompleted = random.nextBoolean();
         LocalDateTime endedAt = null;
         Duration totalTime = null;
 
-        if (isCompleted && snapshot.getRequiredTime() != null) {
-            endedAt = startedAt.plus(snapshot.getRequiredTime()).plusMinutes(random.nextInt(10) - 5); // 약간의 오차
-            totalTime = Duration.between(startedAt, endedAt);
+        // 사용자의 미리 할당된 '성실도 점수'를 가져오기
+        double diligenceScore = userDiligenceScores.getOrDefault(user.getId(), 0.5); // 점수가 없으면 50% 확률
+
+        // 사용자의 라이프스타일을 가져와 완료 확률을 조정.
+        UserLifestyle lifestyle = userLifestyles.getOrDefault(user.getId(), UserLifestyle.BALANCED);
+        java.time.DayOfWeek dayOfWeek = startedAt.getDayOfWeek();
+        double finalCompletionProbability = diligenceScore;
+        double modifier = 0.25; // 확률 보정값 (25%p)
+
+        switch (lifestyle) {
+            case WEEKDAY_WARRIOR:
+                if (dayOfWeek != java.time.DayOfWeek.SATURDAY && dayOfWeek != java.time.DayOfWeek.SUNDAY) {
+                    finalCompletionProbability += modifier; // 평일 보너스
+                } else {
+                    finalCompletionProbability -= modifier; // 주말 페널티
+                }
+                break;
+            case WEEKEND_RELAXER:
+                if (dayOfWeek == java.time.DayOfWeek.SATURDAY || dayOfWeek == java.time.DayOfWeek.SUNDAY) {
+                    finalCompletionProbability += modifier; // 주말 보너스
+                } else {
+                    finalCompletionProbability -= modifier; // 평일 페널티
+                }
+                break;
+            case BALANCED:
+                // 확률 변경 없음
+                break;
         }
 
+        finalCompletionProbability = Math.max(0.05, Math.min(finalCompletionProbability, 0.95));
+
+        // 성실도 점수를 기반으로 이 로그의 완료 여부를 확률적으로 결정
+        boolean isCompleted = random.nextDouble() < finalCompletionProbability;
+
+        // 완료된 경우에만 종료 시간과 소요 시간을 기록
+        if (isCompleted) {
+            if (!snapshot.isSimple() && snapshot.getRequiredTime() != null && !snapshot.getRequiredTime().isZero()) {
+                // 집중 루틴: 예상 시간에 약간의 오차를 더해 현실적인 소요 시간 생성
+                endedAt = startedAt.plus(snapshot.getRequiredTime()).plusMinutes(random.nextInt(10) - 5);
+                totalTime = Duration.between(startedAt, endedAt);
+            } else {
+                // 간편 루틴: 1~5분 사이의 짧은 소요 시간 생성
+                totalTime = Duration.ofMinutes(random.nextInt(5) + 1);
+                endedAt = startedAt.plus(totalTime);
+            }
+        }
+        // 완료되지 않은 경우, endedAt과 totalTime은 null로 유지
         return RoutineLog.builder()
                 .user(user)
                 .routineSnapshot(snapshot)
@@ -519,5 +669,30 @@ public class DummyDataGenerator {
             log.info("▶ {}/{} 개의 루틴 로그 저장 완료", end, logsToSave.size());
         }
         log.info("루틴 로그 저장 완료");
+    }
+
+    private void assignDiligenceScoresToUsers(List<User> users) {
+        double mean = 0.65;   // 목표 평균 실천율: 65%
+        double stdDev = 0.20; // 표준 편차: 20% (점수 분포를 더 넓게 하여 다양한 사용자 유형 생성)
+        for (User user : users) {
+            double diligence = (random.nextGaussian() * stdDev) + mean;
+            // 생성된 값이 5% ~ 95% 범위를 벗어나지 않도록 보정합니다.
+            diligence = Math.max(0.05, Math.min(diligence, 0.95));
+            userDiligenceScores.put(user.getId(), diligence);
+        }
+        log.info("{}명의 사용자에게 정규분포를 따르는 실천율 점수(diligence) 할당 완료", users.size());
+    }
+
+    private void assignLifestylesToUsers(List<User> users) {
+        for (User user : users) {
+            int choice = random.nextInt(3);
+            UserLifestyle lifestyle = switch (choice) {
+                case 0 -> UserLifestyle.WEEKDAY_WARRIOR;
+                case 1 -> UserLifestyle.WEEKEND_RELAXER;
+                default -> UserLifestyle.BALANCED;
+            };
+            userLifestyles.put(user.getId(), lifestyle);
+        }
+        log.info("{}명의 사용자에게 라이프스타일 유형 할당 완료", users.size());
     }
 }
