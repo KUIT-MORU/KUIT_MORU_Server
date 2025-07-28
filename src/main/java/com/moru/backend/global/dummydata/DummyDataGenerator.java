@@ -489,7 +489,7 @@ public class DummyDataGenerator {
         List<RoutineSnapshot> snapshotsToSave = new ArrayList<>();
 
         for (Routine routine : routines) {
-            // 각 루틴마다 0~5개의 로그를 무작위로 생성합니다.
+            // 각 루틴마다 0~5개의 로그를 무작위로 생성합니다!
             int logCount = random.nextInt(6); // 0, 1, 2, 3, 4, 5 중 하나
             if (logCount == 0) continue;
 
