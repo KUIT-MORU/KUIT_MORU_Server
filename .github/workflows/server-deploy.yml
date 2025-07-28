@@ -18,8 +18,12 @@ jobs:
           key: ${{ secrets.SERVER_KEY }}
           script: |
             cd ~/KUIT_MORU_Server
+            PID=$(lsof -t -i :8000)
+            if [ -n "$PID" ]; then
+              kill -9 $PID
+            fi
+            
             git checkout develop
-            kill -9 $(lsof -t -i :8000)
             git add .
             git commit -m "temp commit"
             git fetch origin develop
@@ -34,6 +38,6 @@ jobs:
             fi
 
             ./gradlew clean build
-            docker rm -f server-dev --force
-            docker rmi server-dev
+            docker rm -f server-dev --force || true
+            docker rmi server-dev || true
             docker compose -f docker-compose-dev.yml -p server-dev up --build -d
