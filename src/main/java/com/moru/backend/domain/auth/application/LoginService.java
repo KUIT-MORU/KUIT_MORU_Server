@@ -4,6 +4,7 @@ import com.moru.backend.domain.auth.dto.LoginRequest;
 import com.moru.backend.domain.auth.dto.TokenResponse;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.domain.user.domain.UserRole;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.jwt.JwtProvider;
@@ -36,8 +37,9 @@ public class LoginService {
         }
 
         UUID userId = user.getId();
-        String accessToken = jwtProvider.createAccessToken(userId);
-        String refreshToken = jwtProvider.createRefreshToken(userId);
+        UserRole role = user.getRole();
+        String accessToken = jwtProvider.createAccessToken(userId, role);
+        String refreshToken = jwtProvider.createRefreshToken(userId, role);
 
         refreshTokenRepository.save(
                 userId.toString(),

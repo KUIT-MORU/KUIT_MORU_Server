@@ -39,9 +39,12 @@ public class RoutineInsightCalculator {
         // 유저 전체 루틴 조회
         List<Routine> userRoutines = routineRepository.findAllByUserId(user.getId());
 
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
+
         // 완료된 루틴 로그의 originalRoutineId + 날짜 기준으로 그룹핑
         Map<LocalDate, Set<UUID>> completedRoutinesByDate = routineLogRepository
-                .findCompletedByUserIdAndPeriodWithSnapshot(user.getId(), startDate, endDate)
+                .findCompletedByUserIdAndPeriodWithSnapshot(user.getId(), startDateTime, endDateTime)
                 .stream()
                 .collect(Collectors.groupingBy(
                         log -> log.getStartedAt().toLocalDate(),
@@ -76,15 +79,6 @@ public class RoutineInsightCalculator {
         return totalScheduled == 0 ? 0.0 : (totalCompleted / totalScheduled);
     }
 
-    // 해당 요일에 실행되도록 설정한 스케줄이 존재하고, 그 스케줄이 해당 날짜 이전에 수정되었는지 확인
-    private boolean hasScheduleOnDayBefore(Routine routine, DayOfWeek targetDay, LocalDate date) {
-        return routine.getRoutineSchedules().stream()
-                .anyMatch(schedule ->
-                    schedule.getDayOfWeek().equals(targetDay) &&
-                    schedule.getUpdatedAt().toLocalDate().isBefore(date.plusDays(1))
-                );
-    }
-
     /**
      * 주중 / 주말 실천 평균 개수 계산
      * @param user
@@ -93,7 +87,10 @@ public class RoutineInsightCalculator {
      * @return
      */
     public Map<String, Double> calculateWeekdayWeekendAvg(User user, LocalDate startDate, LocalDate endDate) {
-        Map<LocalDate, List<RoutineLog>> logsByDate = routineLogRepository.findCompletedByUserIdAndPeriodWithSnapshot(user.getId(), startDate, endDate)
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
+
+        Map<LocalDate, List<RoutineLog>> logsByDate = routineLogRepository.findCompletedByUserIdAndPeriodWithSnapshot(user.getId(), startDateTime, endDateTime)
                 .stream()
                 .collect(Collectors.groupingBy(log -> log.getStartedAt().toLocalDate()));
 
@@ -133,7 +130,10 @@ public class RoutineInsightCalculator {
      * @return
      */
     public Map<TimeSlot, Integer> calculateCompletionCountByTimeSlot(User user, LocalDate startDate, LocalDate endDate) {
-        List<RoutineLog> logs = routineLogRepository.findCompletedByUserIdAndPeriodWithSnapshot(user.getId(), startDate, endDate);
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
+
+        List<RoutineLog> logs = routineLogRepository.findCompletedByUserIdAndPeriodWithSnapshot(user.getId(), startDateTime, endDateTime);
         Map<TimeSlot, Integer> timeSlotCount = new EnumMap<>(TimeSlot.class);
 
         for(RoutineLog log : logs) {

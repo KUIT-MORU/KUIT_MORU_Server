@@ -12,7 +12,6 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@EntityListeners(AuditingEntityListener.class)
 @Table(name = "notification")
 @Getter
 @NoArgsConstructor
@@ -31,20 +30,9 @@ public class Notification {
     private UUID resourceId;
 
     @Column(nullable = false)
-    private String link;
-
-    @Column(nullable = false)
-    private boolean isRead = false;
-
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private NotificationType type;
 
-    @CreatedDate
     @Column(nullable = false)
     private LocalDateTime createdAt;
-
-    public void markAsRead() {
-        this.isRead = true;
-    }
 }

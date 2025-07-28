@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.GenericGenerator;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -23,7 +24,12 @@ import java.util.UUID;
 @Builder
 public class RoutineSchedule {
     @Id
-    @GeneratedValue
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(
+            name = "UUID",
+            strategy = "org.hibernate.id.UUIDGenerator"
+    )
+    @Column(columnDefinition = "BINARY(16)")
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -57,5 +63,8 @@ public class RoutineSchedule {
     }
     public void setAlarmEnabled(boolean alarmEnabled) {
         this.alarmEnabled = alarmEnabled;
+    }
+    public void setRoutine(Routine routine) {
+        this.routine = routine;
     }
 }

@@ -25,9 +25,8 @@ public class UserInsightBatchService {
         LocalDate endDate = LocalDate.now().minusDays(1); // 오늘은 제외
 
         // 개인 인사이트 계산
-        for (User user : activeUsers) {
-            userInsightService.calculateAndSaveUserInsight(user, startDate, endDate);
-        }
+        activeUsers.parallelStream()
+                .forEach(user -> userInsightService.calculateAndSaveUserInsight(user,startDate,endDate));
 
         // 전체 인사이트 계산
         globalInsightService.recalculateAndCacheGlobalInsight(startDate);

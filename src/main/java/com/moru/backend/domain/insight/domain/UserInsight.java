@@ -4,10 +4,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.moru.backend.domain.user.domain.User;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.hibernate.annotations.GenericGenerator;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -19,12 +17,18 @@ import java.util.UUID;
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "user_insight")
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class UserInsight {
     @Id
-    @GeneratedValue
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(
+            name = "UUID",
+            strategy = "org.hibernate.id.UUIDGenerator"
+    )
+    @Column(columnDefinition = "BINARY(16)")
     private UUID id;
 
     @OneToOne(fetch = FetchType.LAZY)

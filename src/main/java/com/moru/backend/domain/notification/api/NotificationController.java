@@ -35,27 +35,19 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.getNotifications(user, cursorCreatedAt, lastNotificationId, size));
     }
 
-    // 알림 읽음 처리
-    @Operation(summary = "알림 읽음 처리")
-    @PutMapping("/{notificationId}/read")
+    // 알림 삭제 처리
+    @Operation(summary = "알림 삭제 처리")
+    @DeleteMapping("/{notificationId}")
     public ResponseEntity<Void> markAsRead(
             @PathVariable UUID notificationId,
             @CurrentUser User user
     ) {
-        notificationService.markAsRead(notificationId, user.getId());
+        notificationService.delete(notificationId, user.getId());
         return ResponseEntity.noContent().build();
     }
 
-    // 전체 알림 읽음 처리
-    @Operation(summary = "전체 알림 읽음 처리")
-    @PutMapping("/read-all")
-    public ResponseEntity<Void> markAllAsRead(@CurrentUser User user) {
-        notificationService.markAllAsRead(user.getId());
-        return ResponseEntity.noContent().build();
-    }
-
-    // 안 읽은 알림 수 조회
-    @Operation(summary = "안 읽은 알림 수 조회")
+    // 알림 수 조회
+    @Operation(summary = "알림 수 조회")
     @GetMapping("/unread-count")
     public ResponseEntity<Integer> getUnreadCount(@CurrentUser User user) {
         int count = notificationService.getUnreadCount(user.getId());

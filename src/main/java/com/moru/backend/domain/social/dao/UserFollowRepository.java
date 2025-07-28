@@ -53,4 +53,7 @@ public interface UserFollowRepository extends JpaRepository<UserFollow, UUID> {
             @Param("lastUserId") UUID lastUserId,
             Pageable pageable
     );
+
+    @Query("SELECT uf.follower.id FROM UserFollow uf WHERE uf.following.id = :userId")
+    List<UUID> findFollowerIdsByUserId(@Param("userId") UUID userId);
 }

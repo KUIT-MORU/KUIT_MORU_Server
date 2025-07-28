@@ -6,6 +6,8 @@ import com.moru.backend.domain.notification.domain.NotificationType;
 import com.moru.backend.domain.notification.dto.NotificationCursor;
 import com.moru.backend.domain.notification.dto.NotificationResponse;
 import com.moru.backend.domain.notification.mapper.NotificationMapper;
+import com.moru.backend.domain.routine.application.RoutineQueryService;
+import com.moru.backend.domain.social.application.FollowService;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.global.common.dto.ScrollResponse;
 import com.moru.backend.global.exception.CustomException;
@@ -25,44 +27,47 @@ import java.util.UUID;
 public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationMapper notificationMapper;
+    private final RoutineQueryService routineQueryService;
+    private final FollowService followService;
 
     // 루틴 생성 알림
-    public void sendRoutineCreated(UUID receiverId, UUID senderId, UUID routineId) {
-        Notification notification = Notification.builder()
-                .receiverId(receiverId)
-                .senderId(senderId)
-                .resourceId(routineId)
-                .link("/routines/" + routineId)
-                .type(NotificationType.ROUTINE_CREATED)
-                .build();
+    public void sendRoutineCreated(UUID senderId, UUID routineId, LocalDateTime createdAt) {
+        // 루틴의 유저 공개 여부 확인
+        if(!routineQueryService.isUserVisibleById(routineId)) {
+            return;
+        }
 
-        notificationRepository.save(notification);
+        // 발송자 팔로워 목록 조회
+        List<UUID> followerIds = followService.findFollowerIdsByUserId(senderId);
+
+        // 알림 생성
+        for(UUID followerId : followerIds) {
+            Notification notification = Notification.builder()
+                    .receiverId(followerId)
+                    .senderId(senderId)
+                    .resourceId(routineId)
+                    .type(NotificationType.ROUTINE_CREATED)
+                    .createdAt(createdAt)
+                    .build();
+
+            notificationRepository.save(notification);
+        }
     }
 
     // 팔로우 알림
-    public void sendFollowReceived(UUID receiverId, UUID senderId) {
+    public void sendFollowReceived(UUID receiverId, UUID senderId, LocalDateTime createdAt) {
+        //DB 저장
         Notification notification = Notification.builder()
                 .receiverId(receiverId)
                 .senderId(senderId)
-                .link("/user/" + senderId)
                 .type(NotificationType.FOLLOW_RECEIVED)
-                .build();
-        notificationRepository.save(notification);
-    }
-
-    // 루틴 스케줄 알림
-    public void sendRoutineReminder(UUID receiverId, UUID routineId) {
-        Notification notification = Notification.builder()
-                .receiverId(receiverId)
-                .senderId(null) // 시스템 알림
-                .resourceId(routineId)
-                .link("/routines/" + routineId)
-                .type(NotificationType.ROUTINE_REMINDER)
+                .createdAt(createdAt)
                 .build();
         notificationRepository.save(notification);
     }
 
     // 알림 목록 조회
+    @Transactional(readOnly = true)
     public ScrollResponse<NotificationResponse, NotificationCursor> getNotifications(
             User user,
             LocalDateTime lastCreatedAt, UUID lastNotificationId, int limit
@@ -86,28 +91,20 @@ public class NotificationService {
         return ScrollResponse.of(result, hasNext, nextCursor);
     }
 
-    // 알림 읽음 처리
+    @Transactional(readOnly = true)
+    public int getUnreadCount(UUID receiverId) {
+        return notificationRepository.countByReceiverId(receiverId);
+    }
+
     @Transactional
-    public void markAsRead(UUID notificationId, UUID receiverId) {
+    public void delete(UUID notificationId, UUID userId) {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND));
 
-        if(!notification.getReceiverId().equals(receiverId)) {
+        if (!notification.getReceiverId().equals(userId)) {
             throw new CustomException(ErrorCode.FORBIDDEN_NOTIFICATION_ACCESS);
         }
 
-        if(!notification.isRead()) {
-            notification.markAsRead();
-        }
-    }
-
-    @Transactional
-    public void markAllAsRead(UUID receiverId) {
-        notificationRepository.markAllAsRead(receiverId);
-    }
-
-    @Transactional
-    public int getUnreadCount(UUID receiverId) {
-        return notificationRepository.countByReceiverIdAndIsReadFalse(receiverId);
+        notificationRepository.delete(notification);
     }
 }

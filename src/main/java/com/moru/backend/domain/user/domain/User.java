@@ -2,6 +2,7 @@ package com.moru.backend.domain.user.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.GenericGenerator;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -19,6 +20,12 @@ import java.util.UUID;
 @Builder
 public class User {
     @Id
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(
+            name = "UUID",
+            strategy = "org.hibernate.id.UUIDGenerator"
+    )
+    @Column(columnDefinition = "BINARY(16)")
     private UUID id;
 
     @Column(nullable = false, unique = true, length = 100)
@@ -27,17 +34,21 @@ public class User {
     @Column(nullable = false, length = 100)
     private String password;
 
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private UserRole role;
+
     @Setter
-    @Column(nullable = false, unique = true, length = 50)
+    @Column(unique = true, length = 50)
     private String nickname;
 
     @Setter
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "ENUM('MALE','FEMALE')")
+    @Column(columnDefinition = "ENUM('MALE','FEMALE')")
     private Gender gender;
 
     @Setter
-    @Column(name = "birthday", nullable = false)
+    @Column(name = "birthday")
     private LocalDate birthday;
 
     @Setter

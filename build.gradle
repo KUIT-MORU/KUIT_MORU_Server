@@ -45,6 +45,8 @@ dependencies {
 	// AWS
 	implementation platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.0.2")
 	implementation "io.awspring.cloud:spring-cloud-aws-starter-s3"
+	// dummy data 용
+	implementation 'net.datafaker:datafaker:2.4.4'
 
 	//.env 인식
 	implementation 'io.github.cdimascio:java-dotenv:5.2.2'

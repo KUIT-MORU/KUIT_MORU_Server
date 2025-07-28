@@ -2,6 +2,7 @@ package com.moru.backend.global.jwt.filter;
 
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.domain.user.domain.UserRole;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.jwt.JwtProvider;
@@ -12,10 +13,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -59,9 +63,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 // refreshToken 블랙리스트 체크
                 if(refreshToken != null && !tokenBlacklistService.isBlacklisted(refreshToken) && jwtProvider.validateToken(refreshToken)) {
+                    // 유저 권한 가져오기
+                    UserRole role = user.getRole();
+
                     // AccessToken 및 RefreshToken 재발급
-                    String newAccessToken = jwtProvider.createAccessToken(userId);
-                    String newRefreshToken = jwtProvider.createRefreshToken(userId);
+                    String newAccessToken = jwtProvider.createAccessToken(userId, role);
+                    String newRefreshToken = jwtProvider.createRefreshToken(userId, role);
 
                     // Redis에 RefreshToken 갱신
                     refreshTokenRepository.save(userId.toString(), newRefreshToken);
@@ -70,8 +77,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     response.setHeader("Authorization", "Bearer " + newAccessToken);
                     response.setHeader("X-Refresh-Token", newRefreshToken);
 
+                    // 권한 주입 (Role 주입)
+                    List<GrantedAuthority> authorities = List.of(
+                            new SimpleGrantedAuthority(role.getRoleName())
+                    );
+
                     // SecurityContext 갱신
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userId, null, null);
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userId, null, authorities);
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 } else {
                     // 인증 실패, 인증 정보 삭제
@@ -101,8 +113,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if(!user.isActive()) {
                 throw new CustomException(ErrorCode.USER_DEACTIVATED);
             }
+            UserRole role = jwtProvider.getRole(token);
 
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userId, null, null);
+            // 권한 주입 (Role 주입)
+            List<GrantedAuthority> authorities = List.of(
+                    new SimpleGrantedAuthority(role.getRoleName())
+            );
+
+
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userId, null, authorities);
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
 
