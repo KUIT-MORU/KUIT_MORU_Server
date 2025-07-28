@@ -1,6 +1,9 @@
 package com.moru.backend.global.jwt;
 
+import com.moru.backend.domain.user.domain.UserRole;
 import com.moru.backend.global.config.JwtProperties;
+import com.moru.backend.global.exception.CustomException;
+import com.moru.backend.global.exception.ErrorCode;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -34,20 +37,21 @@ public class JwtProvider {
         this.secretKey = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
     }
 
-    public String createAccessToken(UUID userId) {
-        return createToken(userId, accessTokenValidity);
+    public String createAccessToken(UUID userId, UserRole role) {
+        return createToken(userId, role, accessTokenValidity);
     }
 
-    public String createRefreshToken(UUID userId) {
-        return createToken(userId, refreshTokenValidity);
+    public String createRefreshToken(UUID userId, UserRole role) {
+        return createToken(userId, role, refreshTokenValidity);
     }
 
-    private String createToken(UUID userId, long validity) {
+    private String createToken(UUID userId, UserRole role, long validity) {
         Date now = new Date();
         Date expiration = new Date(now.getTime() + validity);
 
         return Jwts.builder()
                 .setSubject(userId.toString())
+                .claim("role", role.name())
                 .setIssuedAt(now)
                 .setExpiration(expiration)
                 .signWith(secretKey, SignatureAlgorithm.HS256)
@@ -66,6 +70,24 @@ public class JwtProvider {
         } catch (Exception e) {
             // 유효하지 않은 토큰
             return null;
+        }
+    }
+
+    public UserRole getRole(String token) {
+        Claims claims = parseClaims(token);
+        if (claims == null) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN); // 또는 INVALID_ROLE
+        }
+
+        String roleStr = claims.get("role", String.class);
+        if (roleStr == null) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN); // role 누락된 토큰
+        }
+
+        try {
+            return UserRole.valueOf(roleStr);
+        } catch (IllegalArgumentException e) {
+            throw new CustomException(ErrorCode.INVALID_ROLE); // 정의되지 않은 ROLE
         }
     }
 
