@@ -1,0 +1,23 @@
+services:
+  back:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: server-dev
+    image: server-dev
+    restart: always
+    ports:
+      - 8000:8000
+    environment:
+      - TZ=Asia/Seoul
+      - SPRING_PROFILES_ACTIVE=${profile}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}?useSSL=false&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true&tinyInt1isBit=false
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
+      - IP=${IP}
+    networks:
+      - temp
+
+networks:
+  temp:
+    driver: bridge
