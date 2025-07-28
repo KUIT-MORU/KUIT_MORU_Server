@@ -20,13 +20,17 @@ import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.util.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,35 +54,53 @@ public class RoutineSearchService {
         // 페이징 정보 생성 (# page, size)
         Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
 
-        // 정렬 타입에 따라 서로 다른 Repository 메서드 호출
-        Page<Routine> routines;
+        // 1단계: ID 조회 (변경된 Repository 메서드 호출)
+        Page<UUID> routineIdPage;
         if (request.getSortType() == SortType.POPULAR) {
-            routines = routineRepository.findBySearchCriteriaOrderByLikeCount(
+            routineIdPage = routineRepository.findIdsBySearchCriteriaOrderByLikeCount(
                     request.getTitleKeyword(),
                     request.getTagNames(),
                     pageable
             );
         } else {
-            routines = routineRepository.findBySearchCriteriaOrderByCreatedAt(
+            routineIdPage = routineRepository.findIdsBySearchCriteriaOrderByCreatedAt(
                     request.getTitleKeyword(),
                     request.getTagNames(),
                     pageable
             );
         }
 
-        // 엔티티에서 DTO로 매핑하기
-        return routines.map(routine -> {
-            // 루틴에 연결된 태그 목록 조회
-            List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
-            // RoutineListResponse 생성 (routine & tag entity 포함)
-            RoutineListResponse routineListResponse = RoutineListResponse.fromRoutine(
-                    routine,
-                    s3Service.getImageUrl(routine.getImageUrl()),
-                    tags
-            );
-            // 실행중 여부는 더 이상 포함하지 않음
-            return RoutineSearchResponse.of(routineListResponse);
-        });
+        List<UUID> routineIds = routineIdPage.getContent();
+        if (routineIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        // 2단계: ID로 상세 정보 조회
+        List<Routine> routines = routineRepository.findAllWithDetailsByIds(routineIds);
+
+        // 3단계: 원래 순서대로 정렬
+        Map<UUID, Routine> routineMap = routines.stream()
+                .collect(Collectors.toMap(Routine::getId, Function.identity()));
+
+        List<Routine> sortedRoutines = routineIds.stream()
+                .map(routineMap::get)
+                .filter(Objects::nonNull)
+                .toList();
+
+        // 4단계: DTO로 변환
+        List<RoutineSearchResponse> dtoList = sortedRoutines.stream()
+                .map(routine -> {
+                    RoutineListResponse routineListResponse = RoutineListResponse.fromRoutine(
+                            routine,
+                            s3Service.getImageUrl(routine.getImageUrl()),
+                            routine.getRoutineTags() // 이미 Fetch 되어 있음
+                    );
+                    return RoutineSearchResponse.of(routineListResponse);
+                })
+                .toList();
+
+        // 5단계: 최종 Page 객체 생성
+        return new PageImpl<>(dtoList, pageable, routineIdPage.getTotalElements());
     }
 
     /**

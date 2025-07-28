@@ -56,7 +56,22 @@ public class RoutineRecommendService {
      */
     public List<RoutineListResponse> getHotRoutines(int limit) {
         LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
-        return routineRepository.findHotRoutines(weekAgo, viewWeight, likeWeight, PageRequest.of(0, limit)).stream()
+        // ID 조회 (변경된 Repository 메서드 호출)
+        List<UUID> hotRoutineIds = routineRepository.findHotRoutinesIds(weekAgo, viewWeight, likeWeight, PageRequest.of(0, limit));
+        if (hotRoutineIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 상세 정보 조회
+        List<Routine> hotRoutines = routineRepository.findAllWithDetailsByIds(hotRoutineIds);
+
+        // 원래 순서대로 정렬
+        Map<UUID, Routine> routineMap = hotRoutines.stream()
+                .collect(Collectors.toMap(Routine::getId, Function.identity()));
+
+        return hotRoutineIds.stream()
+                .map(routineMap::get)
+                .filter(Objects::nonNull)
                 .map(this::toRoutineListResponse)
                 .toList();
     }
@@ -211,8 +226,26 @@ public class RoutineRecommendService {
 
             if (tagName1 == null || tagName2 == null) return null;
 
-            List<Routine> routines = routineRepository.findRoutinesByTagPair(tagId1, tagId2, PageRequest.of(0, limit));
-            List<RoutineListResponse> routineList = routines.stream().map(this::toRoutineListResponse).toList();
+            Page<UUID> routineIdPage = routineRepository.findRoutineIdsByTagPair(tagId1, tagId2, PageRequest.of(0, limit));
+            List<UUID> routineIds = routineIdPage.getContent();
+
+            if (routineIds.isEmpty()) {
+                return new TagPairSection(tagName1, tagName2, Collections.emptyList());
+            }
+
+            List<Routine> routines = routineRepository.findAllWithDetailsByIds(routineIds);
+
+            // ID 순서대로 정렬
+            Map<UUID, Routine> routinesById = routines.stream()
+                    .collect(Collectors.toMap(Routine::getId, Function.identity()));
+            List<Routine> sortedRoutines = routineIds.stream()
+                    .map(routinesById::get)
+                    .filter(Objects::nonNull)
+                    .toList();
+
+            List<RoutineListResponse> routineList = sortedRoutines.stream()
+                    .map(this::toRoutineListResponse)
+                    .toList();
 
             return new TagPairSection(tagName1, tagName2, routineList);
         } catch (IllegalArgumentException e) {

@@ -16,6 +16,7 @@ import com.moru.backend.global.util.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -23,8 +24,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -78,21 +80,42 @@ public class RoutineQueryService {
     }
 
     public Page<RoutineListResponse> getRoutineList(User user, SortType sortType, DayOfWeek dayOfWeek, Pageable pageable) {
-        Page<Routine> routines;
+        Page<UUID> routineIdPage;
         if (sortType == SortType.TIME && dayOfWeek != null) {
-            routines = routineRepository.findByUserIdAndDayOfWeekOrderByScheduleTimeAsc(user.getId(), dayOfWeek, pageable);
+            routineIdPage = routineRepository.findIdsByUserIdAndDayOfWeekOrderByScheduleTimeAsc(user.getId(), dayOfWeek, pageable);
         } else if (sortType == SortType.POPULAR) {
-            routines = routineRepository.findByUserOrderByLikeCountDescCreatedAtDesc(user, pageable);
+            routineIdPage = routineRepository.findIdsByUserOrderByLikeCountDescCreatedAtDesc(user, pageable);
         } else { // LATEST
-            routines = routineRepository.findByUserOrderByCreatedAtDesc(user, pageable);
+            routineIdPage = routineRepository.findIdsByUserOrderByCreatedAtDesc(user, pageable);
         }
-        return routines.map(this::toRoutineListResponse);
+        List<UUID> routineIds = routineIdPage.getContent();
+        if (routineIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        // ID로 상세 정보 조회
+        List<Routine> routines = routineRepository.findAllWithDetailsByIds(routineIds);
+
+        // 원래 순서대로 정렬
+        Map<UUID, Routine> routineMap = routines.stream()
+                .collect(Collectors.toMap(Routine::getId, Function.identity()));
+        List<Routine> sortedRoutines = routineIds.stream()
+                .map(routineMap::get)
+                .filter(Objects::nonNull)
+                .toList();
+
+        // DTO로 변환 후 최종 Page 객체 생성
+        List<RoutineListResponse> dtoList = sortedRoutines.stream()
+                .map(this::toRoutineListResponse)
+                .toList();
+
+        return new PageImpl<>(dtoList, pageable, routineIdPage.getTotalElements());
     }
 
 
     private List<RoutineListResponse> findSimilarRoutines(Routine routine, User currentUser) {
         if (routine.getRoutineTags().isEmpty()) {
-            return List.of();
+            return Collections.emptyList();
         }
         List<UUID> tagIds = routine.getRoutineTags().stream()
                 .map(rt -> rt.getTag().getId())
@@ -100,9 +123,25 @@ public class RoutineQueryService {
         Pageable pageable = PageRequest.of(0, similarFetchSize); // 넉넉히 조회
 
         // 이 Repository 메서드도 JOIN FETCH를 사용하도록 수정하면 성능이 더 좋아짐
-        List<Routine> routines = routineRepository.findSimilarRoutinesByTagIds(tagIds, routine.getId(), pageable);
+        Page<UUID> similarRoutineIdPage = routineRepository.findSimilarRoutineIdsByTagIds(tagIds, routine.getId(), pageable);
+        List<UUID> similarRoutineIds = similarRoutineIdPage.getContent();
 
-        return routines.stream()
+        if (similarRoutineIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 2단계: ID로 상세 정보 조회
+        List<Routine> similarRoutines = routineRepository.findAllWithDetailsByIds(similarRoutineIds);
+
+        // 3단계: 원래 순서대로 정렬
+        Map<UUID, Routine> routineMap = similarRoutines.stream()
+                .collect(Collectors.toMap(Routine::getId, Function.identity()));
+        List<Routine> sortedRoutines = similarRoutineIds.stream()
+                .map(routineMap::get)
+                .filter(Objects::nonNull)
+                .toList();
+
+        return sortedRoutines.stream()
                 .filter(r -> !r.getUser().getId().equals(currentUser.getId()))
                 .limit(similarLimitSize)
                 .map(this::toRoutineListResponse)
