@@ -11,6 +11,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import static com.moru.backend.domain.user.domain.UserRole.*;
+
 @Entity
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "user")
@@ -34,9 +36,10 @@ public class User {
     @Column(nullable = false, length = 100)
     private String password;
 
+    @Builder.Default
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private UserRole role;
+    private UserRole role = USER;
 
     @Setter
     @Column(unique = true, length = 50)
