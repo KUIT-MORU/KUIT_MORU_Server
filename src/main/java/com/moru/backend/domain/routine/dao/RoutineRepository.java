@@ -105,10 +105,8 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
                                   Pageable pageable);
 
     /**
-     *
-     * @param tags     추천의 기반이 될 태그 이름 목록
-     * @param pageable 페이징 정보
-     * @return 정렬된 루틴 ID의 Page 객체
+     * 주어진 태그를 포함하는 루틴의 ID를, 태그 일치 개수가 많은 순으로 정렬하여 조회.
+     * JOIN FETCH를 제거하여 COUNT 및 GROUP BY와 함께 사용할 수 있도록 수정했.
      */
     @Query(value = "SELECT r.id FROM Routine r JOIN r.routineTags rt WHERE rt.tag.name IN :tags GROUP BY r.id ORDER BY COUNT(r.id) DESC, r.createdAt DESC",
             countQuery = "SELECT COUNT(DISTINCT r.id) FROM Routine r JOIN r.routineTags rt WHERE rt.tag.name IN :tags")
