@@ -28,6 +28,7 @@ import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.Gender;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.domain.user.domain.UserFavoriteTag;
+import com.moru.backend.domain.user.domain.UserRole;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.datafaker.Faker;
@@ -130,6 +131,7 @@ public class DummyDataGenerator {
                 .birthday(LocalDate.parse("2000-01-01"))
                 .bio("테스트 계정입니다.")
                 .profileImageUrl("https://example.com/profile0.jpg")
+                .role(UserRole.USER)
                 // status, createdAt, updatedAt은 자동 처리되므로 설정 불필요
                 .build();
         userBatch.add(testUser);
@@ -151,6 +153,7 @@ public class DummyDataGenerator {
                     .bio(dummyDataPool.getRandomBio())
                     // profileImageUrl은 faker로 직접 생성하여 설정
                     .profileImageUrl(random.nextInt(10) < 7 ? faker.avatar().image() : null)
+                    .role(UserRole.USER)
                     // status, createdAt, updatedAt은 자동 처리되므로 설정 불필요
                     .build());
             if (userBatch.size() >= BATCH_SIZE) {
@@ -284,8 +287,11 @@ public class DummyDataGenerator {
         assignDiligenceScoresToUsers(users);
         assignLifestylesToUsers(users);
 
+        Map<UUID, User> routineOwnerMap = routines.stream()
+                .collect(Collectors.toMap(Routine::getId, Routine::getUser));
+
         List<RoutineSnapshot> savedSnapshots = createSnapshots(routines);
-        createLogsFromSnapshots(savedSnapshots, users);
+        createLogsFromSnapshots(savedSnapshots, users, routineOwnerMap);
     }
 
 
@@ -566,7 +572,7 @@ public class DummyDataGenerator {
      * @param savedSnapshots    저장된 스냅샷 리스트
      * @param users          사용자들
      */
-    private void createLogsFromSnapshots(List<RoutineSnapshot> savedSnapshots, List<User> users) {
+    private void createLogsFromSnapshots(List<RoutineSnapshot> savedSnapshots, List<User> users, Map<UUID, User> routineOwnerMap) {
         if (savedSnapshots.isEmpty()) {
             log.info("생성된 스냅샷이 없음 -> 루틴 로그 생성 x");
             return;
@@ -576,9 +582,9 @@ public class DummyDataGenerator {
         List<RoutineLog> logsToSave = new ArrayList<>();
         for (RoutineSnapshot snapshot : savedSnapshots) {
             // 각 로그에 대해 무작위 사용자를 할당
-            User owner = routineRepository.findById(snapshot.getOriginalRoutineId())
-                    .map(Routine::getUser)
-                    .orElse(users.get(random.nextInt(users.size()))); // 혹시 못찾으면 랜덤 유저
+            // [성능 개선] DB를 반복 조회하는 대신, 미리 만들어둔 Map에서 소유자 정보를 가져옵니다.
+            User owner = routineOwnerMap.getOrDefault(snapshot.getOriginalRoutineId(),
+                    users.get(random.nextInt(users.size()))); // 혹시 못찾으면 랜덤 유저
             logsToSave.add(buildRoutineLog(snapshot, owner));
         }
         batchSaveLogs(logsToSave);
