@@ -134,7 +134,7 @@ public class DummyDataGenerator {
                 .birthday(LocalDate.parse("2000-01-01"))
                 .bio("테스트 계정입니다.")
                 .profileImageUrl("https://example.com/profile0.jpg")
-                .role(UserRole.USER)
+                .role(UserRole.ADMIN)
                 // status, createdAt, updatedAt은 자동 처리되므로 설정 불필요
                 .build();
         userBatch.add(testUser);
@@ -507,10 +507,11 @@ public class DummyDataGenerator {
         }
 
         // 루틴 히스토리 설정
+        LocalDateTime effectiveStartDateTime = LocalDateTime.now().minusDays(30);
         return RoutineScheduleHistory.builder()
                 .routine(routine)
                 .scheduledDays(scheduledDays.stream().toList())
-                .effectiveStartDateTime(LocalDateTime.now())
+                .effectiveStartDateTime(effectiveStartDateTime)
                 .build();
         // --- 로직 종료 ---
     }
