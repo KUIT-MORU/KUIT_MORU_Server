@@ -139,6 +139,18 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
     List<Routine> findWithTagsByIds(@Param("routineIds") List<UUID> routineIds);
 
     /**
+     *
+     * @param routineIds    조회할 루틴의 ID 목록
+     * @return              상세 정보가 포함된 루틴 목록
+     */
+    @Query("SELECT DISTINCT r FROM Routine r " +
+            "LEFT JOIN FETCH r.user " +
+            "LEFT JOIN FETCH r.routineApps ra " +
+            "LEFT JOIN FETCH ra.app " +
+            "WHERE r.id IN :routineIds")
+    List<Routine> findWithAppsByIds(@Param("routineIds") List<UUID> routineIds);
+
+    /**
      * 두 개의 태그를 모두 포함하는 루틴을 인기순으로 정렬하여 조회합니다.
      *
      * @param tag1     첫 번째 태그 ID

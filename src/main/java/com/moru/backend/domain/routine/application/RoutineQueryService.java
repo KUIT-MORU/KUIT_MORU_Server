@@ -46,9 +46,12 @@ public class RoutineQueryService {
 
     @Transactional // 조회수 증가 때문에 쓰기 트랜잭션 필요
     public RoutineDetailResponse getRoutineDetail(UUID routineId, User currentUser) {
-        // JOIN FETCH로 Routine과 연관 엔티티 (Tag, Step, App) 한번에 조회
-        Routine routine = routineRepository.findByIdWithDetails(routineId)
-                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
+        // 헬퍼 메서드 사용
+        List<Routine> routines = findAndSortRoutinesWithDetails(List.of(routineId));
+        if (routines.isEmpty()) {
+            throw new CustomException(ErrorCode.ROUTINE_NOT_FOUND);
+        }
+        Routine routine = routines.get(0);
 
         // 1. 자신의 루틴이면 조회수 증가 X
         if (!routine.getUser().getId().equals(currentUser.getId())) {
@@ -142,6 +145,7 @@ public class RoutineQueryService {
         // 1. 분리된 쿼리로 상세 정보 조회
         List<Routine> routinesWithDetails = routineRepository.findWithStepsByIds(routineIds);
         routinesWithDetails = routineRepository.findWithTagsByIds(routineIds);
+        routinesWithDetails = routineRepository.findWithAppsByIds(routineIds);
 
         // 2. 원래 ID 순서대로 정렬
         Map<UUID, Routine> routineMap = routinesWithDetails.stream()
