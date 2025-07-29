@@ -35,6 +35,7 @@ public class RoutineRecommendService {
     private final UserFavoriteTagRepository userFavoriteTagRepository;
     private final TagRepository tagRepository;
     private final S3Service s3Service;
+    private final RoutineQueryService routineQueryService;
 
     @Value("${moru.routine.recommend.hot-score.view-weight}")
     private double viewWeight;
@@ -63,15 +64,9 @@ public class RoutineRecommendService {
         }
 
         // 상세 정보 조회
-        List<Routine> hotRoutines = routineRepository.findAllWithDetailsByIds(hotRoutineIds);
+        List<Routine> hotRoutines = routineQueryService.findAndSortRoutinesWithDetails(hotRoutineIds);
 
-        // 원래 순서대로 정렬
-        Map<UUID, Routine> routineMap = hotRoutines.stream()
-                .collect(Collectors.toMap(Routine::getId, Function.identity()));
-
-        return hotRoutineIds.stream()
-                .map(routineMap::get)
-                .filter(Objects::nonNull)
+        return hotRoutines.stream()
                 .map(this::toRoutineListResponse)
                 .toList();
     }
@@ -165,17 +160,7 @@ public class RoutineRecommendService {
             return;
         }
 
-        // 2단계: 조회된 ID 목록으로 루틴의 모든 상세 정보를 한 번에 조회
-        List<Routine> routines = routineRepository.findAllWithDetailsByIds(routineIds);
-
-        // [중요] DB의 IN 절은 순서를 보장하지 않으므로, ID 목록의 순서대로 다시 정렬합니다.
-        Map<UUID, Routine> routineMap = routines.stream()
-                .collect(Collectors.toMap(Routine::getId, Function.identity()));
-
-        List<Routine> sortedRoutines = routineIds.stream()
-                .map(routineMap::get)
-                .filter(Objects::nonNull)
-                .toList();
+        List<Routine> sortedRoutines = routineQueryService.findAndSortRoutinesWithDetails(routineIds);
 
         for (Routine routine : sortedRoutines) {
             if (result.size() >= limit) break;
@@ -233,15 +218,7 @@ public class RoutineRecommendService {
                 return new TagPairSection(tagName1, tagName2, Collections.emptyList());
             }
 
-            List<Routine> routines = routineRepository.findAllWithDetailsByIds(routineIds);
-
-            // ID 순서대로 정렬
-            Map<UUID, Routine> routinesById = routines.stream()
-                    .collect(Collectors.toMap(Routine::getId, Function.identity()));
-            List<Routine> sortedRoutines = routineIds.stream()
-                    .map(routinesById::get)
-                    .filter(Objects::nonNull)
-                    .toList();
+            List<Routine> sortedRoutines = routineQueryService.findAndSortRoutinesWithDetails(routineIds);
 
             List<RoutineListResponse> routineList = sortedRoutines.stream()
                     .map(this::toRoutineListResponse)

@@ -41,6 +41,7 @@ public class RoutineSearchService {
     private final SearchHistoryRepository searchHistoryRepository;
     private final TagRepository tagRepository;
     private final RoutineLogRepository routineLogRepository;
+    private final RoutineQueryService routineQueryService;
     private final S3Service s3Service;
 
     /**
@@ -76,16 +77,7 @@ public class RoutineSearchService {
         }
 
         // 2단계: ID로 상세 정보 조회
-        List<Routine> routines = routineRepository.findAllWithDetailsByIds(routineIds);
-
-        // 3단계: 원래 순서대로 정렬
-        Map<UUID, Routine> routineMap = routines.stream()
-                .collect(Collectors.toMap(Routine::getId, Function.identity()));
-
-        List<Routine> sortedRoutines = routineIds.stream()
-                .map(routineMap::get)
-                .filter(Objects::nonNull)
-                .toList();
+        List<Routine> sortedRoutines = routineQueryService.findAndSortRoutinesWithDetails(routineIds);
 
         // 4단계: DTO로 변환
         List<RoutineSearchResponse> dtoList = sortedRoutines.stream()
