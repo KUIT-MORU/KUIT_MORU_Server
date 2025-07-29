@@ -15,12 +15,14 @@ import com.moru.backend.domain.notification.dao.NotificationRepository;
 import com.moru.backend.domain.notification.domain.Notification;
 import com.moru.backend.domain.notification.domain.NotificationType;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
+import com.moru.backend.domain.routine.dao.RoutineScheduleHistoryRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.meta.RoutineApp;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
+import com.moru.backend.domain.routine.domain.schedule.RoutineScheduleHistory;
 import com.moru.backend.domain.social.dao.UserFollowRepository;
 import com.moru.backend.domain.social.domain.UserFollow;
 import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
@@ -61,6 +63,7 @@ public class DummyDataGenerator {
     // Faker 인스턴스와 Random 객체를 필드로 선언해서 재사용하기
     private final Faker faker = new Faker(new Locale("ko"));
     private final Random random = new Random();
+    private final RoutineScheduleHistoryRepository routineScheduleHistoryRepository;
 
     private enum UserLifestyle {
         WEEKDAY_WARRIOR, //평일에 더 성실
@@ -131,7 +134,7 @@ public class DummyDataGenerator {
                 .birthday(LocalDate.parse("2000-01-01"))
                 .bio("테스트 계정입니다.")
                 .profileImageUrl("https://example.com/profile0.jpg")
-                .role(UserRole.USER)
+                .role(UserRole.ADMIN)
                 // status, createdAt, updatedAt은 자동 처리되므로 설정 불필요
                 .build();
         userBatch.add(testUser);
@@ -172,6 +175,8 @@ public class DummyDataGenerator {
     public List<Routine> createBulkRoutines(int count, List<User> users, List<Tag> tags, List<App> apps) {
         List<Routine> allGeneratedRoutines = new ArrayList<>();
         List<Routine> routineBatch = new ArrayList<>();
+        List<RoutineScheduleHistory> allGeneratedRoutineScheduleHistories = new ArrayList<>();
+        List<RoutineScheduleHistory> routineScheduleHistoryBatch = new ArrayList<>();
 
         for (int i = 0; i < count; i++) {
             // em.getReference()를 사용하여 실제 SELECT 없이 프록시 객체를 가져옴 (N+1 방지)
@@ -203,18 +208,35 @@ public class DummyDataGenerator {
                 connectAppsToRoutine(routine, apps);
             }
             connectTagsToRoutine(routine, tags, recipe.getTheme());
-            createAndAddSchedules(routine);
+            RoutineScheduleHistory history = createAndAddSchedules(routine);
 
             routineBatch.add(routine);
+            routineScheduleHistoryBatch.add(history);
 
             if (routineBatch.size() >= BATCH_SIZE) {
                 allGeneratedRoutines.addAll(routineRepository.saveAll(routineBatch));
                 routineBatch.clear();
                 log.info("{}개의 루틴 중간 저장 완료...", allGeneratedRoutines.size());
             }
+            if (routineScheduleHistoryBatch.size() >= BATCH_SIZE) {
+                allGeneratedRoutineScheduleHistories.addAll(
+                        routineScheduleHistoryRepository.saveAll(
+                                routineScheduleHistoryBatch
+                        )
+                );
+                routineScheduleHistoryBatch.clear();
+                log.info("{}개의 루틴 스케줄 히스토리 중간 저장 완료...", allGeneratedRoutineScheduleHistories.size());
+            }
         }
         if (!routineBatch.isEmpty()) {
             allGeneratedRoutines.addAll(routineRepository.saveAll(routineBatch));
+        }
+        if (!routineScheduleHistoryBatch.isEmpty()) {
+            allGeneratedRoutineScheduleHistories.addAll(
+                    routineScheduleHistoryRepository.saveAll(
+                            routineScheduleHistoryBatch
+                    )
+            );
         }
         return allGeneratedRoutines;
     }
@@ -464,7 +486,7 @@ public class DummyDataGenerator {
      * 루틴에 무작위 스케쥴 생성 및 추가
      * @param routine   대상 루틴
      */
-    private void createAndAddSchedules(Routine routine) {
+    private RoutineScheduleHistory createAndAddSchedules(Routine routine) {
         // 루틴 스케줄 자동 생성
         Set<DayOfWeek> scheduledDays = new HashSet<>();
         int dayCount = random.nextInt(7) + 1;
@@ -483,6 +505,14 @@ public class DummyDataGenerator {
             // 편의 메서드를 사용하여 관계를 설정합니다.
             routine.addRoutineSchedule(schedule);
         }
+
+        // 루틴 히스토리 설정
+        LocalDateTime effectiveStartDateTime = LocalDateTime.now().minusDays(30);
+        return RoutineScheduleHistory.builder()
+                .routine(routine)
+                .scheduledDays(scheduledDays.stream().toList())
+                .effectiveStartDateTime(effectiveStartDateTime)
+                .build();
         // --- 로직 종료 ---
     }
 
