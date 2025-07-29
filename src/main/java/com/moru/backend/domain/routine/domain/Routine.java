@@ -53,8 +53,9 @@ public class Routine {
     @Column(columnDefinition = "tinyint(1)", nullable = false)
     private boolean isUserVisible; // 사용자 생성 여부 표시 
 
+    @Builder.Default
     @Column(columnDefinition = "int unsigned default 0", nullable = false)
-    private Integer likeCount;
+    private Integer likeCount = 0;
 
     @Column(columnDefinition = "int unsigned default 0", nullable = false)
     @Builder.Default
