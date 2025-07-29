@@ -110,34 +110,40 @@ public class RoutineRecommendService {
      */
     public TagPairSection getTopTagPairSection(int limit) {
         List<TagPairCount> topPairs = routineTagRepository.findTopTagPairs();
-        if (topPairs.isEmpty()) {
-            return null;
+        // 가장 인기있는 쌍부터 시도, 성공하는 첫 번째 섹션을 반환
+        for (TagPairCount pair : topPairs) {
+            TagPairSection section = buildTagPairSection(pair, limit);
+            // 섹션이 성공적으로 생성되었고, 루틴 목록이 비어있지 않다면 반환
+            if (section != null && !section.routines().isEmpty()) {
+                return section;
+            }
         }
-        // Stream API를 사용하여 더 간결하게 표현
-        return topPairs.stream()
-                .map(pair -> buildTagPairSection(pair, limit))
-                .filter(Objects::nonNull)
-                .findFirst()
-                .orElse(null);
+        // 모든 쌍을 시도했지만 유효한 섹션을 만들지 못한 경우
+        return null;
     }
 
     public TagPairSection getInterestTagPairSection(User user, int limit) {
-        Set<String> interestTagIds = userFavoriteTagRepository.findAllByUserId(user.getId()).stream()
-                .map(f -> f.getTag().getId().toString())
-                .collect(Collectors.toSet());
+        // 쿼리에 직접 전달하기 위해 UUID 리스트로 조회
+        List<UUID> interestTagIds = userFavoriteTagRepository.findAllByUserId(user.getId()).stream()
+                .map(uft -> uft.getTag().getId())
+                .toList();
 
         if (interestTagIds.isEmpty()) {
             return null;
         }
 
-        List<TagPairCount> topPairs = routineTagRepository.findTopTagPairs();
-        // Stream API를 사용하여 더 간결하게 표현
-        return topPairs.stream()
-                .filter(pair -> interestTagIds.contains(pair.getTag1()) || interestTagIds.contains(pair.getTag2()))
-                .map(pair -> buildTagPairSection(pair, limit))
-                .filter(Objects::nonNull)
-                .findFirst()
-                .orElse(null);
+        // 사용자의 관심 태그를 직접 사용하여 관련 인기 조합을 조회하는 새 메서드 호출
+        List<TagPairCount> relevantPairs = routineTagRepository.findTopTagPairsForInterests(interestTagIds);
+
+        // 필터링된 쌍 중에서 성공하는 첫 번째 섹션을 반환
+        for (TagPairCount pair : relevantPairs) {
+
+            TagPairSection section = buildTagPairSection(pair, limit);
+            if (section != null && !section.routines().isEmpty()) {
+                return section;
+            }
+        }
+        return null;
     }
 
 
