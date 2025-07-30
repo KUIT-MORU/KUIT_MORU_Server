@@ -80,6 +80,11 @@ public class S3Service {
     }
 
     public String getImageUrl(String key) {
+        // 이미 완성된 url로 판단하여 그대로 반환한다.
+        if (key.startsWith("http")) {
+            return key;
+        }
+
         if(usePresigned) {
             return generatePresignedUrl(key);
         } else {
@@ -90,11 +95,6 @@ public class S3Service {
     private String getFullUrl(String key) {
         if (key == null || key.isBlank()) {
             return null; // null 또는 빈 키는 그대로 반환
-        }
-
-
-        if (key == null || key.isBlank()) {
-            return key;
         }
 
         // [개선] S3Client에 설정된 엔드포인트를 사용하여 URL을 생성하여 일관성 유지
