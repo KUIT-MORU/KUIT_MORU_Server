@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/routines/{routineId}/steps")
+@RequestMapping("/api/routines/{routineId}/steps")
 @RequiredArgsConstructor
 @Tag(name = "루틴 스텝", description = "루팁 스텝 관련 API")
 public class RoutineStepController {

@@ -22,7 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
 @RestController
-@RequestMapping("/routines")
+@RequestMapping("/api/routines")
 @RequiredArgsConstructor
 @Tag(name = "루틴", description = "루틴 관련 API")
 public class RoutineController {

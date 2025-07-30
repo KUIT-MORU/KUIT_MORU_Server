@@ -9,6 +9,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.UUID;
 
 @Service
@@ -18,9 +19,6 @@ public class S3Service {
 
     @Value("${spring.cloud.aws.s3.bucket}")
     private String bucket;
-
-    @Value("${spring.cloud.aws.region.static}")
-    private String region;
 
     private final boolean usePresigned = false;
 
@@ -91,22 +89,26 @@ public class S3Service {
 
     private String getFullUrl(String key) {
         if (key == null || key.isBlank()) {
+            return null; // null 또는 빈 키는 그대로 반환
+        }
+
+
+        if (key == null || key.isBlank()) {
             return key;
         }
 
-        if (key.startsWith("http://") || key.startsWith("https://")) {
-            // 완전한 URL이면, 아무 처리 없이 그대로 반환
-            return key;
+        // [개선] S3Client에 설정된 엔드포인트를 사용하여 URL을 생성하여 일관성 유지
+        String endpoint = s3Client.serviceClientConfiguration().endpointOverride()
+                .map(URI::toString)
+                .orElse("https://s3.amazonaws.com"); // 기본값
+
+        // endpoint가 /로 끝나면 중복 슬래시 방지
+        if (endpoint.endsWith("/")) {
+            endpoint = endpoint.substring(0, endpoint.length() - 1);
         }
 
-        StringBuilder url = new StringBuilder();
-        url.append("https://")
-                .append(bucket)
-                .append(".s3.")
-                .append(region)
-                .append(".amazonaws.com/")
-                .append(key);
-        return url.toString();
+        // path-style 접근을 사용하므로 URL 형식은 endpoint/bucket/key
+        return String.format("%s/%s/%s", endpoint, bucket, key);
     }
 
     private String generatePresignedUrl(String key) {

@@ -101,7 +101,7 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
      */
     @Query(value = "SELECT r.id FROM Routine r WHERE r.createdAt >= :weekAgo " +
             "GROUP BY r.id, r.viewCount, r.likeCount, r.createdAt " + // GROUP BY에 정렬 기준 컬럼 추가
-            "ORDER BY (r.viewCount * :viewWeight + r.likeCount * :likeWeight) DESC, r.createdAt DESC")
+            "ORDER BY (CAST(r.viewCount AS double) * :viewWeight + CAST(r.likeCount AS double) * :likeWeight) DESC, r.createdAt DESC")
     List<UUID> findHotRoutinesIds(@Param("weekAgo") LocalDateTime weekAgo,
                                   @Param("viewWeight") double viewWeight,
                                   @Param("likeWeight") double likeWeight,
@@ -117,16 +117,38 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
 
     /**
      *
-     * @param routineIds 조회할 루틴의 ID 목록
-     * @return 상세 정보가 포함된 루틴 목록
+     * @param routineIds  조회할 루틴의 ID 목록
+     * @return            상세 정보가 포함된 루틴 목록
      */
     @Query("SELECT DISTINCT r FROM Routine r " +
-            "LEFT JOIN FETCH r.user " + // 사용자 정보도 함께 가져오도록 추가
-            "LEFT JOIN FETCH r.routineTags rt " +
-            "LEFT JOIN FETCH rt.tag " +
+            "LEFT JOIN FETCH r.user " +
             "LEFT JOIN FETCH r.routineSteps " +
             "WHERE r.id IN :routineIds")
-    List<Routine> findAllWithDetailsByIds(@Param("routineIds") List<UUID> routineIds);
+    List<Routine> findWithStepsByIds(@Param("routineIds") List<UUID> routineIds);
+
+    /**
+     *
+     * @param routineIds    조회할 루틴의 ID 목록
+     * @return              상세 정보가 포함된 루틴 목록
+     */
+    @Query("SELECT DISTINCT r FROM Routine r " +
+            "LEFT JOIN FETCH r.user " +
+            "LEFT JOIN FETCH r.routineTags rt " +
+            "LEFT JOIN FETCH rt.tag " +
+            "WHERE r.id IN :routineIds")
+    List<Routine> findWithTagsByIds(@Param("routineIds") List<UUID> routineIds);
+
+    /**
+     *
+     * @param routineIds    조회할 루틴의 ID 목록
+     * @return              상세 정보가 포함된 루틴 목록
+     */
+    @Query("SELECT DISTINCT r FROM Routine r " +
+            "LEFT JOIN FETCH r.user " +
+            "LEFT JOIN FETCH r.routineApps ra " +
+            "LEFT JOIN FETCH ra.app " +
+            "WHERE r.id IN :routineIds")
+    List<Routine> findWithAppsByIds(@Param("routineIds") List<UUID> routineIds);
 
     /**
      * 두 개의 태그를 모두 포함하는 루틴을 인기순으로 정렬하여 조회합니다.
@@ -142,7 +164,7 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
         JOIN r.routineTags rt2
         WHERE rt1.tag.id = :tag1 AND rt2.tag.id = :tag2
         GROUP BY r.id
-        ORDER BY (r.viewCount * 0.5 + r.likeCount * 0.5) DESC, r.createdAt DESC
+        ORDER BY (CAST(r.viewCount AS double) * 0.5 + CAST(r.likeCount AS double) * 0.5) DESC, r.createdAt DESC
     """, countQuery = "SELECT COUNT(DISTINCT r.id) FROM Routine r JOIN r.routineTags rt1 JOIN r.routineTags rt2 WHERE rt1.tag.id = :tag1 AND rt2.tag.id = :tag2")
     Page<UUID> findRoutineIdsByTagPair(@Param("tag1") UUID tag1, @Param("tag2") UUID tag2, Pageable pageable);
 

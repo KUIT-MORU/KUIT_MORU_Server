@@ -35,6 +35,7 @@ public class RoutineRecommendService {
     private final UserFavoriteTagRepository userFavoriteTagRepository;
     private final TagRepository tagRepository;
     private final S3Service s3Service;
+    private final RoutineQueryService routineQueryService;
 
     @Value("${moru.routine.recommend.hot-score.view-weight}")
     private double viewWeight;
@@ -63,15 +64,9 @@ public class RoutineRecommendService {
         }
 
         // 상세 정보 조회
-        List<Routine> hotRoutines = routineRepository.findAllWithDetailsByIds(hotRoutineIds);
+        List<Routine> hotRoutines = routineQueryService.findAndSortRoutinesWithDetails(hotRoutineIds);
 
-        // 원래 순서대로 정렬
-        Map<UUID, Routine> routineMap = hotRoutines.stream()
-                .collect(Collectors.toMap(Routine::getId, Function.identity()));
-
-        return hotRoutineIds.stream()
-                .map(routineMap::get)
-                .filter(Objects::nonNull)
+        return hotRoutines.stream()
                 .map(this::toRoutineListResponse)
                 .toList();
     }
@@ -115,34 +110,40 @@ public class RoutineRecommendService {
      */
     public TagPairSection getTopTagPairSection(int limit) {
         List<TagPairCount> topPairs = routineTagRepository.findTopTagPairs();
-        if (topPairs.isEmpty()) {
-            return null;
+        // 가장 인기있는 쌍부터 시도, 성공하는 첫 번째 섹션을 반환
+        for (TagPairCount pair : topPairs) {
+            TagPairSection section = buildTagPairSection(pair, limit);
+            // 섹션이 성공적으로 생성되었고, 루틴 목록이 비어있지 않다면 반환
+            if (section != null && !section.routines().isEmpty()) {
+                return section;
+            }
         }
-        // Stream API를 사용하여 더 간결하게 표현
-        return topPairs.stream()
-                .map(pair -> buildTagPairSection(pair, limit))
-                .filter(Objects::nonNull)
-                .findFirst()
-                .orElse(null);
+        // 모든 쌍을 시도했지만 유효한 섹션을 만들지 못한 경우
+        return null;
     }
 
     public TagPairSection getInterestTagPairSection(User user, int limit) {
-        Set<String> interestTagIds = userFavoriteTagRepository.findAllByUserId(user.getId()).stream()
-                .map(f -> f.getTag().getId().toString())
-                .collect(Collectors.toSet());
+        // 쿼리에 직접 전달하기 위해 UUID 리스트로 조회
+        List<UUID> interestTagIds = userFavoriteTagRepository.findAllByUserId(user.getId()).stream()
+                .map(uft -> uft.getTag().getId())
+                .toList();
 
         if (interestTagIds.isEmpty()) {
             return null;
         }
 
-        List<TagPairCount> topPairs = routineTagRepository.findTopTagPairs();
-        // Stream API를 사용하여 더 간결하게 표현
-        return topPairs.stream()
-                .filter(pair -> interestTagIds.contains(pair.getTag1()) || interestTagIds.contains(pair.getTag2()))
-                .map(pair -> buildTagPairSection(pair, limit))
-                .filter(Objects::nonNull)
-                .findFirst()
-                .orElse(null);
+        // 사용자의 관심 태그를 직접 사용하여 관련 인기 조합을 조회하는 새 메서드 호출
+        List<TagPairCount> relevantPairs = routineTagRepository.findTopTagPairsForInterests(interestTagIds);
+
+        // 필터링된 쌍 중에서 성공하는 첫 번째 섹션을 반환
+        for (TagPairCount pair : relevantPairs) {
+
+            TagPairSection section = buildTagPairSection(pair, limit);
+            if (section != null && !section.routines().isEmpty()) {
+                return section;
+            }
+        }
+        return null;
     }
 
 
@@ -165,17 +166,7 @@ public class RoutineRecommendService {
             return;
         }
 
-        // 2단계: 조회된 ID 목록으로 루틴의 모든 상세 정보를 한 번에 조회
-        List<Routine> routines = routineRepository.findAllWithDetailsByIds(routineIds);
-
-        // [중요] DB의 IN 절은 순서를 보장하지 않으므로, ID 목록의 순서대로 다시 정렬합니다.
-        Map<UUID, Routine> routineMap = routines.stream()
-                .collect(Collectors.toMap(Routine::getId, Function.identity()));
-
-        List<Routine> sortedRoutines = routineIds.stream()
-                .map(routineMap::get)
-                .filter(Objects::nonNull)
-                .toList();
+        List<Routine> sortedRoutines = routineQueryService.findAndSortRoutinesWithDetails(routineIds);
 
         for (Routine routine : sortedRoutines) {
             if (result.size() >= limit) break;
@@ -233,15 +224,7 @@ public class RoutineRecommendService {
                 return new TagPairSection(tagName1, tagName2, Collections.emptyList());
             }
 
-            List<Routine> routines = routineRepository.findAllWithDetailsByIds(routineIds);
-
-            // ID 순서대로 정렬
-            Map<UUID, Routine> routinesById = routines.stream()
-                    .collect(Collectors.toMap(Routine::getId, Function.identity()));
-            List<Routine> sortedRoutines = routineIds.stream()
-                    .map(routinesById::get)
-                    .filter(Objects::nonNull)
-                    .toList();
+            List<Routine> sortedRoutines = routineQueryService.findAndSortRoutinesWithDetails(routineIds);
 
             List<RoutineListResponse> routineList = sortedRoutines.stream()
                     .map(this::toRoutineListResponse)

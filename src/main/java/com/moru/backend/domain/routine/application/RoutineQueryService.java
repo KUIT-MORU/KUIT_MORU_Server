@@ -46,9 +46,12 @@ public class RoutineQueryService {
 
     @Transactional // 조회수 증가 때문에 쓰기 트랜잭션 필요
     public RoutineDetailResponse getRoutineDetail(UUID routineId, User currentUser) {
-        // JOIN FETCH로 Routine과 연관 엔티티 (Tag, Step, App) 한번에 조회
-        Routine routine = routineRepository.findByIdWithDetails(routineId)
-                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
+        // 헬퍼 메서드 사용
+        List<Routine> routines = findAndSortRoutinesWithDetails(List.of(routineId));
+        if (routines.isEmpty()) {
+            throw new CustomException(ErrorCode.ROUTINE_NOT_FOUND);
+        }
+        Routine routine = routines.get(0);
 
         // 1. 자신의 루틴이면 조회수 증가 X
         if (!routine.getUser().getId().equals(currentUser.getId())) {
@@ -93,17 +96,7 @@ public class RoutineQueryService {
             return Page.empty(pageable);
         }
 
-        // ID로 상세 정보 조회
-        List<Routine> routines = routineRepository.findAllWithDetailsByIds(routineIds);
-
-        // 원래 순서대로 정렬
-        Map<UUID, Routine> routineMap = routines.stream()
-                .collect(Collectors.toMap(Routine::getId, Function.identity()));
-        List<Routine> sortedRoutines = routineIds.stream()
-                .map(routineMap::get)
-                .filter(Objects::nonNull)
-                .toList();
-
+        List<Routine> sortedRoutines = findAndSortRoutinesWithDetails(routineIds);
         // DTO로 변환 후 최종 Page 객체 생성
         List<RoutineListResponse> dtoList = sortedRoutines.stream()
                 .map(this::toRoutineListResponse)
@@ -130,22 +123,34 @@ public class RoutineQueryService {
             return Collections.emptyList();
         }
 
-        // 2단계: ID로 상세 정보 조회
-        List<Routine> similarRoutines = routineRepository.findAllWithDetailsByIds(similarRoutineIds);
-
-        // 3단계: 원래 순서대로 정렬
-        Map<UUID, Routine> routineMap = similarRoutines.stream()
-                .collect(Collectors.toMap(Routine::getId, Function.identity()));
-        List<Routine> sortedRoutines = similarRoutineIds.stream()
-                .map(routineMap::get)
-                .filter(Objects::nonNull)
-                .toList();
+        List<Routine> sortedRoutines = findAndSortRoutinesWithDetails(similarRoutineIds);
 
         return sortedRoutines.stream()
                 .filter(r -> !r.getUser().getId().equals(currentUser.getId()))
                 .limit(similarLimitSize)
                 .map(this::toRoutineListResponse)
                 .toList();
+    }
+
+    /**
+     * ID 목록으로 루틴의 모든 상세 정보 조회, 원본 ID 순서대로 정렬.
+     * @param routineIds    조회할 루틴 ID 목록
+     * @return              상세 정보가 채워지고 정렬된 Routine 리스트
+     */
+    public List<Routine> findAndSortRoutinesWithDetails(List<UUID> routineIds) {
+        if (routineIds == null || routineIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 1. 분리된 쿼리로 상세 정보 조회
+        List<Routine> routinesWithDetails = routineRepository.findWithStepsByIds(routineIds);
+        routinesWithDetails = routineRepository.findWithTagsByIds(routineIds);
+        routinesWithDetails = routineRepository.findWithAppsByIds(routineIds);
+
+        // 2. 원래 ID 순서대로 정렬
+        Map<UUID, Routine> routineMap = routinesWithDetails.stream()
+                .collect(Collectors.toMap(Routine::getId, Function.identity(), (first, second) -> first));
+        return routineIds.stream().map(routineMap::get).filter(Objects::nonNull).toList();
     }
 
     private RoutineListResponse toRoutineListResponse(Routine routine) {
