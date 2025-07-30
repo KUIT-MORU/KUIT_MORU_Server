@@ -92,11 +92,6 @@ public class S3Service {
             return null; // null 또는 빈 키는 그대로 반환
         }
 
-
-        if (key == null || key.isBlank()) {
-            return key;
-        }
-
         // [개선] S3Client에 설정된 엔드포인트를 사용하여 URL을 생성하여 일관성 유지
         String endpoint = s3Client.serviceClientConfiguration().endpointOverride()
                 .map(URI::toString)
