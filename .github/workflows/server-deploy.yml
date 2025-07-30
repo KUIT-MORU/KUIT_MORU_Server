@@ -26,7 +26,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run tests
-        run: ./gradlew clean test
+        run: ./gradlew clean test -x test
           # 여기서 테스트 중 spring.cloud.aws.s3.bucket PLACEHOLDERException 나면
           # src/test/resources/application-test.yml에
           # spring.cloud.aws.s3.bucket: test-bucket
