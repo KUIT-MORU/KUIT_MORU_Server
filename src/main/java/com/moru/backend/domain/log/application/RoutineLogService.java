@@ -289,14 +289,18 @@ public class RoutineLogService {
 
     //====모루 라이브 기능====//
     public List<UUID> findRandomActiveRoutineUserIds(int count) {
-        return routineLogRepository.findRandomActiveUserIds(count);
+        List<String> userIdStrings = routineLogRepository.findRandomActiveUserIdsAsString(count);
+        return userIdStrings.stream()
+                .map(UUID::fromString)
+                .collect(Collectors.toList());
     }
 
     public List<LiveUserResponse> getRandomLiveUsers(List<UUID> userIds) {
         List<User> users = userRepository.findByIdIn(userIds);
         return users.stream()
                 .map(user -> {
-                    RoutineLog log = routineLogRepository.findActiveByUserId(user.getId()).orElse(null);
+                    List<RoutineLog> activeLogs = routineLogRepository.findActiveByUserId(user.getId());
+                    RoutineLog log = activeLogs.isEmpty() ? null : activeLogs.get(0);
                     String tag = null;
                     if (log != null) {
                         List<RoutineTagSnapshot> tags = log.getRoutineSnapshot().getTagSnapshots();

@@ -64,17 +64,19 @@ public class UserProfileService {
         boolean isMe = currentUser.getId().equals(targetUserId);
 
         int routineCount = routineRepository.countByUserId(targetUserId);
-        int followerCount = (int) userFollowRepository.countByFollowingId(targetUserId);
-        int followingCount = (int) userFollowRepository.countByFollowerId(targetUserId);
+        FollowCountResponse followCount = followService.countFollow(targetUserId);
 
         // 실행 중인 루틴
         RoutineListResponse currentRoutine = null;
-        RoutineLog activeLog = routineLogRepository.findActiveByUserId(targetUserId).orElse(null);
-        if (activeLog != null && activeLog.getRoutineSnapshot() != null) {
-            currentRoutine = RoutineListResponse.fromSnapshot(
-                    activeLog.getRoutineSnapshot(),
-                    s3Service.getImageUrl(activeLog.getRoutineSnapshot().getImageUrl())
-            );
+        List<RoutineLog> activeLogs = routineLogRepository.findActiveByUserId(targetUserId);
+        if (!activeLogs.isEmpty()) {
+            RoutineLog mostRecentActiveLog = activeLogs.get(0);
+            if (mostRecentActiveLog.getRoutineSnapshot() != null) {
+                currentRoutine = RoutineListResponse.fromSnapshot(
+                        mostRecentActiveLog.getRoutineSnapshot(),
+                        s3Service.getImageUrl(mostRecentActiveLog.getRoutineSnapshot().getImageUrl())
+                );
+            }
         }
 
         // 소유한(공개) 루틴 목록
@@ -97,8 +99,8 @@ public class UserProfileService {
                 s3Service.getImageUrl(targetUser.getProfileImageUrl()),
                 targetUser.getBio(),
                 routineCount,
-                followerCount,
-                followingCount,
+                followCount.followerCount().intValue(),
+                followCount.followingCount().intValue(),
                 currentRoutine,
                 routineLists
         );
