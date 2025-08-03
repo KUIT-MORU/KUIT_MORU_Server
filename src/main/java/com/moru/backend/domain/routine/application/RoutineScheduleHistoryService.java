@@ -30,10 +30,8 @@ public class RoutineScheduleHistoryService {
 
     @Transactional
     public void endCurrentHistory(Routine routine, LocalDateTime effectiveEndDateTime) {
-        RoutineScheduleHistory current = routineScheduleHistoryRepository.findCurrentByRoutineId(routine.getId());
-        if(current != null && current.getEffectiveEndDateTime() == null) {
-            current.endHistory(effectiveEndDateTime);
-        }
+        List<RoutineScheduleHistory> currentHistories = routineScheduleHistoryRepository.findCurrentByRoutineId(routine.getId());
+        currentHistories.forEach(history -> history.endHistory(effectiveEndDateTime));
     }
 
 }
