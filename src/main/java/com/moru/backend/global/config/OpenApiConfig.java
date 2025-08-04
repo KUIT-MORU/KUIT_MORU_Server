@@ -6,7 +6,9 @@ import org.springframework.context.annotation.Configuration;
 
 @OpenAPIDefinition(
         servers = {
-                @Server(url = "https://15.164.150.204", description = "Production server")
+                // "/" 로 설정하면,
+                // → swagger-ui 가 열려 있는 호스트(=자기자신) 기준으로 경로를 구성합니다.
+                @Server(url = "/", description = "Current host (relative)")
         }
 )
 @Configuration
