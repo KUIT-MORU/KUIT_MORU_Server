@@ -47,7 +47,7 @@ public class LoginService {
                 refreshToken
         );
 
-        boolean isOnboarding = !user.getNickname().isBlank();
+        boolean isOnboarding = !((user.getNickname() == null) || user.getNickname().isBlank());
         return new LoginResponse(
                 new TokenResponse(accessToken, refreshToken),
                 isOnboarding
