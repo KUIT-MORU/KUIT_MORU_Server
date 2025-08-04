@@ -44,6 +44,6 @@ public class SignupService {
 
         LoginRequest loginRequest = new LoginRequest(request.email(), request.password());
 
-        return loginService.login(loginRequest);
+        return loginService.login(loginRequest).token();
     }
 }

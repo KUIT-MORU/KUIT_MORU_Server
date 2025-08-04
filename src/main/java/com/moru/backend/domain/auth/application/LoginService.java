@@ -1,6 +1,7 @@
 package com.moru.backend.domain.auth.application;
 
 import com.moru.backend.domain.auth.dto.LoginRequest;
+import com.moru.backend.domain.auth.dto.LoginResponse;
 import com.moru.backend.domain.auth.dto.TokenResponse;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
@@ -26,7 +27,7 @@ public class LoginService {
     private final JwtProvider jwtProvider;
     private final RefreshTokenRepository refreshTokenRepository;
 
-    public TokenResponse login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         if(!user.isActive()) {
@@ -46,7 +47,12 @@ public class LoginService {
                 refreshToken
         );
 
-        return new TokenResponse(accessToken, refreshToken);
+        boolean isOnboarding = !user.getNickname().isBlank();
+        return new LoginResponse(
+                new TokenResponse(accessToken, refreshToken),
+                isOnboarding
+        );
+
     }
 
     /**
