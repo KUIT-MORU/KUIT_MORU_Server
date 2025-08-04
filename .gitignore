@@ -41,3 +41,4 @@ out/
 /src/main/resources/firebase/firebase-service-account.json
 /src/main/resources/application.yml
 /src/main/resources/application-init-db.yml
+/src/main/resources/application-dev.yml
