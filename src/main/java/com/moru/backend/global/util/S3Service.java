@@ -80,6 +80,10 @@ public class S3Service {
     }
 
     public String getImageUrl(String key) {
+        if (key == null || key.isBlank()) {
+            return null; // null 또는 빈 키는 그대로 반환
+        }
+
         // 이미 완성된 url로 판단하여 그대로 반환한다.
         if (key.startsWith("http")) {
             return key;
