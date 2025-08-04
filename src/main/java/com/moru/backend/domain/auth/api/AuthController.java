@@ -27,9 +27,8 @@ public class AuthController {
 
     @Operation(summary = "회원가입")
     @PostMapping("/signup")
-    public ResponseEntity<Void> signup(@RequestBody @Valid SignupRequest request) {
-        signupService.signup(request);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<TokenResponse> signup(@RequestBody @Valid SignupRequest request) {
+        return ResponseEntity.ok(signupService.signup(request));
     }
 
     @Operation(summary = "로그인")
