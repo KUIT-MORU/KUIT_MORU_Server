@@ -23,16 +23,4 @@ public class WebConfig implements WebMvcConfigurer {
     public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
         resolvers.add(currentUserArgumentResolver);
     }
-
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        // localhost:8000 에서 /api/** 엔드포인트로 들어오는 모든 요청을 허용
-        registry.addMapping("/api/**")
-                .allowedOrigins("http://localhost:8000")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowCredentials(true);
-        // 필요하다면 Swagger UI 경로도 추가로 허용
-        registry.addMapping("/swagger-ui/**")
-                .allowedOrigins("http://localhost:8000");
-    }
 }
