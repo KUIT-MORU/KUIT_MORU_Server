@@ -52,6 +52,10 @@ public class RoutineLogService {
     private final S3Service s3Service;
 
     public UUID startRoutine(User user, UUID routineId) {
+        if (routineLogRepository.existsByUserIdAndEndedAtIsNull(user.getId())) {
+            throw new CustomException(ErrorCode.ALREADY_IN_PROGRESS_ROUTINE);
+        }
+
         // 루틴 권한 검증 및 조회
         Routine routine = routineValidator.validateRoutineAndUserPermission(routineId, user);
 

@@ -72,8 +72,8 @@ public interface RoutineLogRepository extends JpaRepository<RoutineLog, UUID> {
     @Query(value = "SELECT DISTINCT BIN_TO_UUID(user_id) FROM routine_log WHERE ended_at IS NULL ORDER BY RAND() LIMIT :count", nativeQuery = true)
     List<UUID> findRandomActiveUserIds(@Param("count") int count);
 
-    @Query("SELECT rl FROM RoutineLog rl JOIN FETCH rl.routineSnapshot WHERE rl.user.id = :userId AND rl.endedAt IS NULL ORDER BY rl.startedAt DESC")
-    List<RoutineLog> findActiveByUserId(@Param("userId") UUID userId);
+    Optional<RoutineLog> findTopByUserIdAndEndedAtIsNullOrderByStartedAtDesc(UUID userId);
+    boolean existsByUserIdAndEndedAtIsNull(UUID userId);
 
 
     // [추가] N+1 문제 해결을 위해 여러 사용자의 활성 로그를 한 번에 조회
