@@ -28,5 +28,5 @@ public interface RoutineScheduleHistoryRepository extends JpaRepository<RoutineS
         WHERE h.routine.id = :routineId
           AND h.effectiveEndDateTime IS NULL
     """)
-    List<RoutineScheduleHistory> findCurrentByRoutineId(@Param("routineId") UUID routineId);
+    List<RoutineScheduleHistory> findAllCurrentByRoutineId(@Param("routineId") UUID routineId);
 }
