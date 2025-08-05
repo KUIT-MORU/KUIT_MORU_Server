@@ -290,11 +290,15 @@ public class RoutineLogService {
     }
 
     //====모루 라이브 기능====//
-    public List<UUID> findRandomActiveRoutineUserIds(int count) {
-        return routineLogRepository.findRandomActiveUserIds(count);
+    public List<LiveUserResponse> getLiveUsers(int count) {
+        List<UUID> randomActiveUserIds = routineLogRepository.findRandomActiveUserIds(count);
+        if (randomActiveUserIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return getRandomLiveUsers(randomActiveUserIds);
     }
 
-    public List<LiveUserResponse> getRandomLiveUsers(List<UUID> userIds) {
+    private List<LiveUserResponse> getRandomLiveUsers(List<UUID> userIds) {
         if (userIds == null || userIds.isEmpty()) {
             return Collections.emptyList();
         }

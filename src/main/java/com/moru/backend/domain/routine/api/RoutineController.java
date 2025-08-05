@@ -201,7 +201,6 @@ public class RoutineController {
     @Operation(summary = "모루 라이브 기능", description = "랜덤 유저 총 10명의 이미지, 닉네임, 실행중인 태그 중 첫번째를 반환한다")
     @GetMapping("/live-users")
     public List<LiveUserResponse> getLiveUsers(@RequestParam(defaultValue = "10") int count) {
-        List<UUID> activeUserIds = routineLogService.findRandomActiveRoutineUserIds(count);
-        return routineLogService.getRandomLiveUsers(activeUserIds);
+        return routineLogService.getLiveUsers(count);
     }
 } 
