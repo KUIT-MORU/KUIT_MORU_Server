@@ -68,11 +68,21 @@ public interface RoutineLogRepository extends JpaRepository<RoutineLog, UUID> {
             @Param("endDateTime") LocalDateTime endDateTime
     );
 
-    // 실행 중인 루틴 로그들 조회하기기
+    // 실행 중인 루틴 로그들 조회하기 (ended_at = NULL이면 실시간으로 진행 중인 로그만 필터링 됨)
     @Query(value = "SELECT DISTINCT BIN_TO_UUID(user_id) FROM routine_log WHERE ended_at IS NULL ORDER BY RAND() LIMIT :count", nativeQuery = true)
-    List<String> findRandomActiveUserIdsAsString(@Param("count") int count);
+    List<UUID> findRandomActiveUserIds(@Param("count") int count);
 
     @Query("SELECT rl FROM RoutineLog rl JOIN FETCH rl.routineSnapshot WHERE rl.user.id = :userId AND rl.endedAt IS NULL ORDER BY rl.startedAt DESC")
     List<RoutineLog> findActiveByUserId(@Param("userId") UUID userId);
+
+
+    // [추가] N+1 문제 해결을 위해 여러 사용자의 활성 로그를 한 번에 조회
+    @Query("""
+        SELECT rl FROM RoutineLog rl
+        JOIN FETCH rl.routineSnapshot rs
+        LEFT JOIN FETCH rs.tagSnapshots
+        WHERE rl.user.id IN :userIds AND rl.endedAt IS NULL
+    """)
+    List<RoutineLog> findActiveLogsForUsers(@Param("userIds") List<UUID> userIds);
     
 }

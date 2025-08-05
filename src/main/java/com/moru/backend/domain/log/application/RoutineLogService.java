@@ -34,7 +34,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -289,28 +291,39 @@ public class RoutineLogService {
 
     //====모루 라이브 기능====//
     public List<UUID> findRandomActiveRoutineUserIds(int count) {
-        List<String> userIdStrings = routineLogRepository.findRandomActiveUserIdsAsString(count);
-        return userIdStrings.stream()
-                .map(UUID::fromString)
-                .collect(Collectors.toList());
+        return routineLogRepository.findRandomActiveUserIds(count);
     }
 
     public List<LiveUserResponse> getRandomLiveUsers(List<UUID> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 1. 사용자 목록을 한 번의 쿼리로 조회
         List<User> users = userRepository.findByIdIn(userIds);
+
+        // 2. 모든 활성 로그를 단 한 번의 쿼리로 조회 (N+1 해결)
+        Map<UUID, RoutineLog> activeLogMap = routineLogRepository.findActiveLogsForUsers(userIds).stream()
+                .collect(Collectors.toMap(
+                        log -> log.getUser().getId(), // Key: userId
+                        log -> log,                   // Value: RoutineLog
+                        (log1, log2) -> log1.getStartedAt().isAfter(log2.getStartedAt()) ? log1 : log2 // 혹시 중복이면 최신 로그 선택
+                ));
+
+        // 3. DB 접근 없이 메모리에서 데이터를 조합
         return users.stream()
                 .map(user -> {
-                    List<RoutineLog> activeLogs = routineLogRepository.findActiveByUserId(user.getId());
-                    RoutineLog log = activeLogs.isEmpty() ? null : activeLogs.get(0);
-                    String tag = null;
-                    if (log != null) {
-                        List<RoutineTagSnapshot> tags = log.getRoutineSnapshot().getTagSnapshots();
-                        if (tags != null && !tags.isEmpty()) tag = tags.get(0).getTagName();
+                    RoutineLog activeLog = activeLogMap.get(user.getId());
+                    String motivationTag = null;
+                    if (activeLog != null && !activeLog.getRoutineSnapshot().getTagSnapshots().isEmpty()) {
+                        motivationTag = activeLog.getRoutineSnapshot().getTagSnapshots().get(0).getTagName();
                     }
+
                     return new LiveUserResponse(
-                        user.getId(),
-                        user.getNickname(),
-                        user.getProfileImageUrl(),
-                        tag
+                            user.getId(),
+                            user.getNickname(),
+                            s3Service.getImageUrl(user.getProfileImageUrl()),
+                            motivationTag
                     );
                 })
                 .collect(Collectors.toList());
