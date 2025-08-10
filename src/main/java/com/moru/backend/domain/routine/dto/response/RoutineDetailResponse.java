@@ -1,5 +1,6 @@
 package com.moru.backend.domain.routine.dto.response;
 
+import com.moru.backend.domain.user.dto.AuthorInfo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
@@ -25,6 +26,9 @@ public record RoutineDetailResponse(
 
     @Schema(description = "루틴 이미지 URL", example = "https://example.com/image.jpg")
     String imageUrl,
+
+    @Schema(description = "루틴 작성자 정보")
+    AuthorInfo author,
 
     @Schema(description = "루틴 태그 목록", example = "[\"운동\", \"건강\", \"생산성\"]")
     List<String> tags,
@@ -65,32 +69,31 @@ public record RoutineDetailResponse(
     public static RoutineDetailResponse of(
         Routine routine,
         String imageFullUrl,
-        List<RoutineTag> tags,
-        List<RoutineStep> steps,
-        List<RoutineApp> apps,
+        AuthorInfo author,
         int likeCount,
         int scrapCount,
         User currentUser,
         List<RoutineListResponse> similarRoutines
     ) {
-        boolean isOwner = routine.getUser().getId().equals(currentUser.getId());
+        boolean isOwner = author.id().equals(currentUser.getId());
         return new RoutineDetailResponse(
-            routine.getId(),
-            routine.getTitle(),
-            imageFullUrl,
-            tags.stream().map(rt -> rt.getTag().getName()).toList(),
-            routine.getContent(),
-            routine.isSimple(),
-            routine.isUserVisible(),
-            steps.stream().map(RoutineStepDetailResponse::from).toList(),
-            apps.stream().map(a -> RoutineAppResponse.from(a.getApp())).toList(),
-            routine.getCreatedAt(),
-            routine.getUpdatedAt(),
-            routine.getRequiredTime(),
-            likeCount,
-            scrapCount,
-            isOwner,
-            similarRoutines
+                routine.getId(),
+                routine.getTitle(),
+                imageFullUrl,
+                author,
+                routine.getRoutineTags().stream().map(rt -> rt.getTag().getName()).toList(),
+                routine.getContent(),
+                routine.isSimple(),
+                routine.isUserVisible(),
+                routine.getRoutineSteps().stream().map(RoutineStepDetailResponse::from).toList(),
+                routine.getRoutineApps().stream().map(a -> RoutineAppResponse.from(a.getApp())).toList(),
+                routine.getCreatedAt(),
+                routine.getUpdatedAt(),
+                routine.getRequiredTime(),
+                likeCount,
+                scrapCount,
+                isOwner,
+                similarRoutines
         );
     }
 } 

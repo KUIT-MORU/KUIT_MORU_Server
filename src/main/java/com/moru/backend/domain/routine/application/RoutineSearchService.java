@@ -26,10 +26,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -85,7 +82,7 @@ public class RoutineSearchService {
                     RoutineListResponse routineListResponse = RoutineListResponse.fromRoutine(
                             routine,
                             s3Service.getImageUrl(routine.getImageUrl()),
-                            routine.getRoutineTags() // 이미 Fetch 되어 있음
+                            new ArrayList<>(routine.getRoutineTags()) // 이미 Fetch 되어 있음
                     );
                     return RoutineSearchResponse.of(routineListResponse);
                 })

@@ -28,11 +28,6 @@ import org.springframework.data.domain.PageRequest;
 public class RoutineController {
     private final RoutineCommandService routineCommandService;
     private final RoutineQueryService routineQueryService;
-    private final RoutineRecommendService routineRecommendService;
-    private final RoutineAppService routineAppService;
-    private final RoutineTagService routineTagService;
-    private final RoutineScheduleService routineScheduleService;
-    private final RoutineLogService routineLogService;
 
     @Operation(summary = "루틴 생성", description = "새로운 루틴을 생성합니다.")
     @PostMapping

@@ -9,6 +9,7 @@ import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 import com.moru.backend.domain.social.application.LikeService;
 import com.moru.backend.domain.social.application.ScrapService;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.domain.user.dto.AuthorInfo;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.util.RedisKeyUtil;
@@ -69,12 +70,16 @@ public class RoutineQueryService {
 
         List<RoutineListResponse> similarRoutines = findSimilarRoutines(routine, currentUser);
 
+        User author = routine.getUser();
+        AuthorInfo authorInfo = AuthorInfo.from(
+                author,
+                s3Service.getImageUrl(author.getProfileImageUrl())
+        );
+
         return RoutineDetailResponse.of(
                 routine,
                 s3Service.getImageUrl(routine.getImageUrl()),
-                routine.getRoutineTags(), // Fetch된 데이터 사용
-                routine.getRoutineSteps(), // Fetch된 데이터 사용
-                routine.getRoutineApps(), // Fetch된 데이터 사용
+                authorInfo,
                 likeCount,
                 scrapCount,
                 currentUser,
@@ -143,21 +148,22 @@ public class RoutineQueryService {
         }
 
         // 1. 분리된 쿼리로 상세 정보 조회
-        List<Routine> routinesWithDetails = routineRepository.findWithStepsByIds(routineIds);
-        routinesWithDetails = routineRepository.findWithTagsByIds(routineIds);
-        routinesWithDetails = routineRepository.findWithAppsByIds(routineIds);
+        List<Routine> routinesWithDetails = routineRepository.findWithAllDetailsByIds(routineIds);
 
         // 2. 원래 ID 순서대로 정렬
         Map<UUID, Routine> routineMap = routinesWithDetails.stream()
-                .collect(Collectors.toMap(Routine::getId, Function.identity(), (first, second) -> first));
-        return routineIds.stream().map(routineMap::get).filter(Objects::nonNull).toList();
+                .collect(Collectors.toMap(Routine::getId, Function.identity()));
+        return routineIds.stream()
+                .map(routineMap::get)
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     private RoutineListResponse toRoutineListResponse(Routine routine) {
         return RoutineListResponse.fromRoutine(
                 routine,
                 s3Service.getImageUrl(routine.getImageUrl()),
-                routine.getRoutineTags()
+                new ArrayList<>(routine.getRoutineTags())
         );
     }
 

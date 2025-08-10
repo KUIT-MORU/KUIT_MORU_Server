@@ -17,9 +17,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+
 import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
 
 @Entity
@@ -83,21 +82,24 @@ public class Routine {
     @Builder.Default
     private Boolean status = true;
 
-    @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("createdAt ASC")
     @Builder.Default
-    private List<RoutineTag> routineTags = new ArrayList<>();
+    private Set<RoutineTag> routineTags = new HashSet<>();
 
-    @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("createdAt ASC")
     @Builder.Default
-    private List<RoutineApp> routineApps = new ArrayList<>();
+    private Set<RoutineApp> routineApps = new HashSet<>();
+
+    @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("stepOrder ASC")
+    @Builder.Default
+    private Set<RoutineStep> routineSteps = new HashSet<>();
 
     @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<RoutineStep> routineSteps = new ArrayList<>();
-
-    @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<RoutineSchedule> routineSchedules = new ArrayList<>();
+    private Set<RoutineSchedule> routineSchedules = new HashSet<>();
 
     /**
      * 연관관계 편의 메서드: Routine에 Step을 추가하면서, Step에도 Routine을 설정해줍니다.

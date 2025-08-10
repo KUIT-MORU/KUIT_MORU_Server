@@ -57,6 +57,9 @@ public enum ErrorCode {
     INVALID_SCHEDULE_DAY(HttpStatus.BAD_REQUEST, "반복 요일이 필요합니다."),
     ALREADY_EXISTS_SCHEDULE(HttpStatus.CONFLICT, "이미 해당 시간대에 존재하는 루틴이 있습니다."),
 
+    SIMPLE_ROUTINE_CANNOT_HAVE_TIME(HttpStatus.BAD_REQUEST, "간편 루틴에는 소요 시간을 설정할 수 없습니다."),
+    FOCUS_ROUTINE_REQUIRES_TIME_FOR_ALL_STEPS(HttpStatus.BAD_REQUEST, "집중 루틴의 모든 스텝에는 소요시간 입력이 필수입니다."),
+
     // 루틴 로그 관련 예외
     ROUTINE_LOG_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 루틴 로그입니다."),
     ROUTINE_STEP_SNAPSHOT_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 루틴 스텝 스냅샷입니다."),

@@ -40,13 +40,16 @@ public record RoutineListResponse(
     LocalDateTime createdAt,
     
     @Schema(description = "필요 시간(집중루틴만)", example = "PT50M") // 시간순으로 정렬할 때 
-    Duration requiredTime
+    Duration requiredTime,
+
+    @Schema(description = "현재 사용자가 이 루틴을 실행 중인지 여부", example = "false")
+    boolean isRunning
 ) {
     /**
      * 일반 Routine 엔티티 기반 카드 응답 생성 (공개/소유 루틴 등)
      * Routine + List<RoutineTag> → RoutineListResponse
      */
-    public static RoutineListResponse fromRoutine(Routine routine, String imageFullUrl, List<RoutineTag> tags) {
+    public static RoutineListResponse fromRoutine(Routine routine, String imageFullUrl, List<RoutineTag> tags, boolean isRunning) {
         return RoutineListResponse.builder()
                 .id(routine.getId())
                 .title(routine.getTitle())
@@ -55,7 +58,16 @@ public record RoutineListResponse(
                 .likeCount(routine.getLikeCount())
                 .createdAt(routine.getCreatedAt())
                 .requiredTime(routine.getRequiredTime())
+                .isRunning(isRunning) // isRunning 값 설정
                 .build();
+    }
+
+    /**
+     * 기존 코드 호환용 -> isRunning은 false로 기본 설정됨
+     */
+    public static RoutineListResponse fromRoutine(Routine routine, String imageFullUrl, List<RoutineTag> tags) {
+        // 새로운 팩토리 메서드를 호출하되, isRunning을 false로 고정하여 전달
+        return fromRoutine(routine, imageFullUrl, tags, false);
     }
 
     /**
