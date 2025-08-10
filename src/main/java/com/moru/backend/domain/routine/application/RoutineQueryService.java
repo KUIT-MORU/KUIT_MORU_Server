@@ -9,6 +9,7 @@ import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
 import com.moru.backend.domain.social.application.LikeService;
 import com.moru.backend.domain.social.application.ScrapService;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.domain.user.dto.AuthorInfo;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.util.RedisKeyUtil;
@@ -69,12 +70,19 @@ public class RoutineQueryService {
 
         List<RoutineListResponse> similarRoutines = findSimilarRoutines(routine, currentUser);
 
+        User author = routine.getUser();
+        AuthorInfo authorInfo = AuthorInfo.from(
+                author,
+                s3Service.getImageUrl(author.getProfileImageUrl())
+        );
+
         return RoutineDetailResponse.of(
                 routine,
                 s3Service.getImageUrl(routine.getImageUrl()),
                 routine.getRoutineTags(), // Fetch된 데이터 사용
                 routine.getRoutineSteps(), // Fetch된 데이터 사용
                 routine.getRoutineApps(), // Fetch된 데이터 사용
+                authorInfo,
                 likeCount,
                 scrapCount,
                 currentUser,
