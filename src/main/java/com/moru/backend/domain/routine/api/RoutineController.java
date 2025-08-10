@@ -16,10 +16,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
+
+import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/routines")
@@ -34,7 +37,18 @@ public class RoutineController {
     public ResponseEntity<RoutineCreateResponse> createRoutine(
             @CurrentUser User currentUser,
             @Valid @RequestBody RoutineCreateRequest request) {
-        return ResponseEntity.ok(routineCommandService.createRoutine(request, currentUser));
+        // 1. 서비스 계층을 호출하여 루틴을 생성하고, 응답 DTO를 받기
+        RoutineCreateResponse response = routineCommandService.createRoutine(request, currentUser);
+
+        // 2. Location 헤더에 담을 URI를 생성
+        // 예: "http://localhost:8081/api/routines/방금_만든_루틴_ID"
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(response.id())
+                .toUri();
+
+        // 3. 201 Created 상태 코드와 Location 헤더, 그리고 응답 본문을 담아 반환
+        return ResponseEntity.created(location).body(response);
     }
 
     @Operation(summary = "내 루틴 목록 조회", description = "현재 로그인된 사용자의 루틴 목록을 조회합니다. sortType: LATEST(최신순), POPULAR(인기순), TIME(시간순, dayOfWeek 필요)")
