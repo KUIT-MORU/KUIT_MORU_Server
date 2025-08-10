@@ -1,7 +1,7 @@
 package com.moru.backend.domain.notification.dao;
 
 import com.moru.backend.domain.notification.domain.Notification;
-import io.lettuce.core.dynamic.annotation.Param;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -17,7 +17,7 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
             AND (
                 :lastCreatedAt IS NULL OR
                 n.createdAt < :lastCreatedAt OR
-                (n.createdAt = :lastCreatedAt AND n.id <: lastNotificationId)
+                (n.createdAt = :lastCreatedAt AND n.id < :lastNotificationId)
             )
         ORDER BY n.createdAt DESC, n.id DESC
     """)
