@@ -83,11 +83,11 @@ public class Routine {
     @Builder.Default
     private Boolean status = true;
 
-    @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<RoutineTag> routineTags = new ArrayList<>();
 
-    @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<RoutineApp> routineApps = new ArrayList<>();
 
