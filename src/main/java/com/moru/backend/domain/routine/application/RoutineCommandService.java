@@ -44,6 +44,8 @@ public class RoutineCommandService {
     private final ApplicationEventPublisher eventPublisher;
 
     public RoutineCreateResponse createRoutine(RoutineCreateRequest request, User user) {
+        routineValidator.validateCreateRequest(request);
+
         boolean isSimple = request.isSimple();
         Duration totalTime = isSimple ? null : request.steps().stream()
                 .map(step -> Optional.ofNullable(step.estimatedTime()).orElse(Duration.ZERO))
