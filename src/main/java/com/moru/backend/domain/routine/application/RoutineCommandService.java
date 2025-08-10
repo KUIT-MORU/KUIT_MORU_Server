@@ -16,6 +16,8 @@ import com.moru.backend.domain.routine.dto.request.RoutineStepRequest;
 import com.moru.backend.domain.routine.dto.request.RoutineUpdateRequest;
 import com.moru.backend.domain.routine.dto.response.RoutineCreateResponse;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.global.exception.CustomException;
+import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.fcm.RoutineScheduleFcmPreloader;
 import com.moru.backend.global.util.S3Directory;
 import com.moru.backend.global.util.S3Service;
@@ -125,9 +127,12 @@ public class RoutineCommandService {
         // JPA의 변경 감지(Dirty Checking)와 orphanRemoval=true를 활용하기 위해 clear 후 add
         routine.getRoutineTags().clear();
         routineRepository.flush();
+
+        if (tagNames.isEmpty()) return;
+
         tagNames.stream()
                 .map(tagName -> tagRepository.findByName(tagName)
-                        .orElseGet(() -> tagRepository.save(Tag.builder().name(tagName).build())))
+                        .orElseThrow(() -> new CustomException(ErrorCode.TAG_NOT_FOUND)))
                 .forEach(tag -> routine.addRoutineTag(RoutineTag.builder().tag(tag).build()));
     }
 

@@ -29,7 +29,7 @@ public class Tag {
     @Column(columnDefinition = "BINARY(16)")
     private UUID id;
 
-    @Column(nullable = false, length = 5)
+    @Column(nullable = false, unique = true, length = 5)
     private String name;
 
     @CreatedDate
