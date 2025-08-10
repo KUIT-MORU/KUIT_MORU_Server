@@ -38,6 +38,7 @@ public class NotificationMapper {
 
         return new NotificationResponse(
                 notification.getId(),
+                notification.getSenderId(),
                 senderNickname,
                 s3Service.getImageUrl(profileImageUrl),
                 message,
