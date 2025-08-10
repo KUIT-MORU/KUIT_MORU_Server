@@ -69,9 +69,6 @@ public record RoutineDetailResponse(
     public static RoutineDetailResponse of(
         Routine routine,
         String imageFullUrl,
-        List<RoutineTag> tags,
-        List<RoutineStep> steps,
-        List<RoutineApp> apps,
         AuthorInfo author,
         int likeCount,
         int scrapCount,
@@ -80,23 +77,23 @@ public record RoutineDetailResponse(
     ) {
         boolean isOwner = author.id().equals(currentUser.getId());
         return new RoutineDetailResponse(
-            routine.getId(),
-            routine.getTitle(),
-            imageFullUrl,
-            author,
-            tags.stream().map(rt -> rt.getTag().getName()).toList(),
-            routine.getContent(),
-            routine.isSimple(),
-            routine.isUserVisible(),
-            steps.stream().map(RoutineStepDetailResponse::from).toList(),
-            apps.stream().map(a -> RoutineAppResponse.from(a.getApp())).toList(),
-            routine.getCreatedAt(),
-            routine.getUpdatedAt(),
-            routine.getRequiredTime(),
-            likeCount,
-            scrapCount,
-            isOwner,
-            similarRoutines
+                routine.getId(),
+                routine.getTitle(),
+                imageFullUrl,
+                author,
+                routine.getRoutineTags().stream().map(rt -> rt.getTag().getName()).toList(),
+                routine.getContent(),
+                routine.isSimple(),
+                routine.isUserVisible(),
+                routine.getRoutineSteps().stream().map(RoutineStepDetailResponse::from).toList(),
+                routine.getRoutineApps().stream().map(a -> RoutineAppResponse.from(a.getApp())).toList(),
+                routine.getCreatedAt(),
+                routine.getUpdatedAt(),
+                routine.getRequiredTime(),
+                likeCount,
+                scrapCount,
+                isOwner,
+                similarRoutines
         );
     }
 } 

@@ -254,9 +254,10 @@ public class RoutineRecommendService {
     }
 
     private RoutineListResponse toRoutineListResponse(Routine routine, boolean isRunning) {
-        List<RoutineTag> tagsToUse = routine.getRoutineTags().isEmpty()
-                ? Collections.emptyList()
-                : List.of(routine.getRoutineTags().get(0));
+        List<RoutineTag> tagsToUse = routine.getRoutineTags().stream()
+                .findFirst()
+                .map(List::of)
+                .orElse(Collections.emptyList());
 
         return RoutineListResponse.fromRoutine(
                 routine,
