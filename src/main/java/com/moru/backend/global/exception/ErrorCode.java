@@ -48,6 +48,7 @@ public enum ErrorCode {
     ROUTINE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 루틴입니다."),
     TAG_OVERLOADED(HttpStatus.BAD_REQUEST, "루틴에는 최대 3개의 태그만 연결할 수 있습니다."),
     ROUTINE_TAG_NOT_FOUND(HttpStatus.NOT_FOUND, "루틴에 연결된 태그를 찾을 수 없습니다."),
+    INTERNAL_SERVER_ERROR_CAUSING_INVALID_ESTIMATED_TIME(HttpStatus.BAD_REQUEST, "집중 루틴의 스텝에 예상 소요시간이 없습니다."),
 
     APP_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 앱입니다."),
     ALREADY_CONNECTED_APP(HttpStatus.CONFLICT, "이미 연결된 앱입니다."),

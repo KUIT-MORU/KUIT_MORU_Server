@@ -48,10 +48,22 @@ public class RoutineCommandService {
     public RoutineCreateResponse createRoutine(RoutineCreateRequest request, User user) {
         routineValidator.validateCreateRequest(request);
 
-        boolean isSimple = request.isSimple();
-        Duration totalTime = isSimple ? null : request.steps().stream()
-                .map(step -> Optional.ofNullable(step.estimatedTime()).orElse(Duration.ZERO))
-                .reduce(Duration.ZERO, Duration::plus);
+        Duration totalTime;
+        if (request.isSimple()) {
+            totalTime = null;
+        } else {
+            // 집중 루틴일 경우, Validator를 통과했더라도 null을 허용하지 않음
+            totalTime = request.steps().stream()
+                    .map(step -> {
+                        // isSimple=false일 때 estimatedTime은 절대 null이 될 수 없음
+                        if (step.estimatedTime() == null) {
+                            // Validator에 버그가 있거나 로직이 변경될 경우를 대비한 방어 코드
+                            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR_CAUSING_INVALID_ESTIMATED_TIME);
+                        }
+                        return step.estimatedTime();
+                    })
+                    .reduce(Duration.ZERO, Duration::plus);
+        }
 
         // === 이미지 이동 처리 ===
         String imageKey = processImageKey(request.imageKey());
@@ -59,7 +71,7 @@ public class RoutineCommandService {
         Routine routine = Routine.builder()
                 .user(user)
                 .title(request.title())
-                .isSimple(isSimple)
+                .isSimple(request.isSimple())
                 .isUserVisible(request.isUserVisible())
                 .likeCount(0)
                 .content(Optional.ofNullable(request.description()).orElse(""))
