@@ -6,6 +6,7 @@ import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 import com.moru.backend.domain.routine.domain.search.SortType;
 import com.moru.backend.domain.routine.dto.response.RoutineDetailResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
+import com.moru.backend.domain.routine.dto.response.SimilarRoutineResponse;
 import com.moru.backend.domain.social.application.LikeService;
 import com.moru.backend.domain.social.application.ScrapService;
 import com.moru.backend.domain.user.domain.User;
@@ -68,7 +69,7 @@ public class RoutineQueryService {
         int likeCount = likeService.countLikes(routine.getId()).intValue();
         int scrapCount = scrapService.countScrap(routine.getId()).intValue();
 
-        List<RoutineListResponse> similarRoutines = findSimilarRoutines(routine, currentUser);
+        List<SimilarRoutineResponse> similarRoutines = findSimilarRoutines(routine, currentUser);
 
         User author = routine.getUser();
         AuthorInfo authorInfo = AuthorInfo.from(
@@ -111,7 +112,7 @@ public class RoutineQueryService {
     }
 
 
-    private List<RoutineListResponse> findSimilarRoutines(Routine routine, User currentUser) {
+    private List<SimilarRoutineResponse> findSimilarRoutines(Routine routine, User currentUser) {
         if (routine.getRoutineTags().isEmpty()) {
             return Collections.emptyList();
         }
@@ -133,7 +134,7 @@ public class RoutineQueryService {
         return sortedRoutines.stream()
                 .filter(r -> !r.getUser().getId().equals(currentUser.getId()))
                 .limit(similarLimitSize)
-                .map(this::toRoutineListResponse)
+                .map(r -> SimilarRoutineResponse.from(r, s3Service.getImageUrl(r.getImageUrl())))
                 .toList();
     }
 

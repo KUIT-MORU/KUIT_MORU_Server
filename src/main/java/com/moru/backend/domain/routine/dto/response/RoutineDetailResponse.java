@@ -64,7 +64,7 @@ public record RoutineDetailResponse(
     @Schema(description = "루틴 소유자 여부", example = "true")
     boolean isOwner,
     @Schema(description = "비슷한 루틴 목록")
-    List<RoutineListResponse> similarRoutines
+    List<SimilarRoutineResponse> similarRoutines
 ) {
     public static RoutineDetailResponse of(
         Routine routine,
@@ -73,7 +73,7 @@ public record RoutineDetailResponse(
         int likeCount,
         int scrapCount,
         User currentUser,
-        List<RoutineListResponse> similarRoutines
+        List<SimilarRoutineResponse> similarRoutines
     ) {
         boolean isOwner = author.id().equals(currentUser.getId());
         return new RoutineDetailResponse(
