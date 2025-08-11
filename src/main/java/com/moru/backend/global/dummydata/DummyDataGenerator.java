@@ -16,6 +16,7 @@ import com.moru.backend.domain.notification.domain.Notification;
 import com.moru.backend.domain.notification.domain.NotificationType;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
 import com.moru.backend.domain.routine.dao.RoutineScheduleHistoryRepository;
+import com.moru.backend.domain.routine.dao.SearchHistoryRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.meta.RoutineApp;
@@ -23,6 +24,8 @@ import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
 import com.moru.backend.domain.routine.domain.schedule.RoutineScheduleHistory;
+import com.moru.backend.domain.routine.domain.search.SearchHistory;
+import com.moru.backend.domain.routine.domain.search.SearchType;
 import com.moru.backend.domain.social.dao.UserFollowRepository;
 import com.moru.backend.domain.social.domain.UserFollow;
 import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
@@ -59,6 +62,7 @@ public class DummyDataGenerator {
     private final RoutineSnapshotRepository routineSnapshotRepository;
     private final NotificationRepository notificationRepository;
     private final DummyDataPool dummyDataPool;
+    private final SearchHistoryRepository searchHistoryRepository;
 
     // Faker 인스턴스와 Random 객체를 필드로 선언해서 재사용하기
     private final Faker faker = new Faker(new Locale("ko"));
@@ -389,6 +393,95 @@ public class DummyDataGenerator {
             }
             log.info("알림 더미 데이터 저장 완료.");
         }
+    }
+
+    @Transactional
+    public void createUserCentricNotifications(
+            User target,
+            List<UserFollow> allFollows,
+            List<Routine> allRoutines,
+            int followNotifCount,
+            int routineCreatedNotifCount
+    ) {
+        List<Notification> toSave = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        // A. FOLLOW_RECEIVED: target을 following으로 하는 팔로우 중 일부 선택 → receiver=target
+        List<UserFollow> receivedFollows = allFollows.stream()
+                .filter(f -> f.getFollowing().getId().equals(target.getId()))
+                .collect(Collectors.toList());
+        Collections.shuffle(receivedFollows);
+        for (int i = 0; i < Math.min(followNotifCount, receivedFollows.size()); i++) {
+            UserFollow f = receivedFollows.get(i);
+            toSave.add(Notification.builder()
+                    .receiverId(target.getId())
+                    .senderId(f.getFollower().getId())
+                    .type(NotificationType.FOLLOW_RECEIVED)
+                    .createdAt(now.minusMinutes(i))
+                    .build());
+        }
+
+        // B. ROUTINE_CREATED: target이 팔로우하는 사용자의 공개 루틴 중 일부 선택 → receiver=target
+        Set<UUID> followingIds = allFollows.stream()
+                .filter(f -> f.getFollower().getId().equals(target.getId()))
+                .map(f -> f.getFollowing().getId())
+                .collect(Collectors.toSet());
+
+        List<Routine> visibleRoutinesByFollowings = allRoutines.stream()
+                .filter(r -> r.isUserVisible() && followingIds.contains(r.getUser().getId()))
+                .collect(Collectors.toList());
+        Collections.shuffle(visibleRoutinesByFollowings);
+        for (int i = 0; i < Math.min(routineCreatedNotifCount, visibleRoutinesByFollowings.size()); i++) {
+            Routine r = visibleRoutinesByFollowings.get(i);
+            toSave.add(Notification.builder()
+                    .receiverId(target.getId())
+                    .senderId(r.getUser().getId())
+                    .resourceId(r.getId())
+                    .type(NotificationType.ROUTINE_CREATED)
+                    .createdAt(now.minusSeconds(i))
+                    .build());
+        }
+
+        if (!toSave.isEmpty()) {
+            notificationRepository.saveAll(toSave);
+            log.info("[UserCentric] {} 수신함 알림 {}건 생성", target.getEmail(), toSave.size());
+        }
+    }
+
+    @Transactional
+    public void createSearchHistoriesPerUser(List<User> users, int perUser) {
+        if (perUser <= 0 || users.isEmpty()) return;
+
+        List<String> keywords = Arrays.asList("아침","운동","다이어트","명상","헬스","공부","프로그래밍","요가","산책","모닝루틴");
+
+        // 프로젝트 실제 enum 기준으로 생성 (필요시 제외할 값 필터)
+        List<SearchType> allowedTypes = Arrays.stream(SearchType.values())
+                // .filter(t -> t != SearchType.ALL) // 필요하면 제외
+                .collect(Collectors.toList());
+
+        List<SearchHistory> batch = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (User u : users) {
+            for (int i = 0; i < perUser; i++) {
+                String kw = keywords.get(random.nextInt(keywords.size()));
+                SearchType tp = allowedTypes.get(random.nextInt(allowedTypes.size()));
+
+                batch.add(SearchHistory.builder()
+                        .userId(u.getId())
+                        .searchKeyword(kw)
+                        .searchType(tp)                    // ← 엔티티가 enum
+                        .createdAt(now.minusMinutes(random.nextInt(7 * 24 * 60)))
+                        .build());
+
+                if (batch.size() >= BATCH_SIZE) {
+                    searchHistoryRepository.saveAll(batch);
+                    batch.clear();
+                }
+            }
+        }
+        if (!batch.isEmpty()) searchHistoryRepository.saveAll(batch);
+        log.info("검색기록 더미 생성 완료 (perUser: {})", perUser);
     }
 
 
