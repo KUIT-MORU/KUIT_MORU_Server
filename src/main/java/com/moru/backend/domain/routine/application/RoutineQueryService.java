@@ -1,11 +1,13 @@
 package com.moru.backend.domain.routine.application;
 
+import com.moru.backend.domain.log.dao.RoutineLogRepository;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 import com.moru.backend.domain.routine.domain.search.SortType;
 import com.moru.backend.domain.routine.dto.response.RoutineDetailResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
+import com.moru.backend.domain.routine.dto.response.SimilarRoutineResponse;
 import com.moru.backend.domain.social.application.LikeService;
 import com.moru.backend.domain.social.application.ScrapService;
 import com.moru.backend.domain.user.domain.User;
@@ -33,6 +35,7 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class RoutineQueryService {
+    private final RoutineLogRepository routineLogRepository;
     private final RoutineRepository routineRepository;
     private final LikeService likeService;
     private final ScrapService scrapService;
@@ -68,7 +71,11 @@ public class RoutineQueryService {
         int likeCount = likeService.countLikes(routine.getId()).intValue();
         int scrapCount = scrapService.countScrap(routine.getId()).intValue();
 
-        List<RoutineListResponse> similarRoutines = findSimilarRoutines(routine, currentUser);
+        // 각 서비스에 책임을 위임하여 상태 조회
+        boolean isLiked = likeService.isLiked(currentUser.getId(), routineId);
+        boolean isScrapped = scrapService.isScrapped(currentUser.getId(), routineId);
+
+        List<SimilarRoutineResponse> similarRoutines = findSimilarRoutines(routine, currentUser);
 
         User author = routine.getUser();
         AuthorInfo authorInfo = AuthorInfo.from(
@@ -82,6 +89,8 @@ public class RoutineQueryService {
                 authorInfo,
                 likeCount,
                 scrapCount,
+                isLiked,
+                isScrapped,
                 currentUser,
                 similarRoutines
         );
@@ -111,7 +120,7 @@ public class RoutineQueryService {
     }
 
 
-    private List<RoutineListResponse> findSimilarRoutines(Routine routine, User currentUser) {
+    private List<SimilarRoutineResponse> findSimilarRoutines(Routine routine, User currentUser) {
         if (routine.getRoutineTags().isEmpty()) {
             return Collections.emptyList();
         }
@@ -133,7 +142,7 @@ public class RoutineQueryService {
         return sortedRoutines.stream()
                 .filter(r -> !r.getUser().getId().equals(currentUser.getId()))
                 .limit(similarLimitSize)
-                .map(this::toRoutineListResponse)
+                .map(r -> SimilarRoutineResponse.from(r, s3Service.getImageUrl(r.getImageUrl())))
                 .toList();
     }
 

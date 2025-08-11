@@ -111,4 +111,8 @@ public class ScrapService {
             routineCloner.cloneRoutine(origin, user);
         }
     }
+
+    public boolean isScrapped(UUID userId, UUID routineId) {
+        return routineUserActionRepository.existsByUserIdAndRoutineIdAndActionType(userId, routineId, ActionType.SCRAP);
+    }
 }
