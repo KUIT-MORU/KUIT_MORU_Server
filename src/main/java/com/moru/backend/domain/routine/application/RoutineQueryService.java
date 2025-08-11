@@ -1,5 +1,6 @@
 package com.moru.backend.domain.routine.application;
 
+import com.moru.backend.domain.log.dao.RoutineLogRepository;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class RoutineQueryService {
+    private final RoutineLogRepository routineLogRepository;
     private final RoutineRepository routineRepository;
     private final LikeService likeService;
     private final ScrapService scrapService;
@@ -69,6 +71,10 @@ public class RoutineQueryService {
         int likeCount = likeService.countLikes(routine.getId()).intValue();
         int scrapCount = scrapService.countScrap(routine.getId()).intValue();
 
+        // 각 서비스에 책임을 위임하여 상태 조회
+        boolean isLiked = likeService.isLiked(currentUser.getId(), routineId);
+        boolean isScrapped = scrapService.isScrapped(currentUser.getId(), routineId);
+
         List<SimilarRoutineResponse> similarRoutines = findSimilarRoutines(routine, currentUser);
 
         User author = routine.getUser();
@@ -83,6 +89,8 @@ public class RoutineQueryService {
                 authorInfo,
                 likeCount,
                 scrapCount,
+                isLiked,
+                isScrapped,
                 currentUser,
                 similarRoutines
         );

@@ -59,10 +59,19 @@ public record RoutineDetailResponse(
 
     @Schema(description = "좋아요 수", example = "16")
     int likeCount,
+
     @Schema(description = "스크랩 수", example = "5")
     int scrapCount,
+
+    @Schema(description = "현재 사용자가 좋아요를 눌렀는지 여부", example = "true")
+    boolean isLiked,
+
+    @Schema(description = "현재 사용자가 스크랩했는지 여부", example = "false")
+    boolean isScrapped,
+
     @Schema(description = "루틴 소유자 여부", example = "true")
     boolean isOwner,
+
     @Schema(description = "비슷한 루틴 목록")
     List<SimilarRoutineResponse> similarRoutines
 ) {
@@ -72,6 +81,8 @@ public record RoutineDetailResponse(
         AuthorInfo author,
         int likeCount,
         int scrapCount,
+        boolean isLiked,
+        boolean isScrapped,
         User currentUser,
         List<SimilarRoutineResponse> similarRoutines
     ) {
@@ -92,6 +103,8 @@ public record RoutineDetailResponse(
                 routine.getRequiredTime(),
                 likeCount,
                 scrapCount,
+                isLiked,
+                isScrapped,
                 isOwner,
                 similarRoutines
         );
