@@ -7,6 +7,7 @@ import com.moru.backend.global.jwt.filter.JwtAuthenticationFilter;
 import com.moru.backend.global.redis.RefreshTokenRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -18,6 +19,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
     private final JwtProvider jwtProvider;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -52,7 +54,6 @@ public class SecurityConfig {
                             "/webjars/**",
                             "/api-docs"
                     ).permitAll()
-                    .requestMatchers("/routines/**").authenticated() // 루틴 API는 인증 필요
                     .anyRequest().authenticated() // 그 외에는 인증 필요
             )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtProvider, refreshTokenRepository, userRepository, tokenBlacklistService),

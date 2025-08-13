@@ -35,26 +35,28 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
      * 검색 기능 관련
      */
     // 최신순으로 정렬된
-    @Query("select distinct r from Routine r " +
-            "left join fetch r.routineTags rt " + // fetch 추가
-            "left join fetch rt.tag " + // fetch 추가
-            "where (:titleKeyword is null or r.title like %:titleKeyword%) " +
-            "and (:tagNames is null or rt.tag.name in :tagNames) " +
-            "order by r.createdAt desc")
-    Page<Routine> findBySearchCriteriaOrderByCreatedAt(
+    @Query(value = "SELECT r.id FROM Routine r LEFT JOIN r.routineTags rt " +
+            "WHERE (:titleKeyword IS NULL OR r.title LIKE %:titleKeyword%) " +
+            "AND (:tagNames IS NULL OR rt.tag.name IN :tagNames) " +
+            "GROUP BY r.id ORDER BY r.createdAt DESC",
+            countQuery = "SELECT COUNT(DISTINCT r.id) FROM Routine r LEFT JOIN r.routineTags rt " +
+                    "WHERE (:titleKeyword IS NULL OR r.title LIKE %:titleKeyword%) " +
+                    "AND (:tagNames IS NULL OR rt.tag.name IN :tagNames)")
+    Page<UUID> findIdsBySearchCriteriaOrderByCreatedAt(
             @Param("titleKeyword") String titleKeyword,
             @Param("tagNames") List<String> tagNames,
             Pageable pageable);
 
 
     // 인기순으로 정렬된
-    @Query("select distinct r from Routine r " +
-            "left join fetch r.routineTags rt " + // fetch 추가
-            "left join fetch rt.tag " + // fetch 추가
-            "where (:titleKeyword is null or r.title like %:titleKeyword%) " +
-            "and (:tagNames is null or rt.tag.name in :tagNames) " +
-            "order by r.likeCount desc, r.createdAt desc")
-    Page<Routine> findBySearchCriteriaOrderByLikeCount(
+    @Query(value = "SELECT r.id FROM Routine r LEFT JOIN r.routineTags rt " +
+            "WHERE (:titleKeyword IS NULL OR r.title LIKE %:titleKeyword%) " +
+            "AND (:tagNames IS NULL OR rt.tag.name IN :tagNames) " +
+            "GROUP BY r.id ORDER BY r.likeCount DESC, r.createdAt DESC",
+            countQuery = "SELECT COUNT(DISTINCT r.id) FROM Routine r LEFT JOIN r.routineTags rt " +
+                    "WHERE (:titleKeyword IS NULL OR r.title LIKE %:titleKeyword%) " +
+                    "AND (:tagNames IS NULL OR rt.tag.name IN :tagNames)")
+    Page<UUID> findIdsBySearchCriteriaOrderByLikeCount(
             @Param("titleKeyword") String titleKeyword,
             @Param("tagNames") List<String> tagNames,
             Pageable pageable
@@ -62,9 +64,7 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
  
 
     // 루틴명 자동완성
-    @Query("select distinct r.title from Routine r " +
-            "where r.title like %:keyword% " +
-            "order by r.title")
+    @Query("SELECT DISTINCT r.title FROM Routine r WHERE r.title LIKE %:keyword% ORDER BY r.title")
     List<String> findTitleSuggestions(@Param("keyword") String keyword);
 
     /**
@@ -75,14 +75,17 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
      * @return 조건에 맞는 루틴의 페이징된 목록
      */
     // 시간순으로 정렬된
-    @Query("SELECT DISTINCT r FROM Routine r JOIN r.routineSchedules s LEFT JOIN FETCH r.routineTags rt LEFT JOIN FETCH rt.tag WHERE r.user.id = :userId AND s.dayOfWeek = :dayOfWeek ORDER BY s.time ASC")
-    Page<Routine> findByUserIdAndDayOfWeekOrderByScheduleTimeAsc(@Param("userId") UUID userId, @Param("dayOfWeek") DayOfWeek dayOfWeek, Pageable pageable);
+    @Query(value = "SELECT r.id FROM Routine r JOIN r.routineSchedules s WHERE r.user.id = :userId AND s.dayOfWeek = :dayOfWeek GROUP BY r.id, s.time ORDER BY s.time ASC",
+            countQuery = "SELECT COUNT(DISTINCT r.id) FROM Routine r JOIN r.routineSchedules s WHERE r.user.id = :userId AND s.dayOfWeek = :dayOfWeek")
+    Page<UUID> findIdsByUserIdAndDayOfWeekOrderByScheduleTimeAsc(@Param("userId") UUID userId, @Param("dayOfWeek") DayOfWeek dayOfWeek, Pageable pageable);
 
-    @Query("select distinct r from Routine r left join fetch r.routineTags rt left join fetch rt.tag where r.user = :user order by r.likeCount desc, r.createdAt desc")
-    Page<Routine> findByUserOrderByLikeCountDescCreatedAtDesc(@Param("user") User user, Pageable pageable);
+    @Query(value = "SELECT r.id FROM Routine r WHERE r.user = :user GROUP BY r.id ORDER BY r.likeCount DESC, r.createdAt DESC",
+            countQuery = "SELECT COUNT(r.id) FROM Routine r WHERE r.user = :user")
+    Page<UUID> findIdsByUserOrderByLikeCountDescCreatedAtDesc(@Param("user") User user, Pageable pageable);
 
-    @Query("select distinct r from Routine r left join fetch r.routineTags rt left join fetch rt.tag where r.user = :user order by r.createdAt desc")
-    Page<Routine> findByUserOrderByCreatedAtDesc(@Param("user") User user, Pageable pageable);
+    @Query(value = "SELECT r.id FROM Routine r WHERE r.user = :user GROUP BY r.id ORDER BY r.createdAt DESC",
+            countQuery = "SELECT COUNT(r.id) FROM Routine r WHERE r.user = :user")
+    Page<UUID> findIdsByUserOrderByCreatedAtDesc(@Param("user") User user, Pageable pageable);
 
     List<Routine> findAllByUserId(UUID userId);
 
@@ -96,37 +99,31 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
      * @param pageable   결과 개수 제한
      * @return 인기 루틴 목록
      */
-    @Query("SELECT DISTINCT r FROM Routine r LEFT JOIN FETCH r.routineTags rt LEFT JOIN FETCH rt.tag " +
-            "WHERE r.createdAt >= :weekAgo " +
-            "ORDER BY (r.viewCount * :viewWeight + r.likeCount * :likeWeight) DESC, r.createdAt DESC")
-    List<Routine> findHotRoutines(@Param("weekAgo") LocalDateTime weekAgo,
+    @Query(value = "SELECT r.id FROM Routine r WHERE r.createdAt >= :weekAgo " +
+            "GROUP BY r.id, r.viewCount, r.likeCount, r.createdAt " + // GROUP BY에 정렬 기준 컬럼 추가
+            "ORDER BY (CAST(r.viewCount AS double) * :viewWeight + CAST(r.likeCount AS double) * :likeWeight) DESC, r.createdAt DESC")
+    List<UUID> findHotRoutinesIds(@Param("weekAgo") LocalDateTime weekAgo,
                                   @Param("viewWeight") double viewWeight,
                                   @Param("likeWeight") double likeWeight,
                                   Pageable pageable);
 
     /**
-     *
-     * @param tags     추천의 기반이 될 태그 이름 목록
-     * @param pageable 페이징 정보
-     * @return 정렬된 루틴 ID의 Page 객체
+     * 주어진 태그를 포함하는 루틴의 ID를, 태그 일치 개수가 많은 순으로 정렬하여 조회.
+     * JOIN FETCH를 제거하여 COUNT 및 GROUP BY와 함께 사용할 수 있도록 수정했.
      */
     @Query(value = "SELECT r.id FROM Routine r JOIN r.routineTags rt WHERE rt.tag.name IN :tags GROUP BY r.id ORDER BY COUNT(r.id) DESC, r.createdAt DESC",
             countQuery = "SELECT COUNT(DISTINCT r.id) FROM Routine r JOIN r.routineTags rt WHERE rt.tag.name IN :tags")
     Page<UUID> findRoutineIdsByTagsOrderByTagCount(@Param("tags") List<String> tags, Pageable pageable);
 
-    /**
-     *
-     * @param routineIds 조회할 루틴의 ID 목록
-     * @return 상세 정보가 포함된 루틴 목록
-     */
-    @Query("SELECT DISTINCT r FROM Routine r " +
-            "LEFT JOIN FETCH r.user " + // 사용자 정보도 함께 가져오도록 추가
-            "LEFT JOIN FETCH r.routineTags rt " +
-            "LEFT JOIN FETCH rt.tag " +
-            "LEFT JOIN FETCH r.routineSteps " +
-            "WHERE r.id IN :routineIds")
-    List<Routine> findAllWithDetailsByIds(@Param("routineIds") List<UUID> routineIds);
-
+    @Query("""
+        SELECT r FROM Routine r
+        LEFT JOIN FETCH r.user
+        LEFT JOIN FETCH r.routineTags rt LEFT JOIN FETCH rt.tag
+        LEFT JOIN FETCH r.routineSteps
+        LEFT JOIN FETCH r.routineApps ra LEFT JOIN FETCH ra.app
+        WHERE r.id IN :ids
+    """)
+    List<Routine> findWithAllDetailsByIds(@Param("ids") List<UUID> ids);
     /**
      * 두 개의 태그를 모두 포함하는 루틴을 인기순으로 정렬하여 조회합니다.
      *
@@ -135,17 +132,15 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
      * @param pageable 페이징 정보
      * @return 태그 쌍 관련 루틴 목록
      */
-    @Query("""
-        SELECT DISTINCT r FROM Routine r
+    @Query(value = """
+        SELECT r.id FROM Routine r
         JOIN r.routineTags rt1
         JOIN r.routineTags rt2
-        LEFT JOIN FETCH r.routineTags rt
-        LEFT JOIN FETCH rt.tag
         WHERE rt1.tag.id = :tag1 AND rt2.tag.id = :tag2
         GROUP BY r.id
-        ORDER BY (r.viewCount * 0.5 + r.likeCount * 0.5) DESC, r.createdAt DESC
-    """)
-    List<Routine> findRoutinesByTagPair(@Param("tag1") UUID tag1, @Param("tag2") UUID tag2, Pageable pageable);
+        ORDER BY (CAST(r.viewCount AS double) * 0.5 + CAST(r.likeCount AS double) * 0.5) DESC, r.createdAt DESC
+    """, countQuery = "SELECT COUNT(DISTINCT r.id) FROM Routine r JOIN r.routineTags rt1 JOIN r.routineTags rt2 WHERE rt1.tag.id = :tag1 AND rt2.tag.id = :tag2")
+    Page<UUID> findRoutineIdsByTagPair(@Param("tag1") UUID tag1, @Param("tag2") UUID tag2, Pageable pageable);
 
     /**
      * 특정 루틴의 조회수를 1 증가시킵니다.
@@ -164,17 +159,17 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
      * @param pageable  페이징 정보
      * @return 유사 루틴 목록
      */
-    @Query("""
-         SELECT DISTINCT r FROM Routine r
-         LEFT JOIN FETCH r.routineTags rt
-         LEFT JOIN FETCH rt.tag
+    @Query(value = """
+         SELECT r.id FROM Routine r
+         JOIN r.routineTags rt
          WHERE rt.tag.id IN :tagIds AND r.id <> :routineId
          GROUP BY r.id
          ORDER BY COUNT(rt.tag.id) DESC, r.createdAt DESC
-    """)
-    List<Routine> findSimilarRoutinesByTagIds(@Param("tagIds") List<UUID> tagIds, @Param("routineId") UUID routineId, Pageable pageable);
+    """, countQuery = "SELECT COUNT(DISTINCT r.id) FROM Routine r JOIN r.routineTags rt WHERE rt.tag.id IN :tagIds AND r.id <> :routineId")
+    Page<UUID> findSimilarRoutineIdsByTagIds(@Param("tagIds") List<UUID> tagIds, @Param("routineId") UUID routineId, Pageable pageable);
 
-    @Query("SELECT r.title FROM Routine r WHERE r.id =: routineId")
+
+    @Query("SELECT r.title FROM Routine r WHERE r.id = :routineId")
     String findTitleById(@Param("routineId") UUID routineId);
 
     @Query("SELECT r.isUserVisible FROM Routine r WHERE r.id = :routineId")

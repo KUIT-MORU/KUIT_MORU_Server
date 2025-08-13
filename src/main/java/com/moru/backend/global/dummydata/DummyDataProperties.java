@@ -14,4 +14,9 @@ public class DummyDataProperties {
     private int routineCount;
     private int followCount;
     private int favoriteTagCount;
+
+    private String targetUserEmail;              // 사용자 기준 알림 타깃(없으면 test@example.com)
+    private int userCentricFollowNotif = 5;      // FOLLOW_RECEIVED 개수
+    private int userCentricRoutineCreatedNotif = 10; // ROUTINE_CREATED 개수
+    private int searchHistoryPerUser = 10;
 }

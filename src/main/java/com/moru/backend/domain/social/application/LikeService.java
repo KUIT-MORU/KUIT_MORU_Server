@@ -58,4 +58,8 @@ public class LikeService {
 
         routineUserActionRepository.delete(action);
     }
+
+    public boolean isLiked(UUID userId, UUID routineId) {
+        return routineUserActionRepository.existsByUserIdAndRoutineIdAndActionType(userId, routineId, ActionType.LIKE);
+    }
 }

@@ -18,6 +18,8 @@ public enum ErrorCode {
     INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "잘못된 비밀번호입니다."),
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 리프레시 토큰입니다."),
     REFRESH_TOKEN_MISMATCH(HttpStatus.UNAUTHORIZED, "리프레시 토큰이 일치하지 않습니다."),
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
+    INVALID_ROLE(HttpStatus.UNAUTHORIZED, "유효하지 않은 권한입니다."),
 
     // 유저 관련 예외
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다."),
@@ -55,11 +57,15 @@ public enum ErrorCode {
     INVALID_SCHEDULE_DAY(HttpStatus.BAD_REQUEST, "반복 요일이 필요합니다."),
     ALREADY_EXISTS_SCHEDULE(HttpStatus.CONFLICT, "이미 해당 시간대에 존재하는 루틴이 있습니다."),
 
+    SIMPLE_ROUTINE_CANNOT_HAVE_TIME(HttpStatus.BAD_REQUEST, "간편 루틴에는 소요 시간을 설정할 수 없습니다."),
+    FOCUS_ROUTINE_REQUIRES_TIME_FOR_ALL_STEPS(HttpStatus.BAD_REQUEST, "집중 루틴의 모든 스텝에는 소요시간 입력이 필수입니다."),
+
     // 루틴 로그 관련 예외
     ROUTINE_LOG_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 루틴 로그입니다."),
     ROUTINE_STEP_SNAPSHOT_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 루틴 스텝 스냅샷입니다."),
     AlREADY_ENDED_ROUTINE_LOG(HttpStatus.BAD_REQUEST, "이미 종료된 루틴 로그입니다."),
     INVALID_END_TIME(HttpStatus.BAD_REQUEST, "종료 시간이 시작 시간보다 이릅니다."),
+    ALREADY_IN_PROGRESS_ROUTINE(HttpStatus.CONFLICT, "이미 진행 중인 루틴이 있습니다."),
 
     // 스텝 관련 예외
     STEP_OVERLOADED(HttpStatus.BAD_REQUEST, "루틴 당 스텝의 최대 개수는 6개입니다"),
@@ -75,6 +81,7 @@ public enum ErrorCode {
     // 알림 관련 예외
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 알림입니다."),
     FORBIDDEN_NOTIFICATION_ACCESS(HttpStatus.FORBIDDEN, "해당 알림에 대한 권한이 없습니다.");
+
     private final HttpStatus status;
     private final String message;
 

@@ -29,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -64,25 +65,21 @@ public class UserProfileService {
         boolean isMe = currentUser.getId().equals(targetUserId);
 
         int routineCount = routineRepository.countByUserId(targetUserId);
-        int followerCount = (int) userFollowRepository.countByFollowingId(targetUserId);
-        int followingCount = (int) userFollowRepository.countByFollowerId(targetUserId);
+        FollowCountResponse followCount = followService.countFollow(targetUserId);
 
-        // 실행 중인 루틴
-        RoutineListResponse currentRoutine = null;
-        RoutineLog activeLog = routineLogRepository.findActiveByUserId(targetUserId).orElse(null);
-        if (activeLog != null && activeLog.getRoutineSnapshot() != null) {
-            currentRoutine = RoutineListResponse.fromSnapshot(
-                    activeLog.getRoutineSnapshot(),
-                    s3Service.getImageUrl(activeLog.getRoutineSnapshot().getImageUrl())
-            );
-        }
+        // 실행 중인 루틴 조회 로직을 명확하게 정리
+        RoutineListResponse currentRoutine = routineLogRepository.findTopByUserIdAndEndedAtIsNullOrderByStartedAtDesc(targetUserId)
+                .map(activeLog -> RoutineListResponse.fromSnapshot(
+                        activeLog.getRoutineSnapshot(),
+                        s3Service.getImageUrl(activeLog.getRoutineSnapshot().getImageUrl())
+                ))
+                .orElse(null); // Optional이 비어있으면 null을 할당
 
-        // 소유한(공개) 루틴 목록
+        // 소유한 루틴 목록
         List<RoutineListResponse> routineLists = routineRepository.findAllByUserId(targetUserId).stream()
                 .filter(Routine::isUserVisible)
                 .map(r -> {
                     List<RoutineTag> tags = routineTagRepository.findByRoutine(r);
-                    int likeCount = likeService.countLikes(r.getId()).intValue();
                     return RoutineListResponse.fromRoutine(
                             r,
                             s3Service.getImageUrl(r.getImageUrl()),
@@ -97,8 +94,8 @@ public class UserProfileService {
                 s3Service.getImageUrl(targetUser.getProfileImageUrl()),
                 targetUser.getBio(),
                 routineCount,
-                followerCount,
-                followingCount,
+                followCount.followerCount().intValue(),
+                followCount.followingCount().intValue(),
                 currentRoutine,
                 routineLists
         );

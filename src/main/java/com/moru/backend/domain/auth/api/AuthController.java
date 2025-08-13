@@ -27,14 +27,13 @@ public class AuthController {
 
     @Operation(summary = "회원가입")
     @PostMapping("/signup")
-    public ResponseEntity<Void> signup(@RequestBody @Valid SignupRequest request) {
-        signupService.signup(request);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<TokenResponse> signup(@RequestBody @Valid SignupRequest request) {
+        return ResponseEntity.ok(signupService.signup(request));
     }
 
     @Operation(summary = "로그인")
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@RequestBody @Valid LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
         return ResponseEntity.ok(loginService.login(request));
     }
 

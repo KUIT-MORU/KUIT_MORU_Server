@@ -59,5 +59,30 @@ public class DummyDataInitializer implements CommandLineRunner {
         log.info("[8/8] 알림 데이터를 생성했습니다.");
 
         log.info("===더미 데이터 생성 완료===");
+
+        // 1) targetUserEmail로 기준 사용자 선택
+        User target = allUsers.stream()
+                .filter(u -> Optional.ofNullable(dummyDataProperties.getTargetUserEmail())
+                        .map(e -> e.equalsIgnoreCase(u.getEmail()))
+                        .orElse("test@example.com".equalsIgnoreCase(u.getEmail())))
+                .findFirst()
+                .orElse(allUsers.get(0));
+
+        // 2) 기준 사용자 수신함 알림 보장
+        dummyDataGenerator.createUserCentricNotifications(
+                target,
+                allFollows,
+                allRoutines,
+                Math.max(0, dummyDataProperties.getUserCentricFollowNotif()),
+                Math.max(0, dummyDataProperties.getUserCentricRoutineCreatedNotif())
+        );
+        log.info("[추가] 사용자 기준 알림 생성 완료 (target: {})", target.getEmail());
+
+        // 3) 검색기록 더미 (원하면 전체 유저, 아니면 target만)
+        dummyDataGenerator.createSearchHistoriesPerUser(
+                List.of(target), // 또는 allUsers
+                Math.max(0, dummyDataProperties.getSearchHistoryPerUser())
+        );
+        log.info("[추가] 검색기록 더미 생성 완료");
     }
 }

@@ -15,12 +15,17 @@ import com.moru.backend.domain.notification.dao.NotificationRepository;
 import com.moru.backend.domain.notification.domain.Notification;
 import com.moru.backend.domain.notification.domain.NotificationType;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
+import com.moru.backend.domain.routine.dao.RoutineScheduleHistoryRepository;
+import com.moru.backend.domain.routine.dao.SearchHistoryRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.meta.RoutineApp;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
+import com.moru.backend.domain.routine.domain.schedule.RoutineScheduleHistory;
+import com.moru.backend.domain.routine.domain.search.SearchHistory;
+import com.moru.backend.domain.routine.domain.search.SearchType;
 import com.moru.backend.domain.social.dao.UserFollowRepository;
 import com.moru.backend.domain.social.domain.UserFollow;
 import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
@@ -28,6 +33,7 @@ import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.Gender;
 import com.moru.backend.domain.user.domain.User;
 import com.moru.backend.domain.user.domain.UserFavoriteTag;
+import com.moru.backend.domain.user.domain.UserRole;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.datafaker.Faker;
@@ -56,10 +62,12 @@ public class DummyDataGenerator {
     private final RoutineSnapshotRepository routineSnapshotRepository;
     private final NotificationRepository notificationRepository;
     private final DummyDataPool dummyDataPool;
+    private final SearchHistoryRepository searchHistoryRepository;
 
     // Faker 인스턴스와 Random 객체를 필드로 선언해서 재사용하기
     private final Faker faker = new Faker(new Locale("ko"));
     private final Random random = new Random();
+    private final RoutineScheduleHistoryRepository routineScheduleHistoryRepository;
 
     private enum UserLifestyle {
         WEEKDAY_WARRIOR, //평일에 더 성실
@@ -130,6 +138,7 @@ public class DummyDataGenerator {
                 .birthday(LocalDate.parse("2000-01-01"))
                 .bio("테스트 계정입니다.")
                 .profileImageUrl("https://example.com/profile0.jpg")
+                .role(UserRole.ADMIN)
                 // status, createdAt, updatedAt은 자동 처리되므로 설정 불필요
                 .build();
         userBatch.add(testUser);
@@ -151,6 +160,7 @@ public class DummyDataGenerator {
                     .bio(dummyDataPool.getRandomBio())
                     // profileImageUrl은 faker로 직접 생성하여 설정
                     .profileImageUrl(random.nextInt(10) < 7 ? faker.avatar().image() : null)
+                    .role(UserRole.USER)
                     // status, createdAt, updatedAt은 자동 처리되므로 설정 불필요
                     .build());
             if (userBatch.size() >= BATCH_SIZE) {
@@ -169,6 +179,8 @@ public class DummyDataGenerator {
     public List<Routine> createBulkRoutines(int count, List<User> users, List<Tag> tags, List<App> apps) {
         List<Routine> allGeneratedRoutines = new ArrayList<>();
         List<Routine> routineBatch = new ArrayList<>();
+        List<RoutineScheduleHistory> allGeneratedRoutineScheduleHistories = new ArrayList<>();
+        List<RoutineScheduleHistory> routineScheduleHistoryBatch = new ArrayList<>();
 
         for (int i = 0; i < count; i++) {
             // em.getReference()를 사용하여 실제 SELECT 없이 프록시 객체를 가져옴 (N+1 방지)
@@ -200,18 +212,35 @@ public class DummyDataGenerator {
                 connectAppsToRoutine(routine, apps);
             }
             connectTagsToRoutine(routine, tags, recipe.getTheme());
-            createAndAddSchedules(routine);
+            RoutineScheduleHistory history = createAndAddSchedules(routine);
 
             routineBatch.add(routine);
+            routineScheduleHistoryBatch.add(history);
 
             if (routineBatch.size() >= BATCH_SIZE) {
                 allGeneratedRoutines.addAll(routineRepository.saveAll(routineBatch));
                 routineBatch.clear();
                 log.info("{}개의 루틴 중간 저장 완료...", allGeneratedRoutines.size());
             }
+            if (routineScheduleHistoryBatch.size() >= BATCH_SIZE) {
+                allGeneratedRoutineScheduleHistories.addAll(
+                        routineScheduleHistoryRepository.saveAll(
+                                routineScheduleHistoryBatch
+                        )
+                );
+                routineScheduleHistoryBatch.clear();
+                log.info("{}개의 루틴 스케줄 히스토리 중간 저장 완료...", allGeneratedRoutineScheduleHistories.size());
+            }
         }
         if (!routineBatch.isEmpty()) {
             allGeneratedRoutines.addAll(routineRepository.saveAll(routineBatch));
+        }
+        if (!routineScheduleHistoryBatch.isEmpty()) {
+            allGeneratedRoutineScheduleHistories.addAll(
+                    routineScheduleHistoryRepository.saveAll(
+                            routineScheduleHistoryBatch
+                    )
+            );
         }
         return allGeneratedRoutines;
     }
@@ -284,8 +313,11 @@ public class DummyDataGenerator {
         assignDiligenceScoresToUsers(users);
         assignLifestylesToUsers(users);
 
+        Map<UUID, User> routineOwnerMap = routines.stream()
+                .collect(Collectors.toMap(Routine::getId, Routine::getUser));
+
         List<RoutineSnapshot> savedSnapshots = createSnapshots(routines);
-        createLogsFromSnapshots(savedSnapshots, users);
+        createLogsFromSnapshots(savedSnapshots, users, routineOwnerMap);
     }
 
 
@@ -363,6 +395,95 @@ public class DummyDataGenerator {
         }
     }
 
+    @Transactional
+    public void createUserCentricNotifications(
+            User target,
+            List<UserFollow> allFollows,
+            List<Routine> allRoutines,
+            int followNotifCount,
+            int routineCreatedNotifCount
+    ) {
+        List<Notification> toSave = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        // A. FOLLOW_RECEIVED: target을 following으로 하는 팔로우 중 일부 선택 → receiver=target
+        List<UserFollow> receivedFollows = allFollows.stream()
+                .filter(f -> f.getFollowing().getId().equals(target.getId()))
+                .collect(Collectors.toList());
+        Collections.shuffle(receivedFollows);
+        for (int i = 0; i < Math.min(followNotifCount, receivedFollows.size()); i++) {
+            UserFollow f = receivedFollows.get(i);
+            toSave.add(Notification.builder()
+                    .receiverId(target.getId())
+                    .senderId(f.getFollower().getId())
+                    .type(NotificationType.FOLLOW_RECEIVED)
+                    .createdAt(now.minusMinutes(i))
+                    .build());
+        }
+
+        // B. ROUTINE_CREATED: target이 팔로우하는 사용자의 공개 루틴 중 일부 선택 → receiver=target
+        Set<UUID> followingIds = allFollows.stream()
+                .filter(f -> f.getFollower().getId().equals(target.getId()))
+                .map(f -> f.getFollowing().getId())
+                .collect(Collectors.toSet());
+
+        List<Routine> visibleRoutinesByFollowings = allRoutines.stream()
+                .filter(r -> r.isUserVisible() && followingIds.contains(r.getUser().getId()))
+                .collect(Collectors.toList());
+        Collections.shuffle(visibleRoutinesByFollowings);
+        for (int i = 0; i < Math.min(routineCreatedNotifCount, visibleRoutinesByFollowings.size()); i++) {
+            Routine r = visibleRoutinesByFollowings.get(i);
+            toSave.add(Notification.builder()
+                    .receiverId(target.getId())
+                    .senderId(r.getUser().getId())
+                    .resourceId(r.getId())
+                    .type(NotificationType.ROUTINE_CREATED)
+                    .createdAt(now.minusSeconds(i))
+                    .build());
+        }
+
+        if (!toSave.isEmpty()) {
+            notificationRepository.saveAll(toSave);
+            log.info("[UserCentric] {} 수신함 알림 {}건 생성", target.getEmail(), toSave.size());
+        }
+    }
+
+    @Transactional
+    public void createSearchHistoriesPerUser(List<User> users, int perUser) {
+        if (perUser <= 0 || users.isEmpty()) return;
+
+        List<String> keywords = Arrays.asList("아침","운동","다이어트","명상","헬스","공부","프로그래밍","요가","산책","모닝루틴");
+
+        // 프로젝트 실제 enum 기준으로 생성 (필요시 제외할 값 필터)
+        List<SearchType> allowedTypes = Arrays.stream(SearchType.values())
+                // .filter(t -> t != SearchType.ALL) // 필요하면 제외
+                .collect(Collectors.toList());
+
+        List<SearchHistory> batch = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (User u : users) {
+            for (int i = 0; i < perUser; i++) {
+                String kw = keywords.get(random.nextInt(keywords.size()));
+                SearchType tp = allowedTypes.get(random.nextInt(allowedTypes.size()));
+
+                batch.add(SearchHistory.builder()
+                        .userId(u.getId())
+                        .searchKeyword(kw)
+                        .searchType(tp)                    // ← 엔티티가 enum
+                        .createdAt(now.minusMinutes(random.nextInt(7 * 24 * 60)))
+                        .build());
+
+                if (batch.size() >= BATCH_SIZE) {
+                    searchHistoryRepository.saveAll(batch);
+                    batch.clear();
+                }
+            }
+        }
+        if (!batch.isEmpty()) searchHistoryRepository.saveAll(batch);
+        log.info("검색기록 더미 생성 완료 (perUser: {})", perUser);
+    }
+
 
     //====헬퍼 메서드====//
 
@@ -438,7 +559,7 @@ public class DummyDataGenerator {
 
         // 나머지 태그를 랜덤하게 추가하여 총 1~3개를 맞춤
         Collections.shuffle(tags);
-        int tagCount = random.nextInt(3) + 1;
+        int tagCount = random.nextInt(2) + 2;
         for (Tag tag : tags) {
             if (tagsToConnect.size() >= tagCount) {
                 break;
@@ -458,7 +579,7 @@ public class DummyDataGenerator {
      * 루틴에 무작위 스케쥴 생성 및 추가
      * @param routine   대상 루틴
      */
-    private void createAndAddSchedules(Routine routine) {
+    private RoutineScheduleHistory createAndAddSchedules(Routine routine) {
         // 루틴 스케줄 자동 생성
         Set<DayOfWeek> scheduledDays = new HashSet<>();
         int dayCount = random.nextInt(7) + 1;
@@ -477,6 +598,14 @@ public class DummyDataGenerator {
             // 편의 메서드를 사용하여 관계를 설정합니다.
             routine.addRoutineSchedule(schedule);
         }
+
+        // 루틴 히스토리 설정
+        LocalDateTime effectiveStartDateTime = LocalDateTime.now().minusDays(30);
+        return RoutineScheduleHistory.builder()
+                .routine(routine)
+                .scheduledDays(scheduledDays.stream().toList())
+                .effectiveStartDateTime(effectiveStartDateTime)
+                .build();
         // --- 로직 종료 ---
     }
 
@@ -489,7 +618,7 @@ public class DummyDataGenerator {
         List<RoutineSnapshot> snapshotsToSave = new ArrayList<>();
 
         for (Routine routine : routines) {
-            // 각 루틴마다 0~5개의 로그를 무작위로 생성합니다.
+            // 각 루틴마다 0~5개의 로그를 무작위로 생성합니다!
             int logCount = random.nextInt(6); // 0, 1, 2, 3, 4, 5 중 하나
             if (logCount == 0) continue;
 
@@ -566,7 +695,7 @@ public class DummyDataGenerator {
      * @param savedSnapshots    저장된 스냅샷 리스트
      * @param users          사용자들
      */
-    private void createLogsFromSnapshots(List<RoutineSnapshot> savedSnapshots, List<User> users) {
+    private void createLogsFromSnapshots(List<RoutineSnapshot> savedSnapshots, List<User> users, Map<UUID, User> routineOwnerMap) {
         if (savedSnapshots.isEmpty()) {
             log.info("생성된 스냅샷이 없음 -> 루틴 로그 생성 x");
             return;
@@ -576,9 +705,9 @@ public class DummyDataGenerator {
         List<RoutineLog> logsToSave = new ArrayList<>();
         for (RoutineSnapshot snapshot : savedSnapshots) {
             // 각 로그에 대해 무작위 사용자를 할당
-            User owner = routineRepository.findById(snapshot.getOriginalRoutineId())
-                    .map(Routine::getUser)
-                    .orElse(users.get(random.nextInt(users.size()))); // 혹시 못찾으면 랜덤 유저
+            // [성능 개선] DB를 반복 조회하는 대신, 미리 만들어둔 Map에서 소유자 정보를 가져옵니다.
+            User owner = routineOwnerMap.getOrDefault(snapshot.getOriginalRoutineId(),
+                    users.get(random.nextInt(users.size()))); // 혹시 못찾으면 랜덤 유저
             logsToSave.add(buildRoutineLog(snapshot, owner));
         }
         batchSaveLogs(logsToSave);

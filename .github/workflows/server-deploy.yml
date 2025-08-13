@@ -1,0 +1,73 @@
+name: moru-server-deploy
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true    # GITHUB_TOKEN 자동 인증
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run tests
+        run: ./gradlew clean test -x test
+          # 여기서 테스트 중 spring.cloud.aws.s3.bucket PLACEHOLDERException 나면
+          # src/test/resources/application-test.yml에
+          # spring.cloud.aws.s3.bucket: test-bucket
+        # 같은 기본값을 넣어주세요.
+
+      - name: Build jar
+        run: ./gradlew bootJar -x test
+
+  deploy:
+    name: SSH & Deploy
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to production server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_KEY }}
+          script: |
+            set -e
+
+            cd ~/KUIT_MORU_Server
+
+            # 1) 코드 동기화: fast‑forward만 허용
+            git fetch origin develop
+            git reset --hard origin/develop
+
+            # 2) 빌드 결과 복사 또는 직접 서버에서 빌드
+            # (이미 build-and-test에서 jar을 artifact로 전달하는 설정이 없다면
+            #  서버에서 빌드해도 됩니다)
+            ./gradlew clean bootJar -x test
+
+            # 3) 기존 컨테이너·네트워크 완전 제거
+            docker compose -f docker-compose-dev.yml down --remove-orphans
+
+            # 4) 새로 올리기
+            docker compose -f docker-compose-dev.yml \
+              -p server-dev up --build -d
+
+            # 5) (선택) 완료 메시지
+            echo "Deployment finished on $(date)"
+

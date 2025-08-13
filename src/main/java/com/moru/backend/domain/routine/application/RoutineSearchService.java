@@ -1,5 +1,6 @@
 package com.moru.backend.domain.routine.application;
 
+import com.moru.backend.domain.log.domain.RoutineLog;
 import com.moru.backend.domain.meta.dao.TagRepository;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
 import com.moru.backend.domain.routine.dao.RoutineTagRepository;
@@ -20,13 +21,14 @@ import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.util.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,6 +39,7 @@ public class RoutineSearchService {
     private final SearchHistoryRepository searchHistoryRepository;
     private final TagRepository tagRepository;
     private final RoutineLogRepository routineLogRepository;
+    private final RoutineQueryService routineQueryService;
     private final S3Service s3Service;
 
     /**
@@ -50,35 +53,70 @@ public class RoutineSearchService {
         // 페이징 정보 생성 (# page, size)
         Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
 
-        // 정렬 타입에 따라 서로 다른 Repository 메서드 호출
-        Page<Routine> routines;
+        // 1단계: ID 조회 (변경된 Repository 메서드 호출)
+        Page<UUID> routineIdPage;
         if (request.getSortType() == SortType.POPULAR) {
-            routines = routineRepository.findBySearchCriteriaOrderByLikeCount(
+            routineIdPage = routineRepository.findIdsBySearchCriteriaOrderByLikeCount(
                     request.getTitleKeyword(),
                     request.getTagNames(),
                     pageable
             );
         } else {
-            routines = routineRepository.findBySearchCriteriaOrderByCreatedAt(
+            routineIdPage = routineRepository.findIdsBySearchCriteriaOrderByCreatedAt(
                     request.getTitleKeyword(),
                     request.getTagNames(),
                     pageable
             );
         }
 
-        // 엔티티에서 DTO로 매핑하기
-        return routines.map(routine -> {
-            // 루틴에 연결된 태그 목록 조회
-            List<RoutineTag> tags = routineTagRepository.findByRoutine(routine);
-            // RoutineListResponse 생성 (routine & tag entity 포함)
-            RoutineListResponse routineListResponse = RoutineListResponse.fromRoutine(
-                    routine,
-                    s3Service.getImageUrl(routine.getImageUrl()),
-                    tags
-            );
-            // 실행중 여부는 더 이상 포함하지 않음
-            return RoutineSearchResponse.of(routineListResponse);
-        });
+        List<UUID> routineIds = routineIdPage.getContent();
+        if (routineIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        // 2단계: ID로 상세 정보 조회
+        List<Routine> sortedRoutines = routineQueryService.findAndSortRoutinesWithDetails(routineIds);
+
+        // 3단계: "소유주에 의해 실행 중인" 루틴 정보 조회
+        // 3-1. 검색된 루틴들의 소유자 ID 목록 추출
+        List<UUID> ownerIds = sortedRoutines.stream()
+                .map(routine -> routine.getUser().getId())
+                .distinct()
+                .toList();
+
+        // 3-2. 소유자 목록으로 현재 실행 중인 모든 로그를 DB에서 한 번에 조회
+        List<RoutineLog> activeLogs = routineLogRepository.findActiveLogsForUsers(ownerIds);
+
+        // 3-3. "소유주에 의해 실행 중인" 루틴의 ID만 필터링하여 Set으로
+        Map<UUID, UUID> routineToOwnerMap = sortedRoutines.stream()
+                .collect(Collectors.toMap(Routine::getId, r -> r.getUser().getId()));
+
+        Set<UUID> runningByOwnerRoutineIds = activeLogs.stream()
+                .filter(log -> {
+                    UUID routineId = log.getRoutineSnapshot().getOriginalRoutineId();
+                    UUID runnerId = log.getUser().getId();
+                    // 이 로그를 실행한 사람(runnerId)이 이 루틴의 소유주(owner)인지 확인
+                    return runnerId.equals(routineToOwnerMap.get(routineId));
+                })
+                .map(log -> log.getRoutineSnapshot().getOriginalRoutineId())
+                .collect(Collectors.toSet());
+
+        // 4단계: DTO로 변환
+        List<RoutineSearchResponse> dtoList = sortedRoutines.stream()
+                .map(routine -> {
+                    boolean isRunning = runningByOwnerRoutineIds.contains(routine.getId());
+                    RoutineListResponse routineListResponse = RoutineListResponse.fromRoutine(
+                            routine,
+                            s3Service.getImageUrl(routine.getImageUrl()),
+                            new ArrayList<>(routine.getRoutineTags()), // 이미 Fetch 되어 있음
+                            isRunning
+                    );
+                    return RoutineSearchResponse.of(routineListResponse, isRunning);
+                })
+                .toList();
+
+        // 5단계: 최종 Page 객체 생성
+        return new PageImpl<>(dtoList, pageable, routineIdPage.getTotalElements());
     }
 
     /**

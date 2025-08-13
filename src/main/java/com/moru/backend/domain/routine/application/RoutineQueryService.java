@@ -1,14 +1,17 @@
 package com.moru.backend.domain.routine.application;
 
+import com.moru.backend.domain.log.dao.RoutineLogRepository;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 import com.moru.backend.domain.routine.domain.search.SortType;
 import com.moru.backend.domain.routine.dto.response.RoutineDetailResponse;
 import com.moru.backend.domain.routine.dto.response.RoutineListResponse;
+import com.moru.backend.domain.routine.dto.response.SimilarRoutineResponse;
 import com.moru.backend.domain.social.application.LikeService;
 import com.moru.backend.domain.social.application.ScrapService;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.domain.user.dto.AuthorInfo;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.util.RedisKeyUtil;
@@ -16,6 +19,7 @@ import com.moru.backend.global.util.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -23,13 +27,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class RoutineQueryService {
+    private final RoutineLogRepository routineLogRepository;
     private final RoutineRepository routineRepository;
     private final LikeService likeService;
     private final ScrapService scrapService;
@@ -44,9 +50,12 @@ public class RoutineQueryService {
 
     @Transactional // 조회수 증가 때문에 쓰기 트랜잭션 필요
     public RoutineDetailResponse getRoutineDetail(UUID routineId, User currentUser) {
-        // JOIN FETCH로 Routine과 연관 엔티티 (Tag, Step, App) 한번에 조회
-        Routine routine = routineRepository.findByIdWithDetails(routineId)
-                .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_NOT_FOUND));
+        // 헬퍼 메서드 사용
+        List<Routine> routines = findAndSortRoutinesWithDetails(List.of(routineId));
+        if (routines.isEmpty()) {
+            throw new CustomException(ErrorCode.ROUTINE_NOT_FOUND);
+        }
+        Routine routine = routines.get(0);
 
         // 1. 자신의 루틴이면 조회수 증가 X
         if (!routine.getUser().getId().equals(currentUser.getId())) {
@@ -62,37 +71,58 @@ public class RoutineQueryService {
         int likeCount = likeService.countLikes(routine.getId()).intValue();
         int scrapCount = scrapService.countScrap(routine.getId()).intValue();
 
-        List<RoutineListResponse> similarRoutines = findSimilarRoutines(routine, currentUser);
+        // 각 서비스에 책임을 위임하여 상태 조회
+        boolean isLiked = likeService.isLiked(currentUser.getId(), routineId);
+        boolean isScrapped = scrapService.isScrapped(currentUser.getId(), routineId);
+
+        List<SimilarRoutineResponse> similarRoutines = findSimilarRoutines(routine, currentUser);
+
+        User author = routine.getUser();
+        AuthorInfo authorInfo = AuthorInfo.from(
+                author,
+                s3Service.getImageUrl(author.getProfileImageUrl())
+        );
 
         return RoutineDetailResponse.of(
                 routine,
                 s3Service.getImageUrl(routine.getImageUrl()),
-                routine.getRoutineTags(), // Fetch된 데이터 사용
-                routine.getRoutineSteps(), // Fetch된 데이터 사용
-                routine.getRoutineApps(), // Fetch된 데이터 사용
+                authorInfo,
                 likeCount,
                 scrapCount,
+                isLiked,
+                isScrapped,
                 currentUser,
                 similarRoutines
         );
     }
 
     public Page<RoutineListResponse> getRoutineList(User user, SortType sortType, DayOfWeek dayOfWeek, Pageable pageable) {
-        Page<Routine> routines;
+        Page<UUID> routineIdPage;
         if (sortType == SortType.TIME && dayOfWeek != null) {
-            routines = routineRepository.findByUserIdAndDayOfWeekOrderByScheduleTimeAsc(user.getId(), dayOfWeek, pageable);
+            routineIdPage = routineRepository.findIdsByUserIdAndDayOfWeekOrderByScheduleTimeAsc(user.getId(), dayOfWeek, pageable);
         } else if (sortType == SortType.POPULAR) {
-            routines = routineRepository.findByUserOrderByLikeCountDescCreatedAtDesc(user, pageable);
+            routineIdPage = routineRepository.findIdsByUserOrderByLikeCountDescCreatedAtDesc(user, pageable);
         } else { // LATEST
-            routines = routineRepository.findByUserOrderByCreatedAtDesc(user, pageable);
+            routineIdPage = routineRepository.findIdsByUserOrderByCreatedAtDesc(user, pageable);
         }
-        return routines.map(this::toRoutineListResponse);
+        List<UUID> routineIds = routineIdPage.getContent();
+        if (routineIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        List<Routine> sortedRoutines = findAndSortRoutinesWithDetails(routineIds);
+        // DTO로 변환 후 최종 Page 객체 생성
+        List<RoutineListResponse> dtoList = sortedRoutines.stream()
+                .map(this::toRoutineListResponse)
+                .toList();
+
+        return new PageImpl<>(dtoList, pageable, routineIdPage.getTotalElements());
     }
 
 
-    private List<RoutineListResponse> findSimilarRoutines(Routine routine, User currentUser) {
+    private List<SimilarRoutineResponse> findSimilarRoutines(Routine routine, User currentUser) {
         if (routine.getRoutineTags().isEmpty()) {
-            return List.of();
+            return Collections.emptyList();
         }
         List<UUID> tagIds = routine.getRoutineTags().stream()
                 .map(rt -> rt.getTag().getId())
@@ -100,12 +130,41 @@ public class RoutineQueryService {
         Pageable pageable = PageRequest.of(0, similarFetchSize); // 넉넉히 조회
 
         // 이 Repository 메서드도 JOIN FETCH를 사용하도록 수정하면 성능이 더 좋아짐
-        List<Routine> routines = routineRepository.findSimilarRoutinesByTagIds(tagIds, routine.getId(), pageable);
+        Page<UUID> similarRoutineIdPage = routineRepository.findSimilarRoutineIdsByTagIds(tagIds, routine.getId(), pageable);
+        List<UUID> similarRoutineIds = similarRoutineIdPage.getContent();
 
-        return routines.stream()
+        if (similarRoutineIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Routine> sortedRoutines = findAndSortRoutinesWithDetails(similarRoutineIds);
+
+        return sortedRoutines.stream()
                 .filter(r -> !r.getUser().getId().equals(currentUser.getId()))
                 .limit(similarLimitSize)
-                .map(this::toRoutineListResponse)
+                .map(r -> SimilarRoutineResponse.from(r, s3Service.getImageUrl(r.getImageUrl())))
+                .toList();
+    }
+
+    /**
+     * ID 목록으로 루틴의 모든 상세 정보 조회, 원본 ID 순서대로 정렬.
+     * @param routineIds    조회할 루틴 ID 목록
+     * @return              상세 정보가 채워지고 정렬된 Routine 리스트
+     */
+    public List<Routine> findAndSortRoutinesWithDetails(List<UUID> routineIds) {
+        if (routineIds == null || routineIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 1. 분리된 쿼리로 상세 정보 조회
+        List<Routine> routinesWithDetails = routineRepository.findWithAllDetailsByIds(routineIds);
+
+        // 2. 원래 ID 순서대로 정렬
+        Map<UUID, Routine> routineMap = routinesWithDetails.stream()
+                .collect(Collectors.toMap(Routine::getId, Function.identity()));
+        return routineIds.stream()
+                .map(routineMap::get)
+                .filter(Objects::nonNull)
                 .toList();
     }
 
@@ -113,7 +172,7 @@ public class RoutineQueryService {
         return RoutineListResponse.fromRoutine(
                 routine,
                 s3Service.getImageUrl(routine.getImageUrl()),
-                routine.getRoutineTags()
+                new ArrayList<>(routine.getRoutineTags())
         );
     }
 

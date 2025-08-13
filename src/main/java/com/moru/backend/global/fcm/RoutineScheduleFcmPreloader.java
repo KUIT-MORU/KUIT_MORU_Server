@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -28,7 +29,7 @@ public class RoutineScheduleFcmPreloader {
 
         if (fcmToken == null || fcmToken.isBlank()) return;
 
-        List<RoutineSchedule> schedules = routine.getRoutineSchedules();
+        Set<RoutineSchedule> schedules = routine.getRoutineSchedules();
 
         LocalDate today = LocalDate.now();
         DayOfWeek todayDayOfWeek = DayOfWeek.fromJavaDay(today.getDayOfWeek());

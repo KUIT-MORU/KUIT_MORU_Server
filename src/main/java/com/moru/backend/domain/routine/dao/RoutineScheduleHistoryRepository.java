@@ -3,6 +3,7 @@ package com.moru.backend.domain.routine.dao;
 import com.moru.backend.domain.routine.domain.schedule.RoutineScheduleHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,5 +28,5 @@ public interface RoutineScheduleHistoryRepository extends JpaRepository<RoutineS
         WHERE h.routine.id = :routineId
           AND h.effectiveEndDateTime IS NULL
     """)
-    RoutineScheduleHistory findCurrentByRoutineId(UUID routineId);
+    List<RoutineScheduleHistory> findAllCurrentByRoutineId(@Param("routineId") UUID routineId);
 }

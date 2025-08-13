@@ -1,9 +1,11 @@
 package com.moru.backend.domain.auth.application;
 
 import com.moru.backend.domain.auth.dto.LoginRequest;
+import com.moru.backend.domain.auth.dto.LoginResponse;
 import com.moru.backend.domain.auth.dto.TokenResponse;
 import com.moru.backend.domain.user.dao.UserRepository;
 import com.moru.backend.domain.user.domain.User;
+import com.moru.backend.domain.user.domain.UserRole;
 import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.jwt.JwtProvider;
@@ -25,7 +27,7 @@ public class LoginService {
     private final JwtProvider jwtProvider;
     private final RefreshTokenRepository refreshTokenRepository;
 
-    public TokenResponse login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         if(!user.isActive()) {
@@ -36,15 +38,21 @@ public class LoginService {
         }
 
         UUID userId = user.getId();
-        String accessToken = jwtProvider.createAccessToken(userId);
-        String refreshToken = jwtProvider.createRefreshToken(userId);
+        UserRole role = user.getRole();
+        String accessToken = jwtProvider.createAccessToken(userId, role);
+        String refreshToken = jwtProvider.createRefreshToken(userId, role);
 
         refreshTokenRepository.save(
                 userId.toString(),
                 refreshToken
         );
 
-        return new TokenResponse(accessToken, refreshToken);
+        boolean isOnboarding = !((user.getNickname() == null) || user.getNickname().isBlank());
+        return new LoginResponse(
+                new TokenResponse(accessToken, refreshToken),
+                isOnboarding
+        );
+
     }
 
     /**

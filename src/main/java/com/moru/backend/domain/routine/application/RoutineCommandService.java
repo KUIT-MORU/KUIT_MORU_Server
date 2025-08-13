@@ -6,6 +6,7 @@ import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.meta.domain.Tag;
 import com.moru.backend.domain.notification.event.RoutineCreatedEvent;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
+import com.moru.backend.domain.routine.dao.RoutineTagRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.meta.RoutineApp;
@@ -43,6 +44,8 @@ public class RoutineCommandService {
     private final ApplicationEventPublisher eventPublisher;
 
     public RoutineCreateResponse createRoutine(RoutineCreateRequest request, User user) {
+        routineValidator.validateCreateRequest(request);
+
         boolean isSimple = request.isSimple();
         Duration totalTime = isSimple ? null : request.steps().stream()
                 .map(step -> Optional.ofNullable(step.estimatedTime()).orElse(Duration.ZERO))
@@ -121,6 +124,7 @@ public class RoutineCommandService {
         if (tagNames == null) return;
         // JPA의 변경 감지(Dirty Checking)와 orphanRemoval=true를 활용하기 위해 clear 후 add
         routine.getRoutineTags().clear();
+        routineRepository.flush();
         tagNames.stream()
                 .map(tagName -> tagRepository.findByName(tagName)
                         .orElseGet(() -> tagRepository.save(Tag.builder().name(tagName).build())))

@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/tags")
+@RequestMapping("/api/tags")
 @RequiredArgsConstructor
 @io.swagger.v3.oas.annotations.tags.Tag(name = "태그", description = "시스템 내장 태그 전체 목록 조회 API")
 public class TagController {

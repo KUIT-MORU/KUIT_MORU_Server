@@ -34,6 +34,10 @@ public class User {
     @Column(nullable = false, length = 100)
     private String password;
 
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private UserRole role;
+
     @Setter
     @Column(unique = true, length = 50)
     private String nickname;

@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/routines/search")
+@RequestMapping("/api/routines/search")
 @RequiredArgsConstructor
 @Tag(name = "루틴 검색", description = "루틴 검색 관련 API")
 public class RoutineSearchController {
