@@ -123,7 +123,7 @@ public class RoutineSeeder {
                 recipe.getSecondaryStepCategories().stream()
         ).collect(Collectors.toList());
 
-        int stepCount = random.nextInt(3) + 3;
+        int stepCount = random.nextInt(4) + 3;
         Set<String> stepNames = dummyDataPool.getRandomStepsFromCategories(allCategories, stepCount);
 
         Duration totalRequiredTime = Duration.ZERO; // 총 소요시간 초기화
