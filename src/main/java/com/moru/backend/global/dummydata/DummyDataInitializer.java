@@ -56,7 +56,7 @@ public class DummyDataInitializer implements CommandLineRunner {
         socialRelationSeeder.createFavoriteTagRelations(dummyDataProperties.getFavoriteTagCount(), allUsers, allTags);
         log.info("[6/10] 선호 태그 관계를 생성했습니다.");
 
-        socialRelationSeeder.createScrapActions(dummyDataProperties.getScrapCount(), allUsers, allRoutines);
+        socialRelationSeeder.createScrapActionsGuaranteed(dummyDataProperties.getScrapCount(), allUsers, allRoutines);
         log.info("[7/10] 스크랩 관계를 생성했습니다.");
 
         socialRelationSeeder.seedLikesAndUpdateCount(allRoutines, allUsers);
