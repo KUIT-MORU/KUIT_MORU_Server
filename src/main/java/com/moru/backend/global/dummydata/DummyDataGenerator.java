@@ -14,6 +14,7 @@ import com.moru.backend.domain.meta.domain.Tag;
 import com.moru.backend.domain.notification.dao.NotificationRepository;
 import com.moru.backend.domain.notification.domain.Notification;
 import com.moru.backend.domain.notification.domain.NotificationType;
+import com.moru.backend.domain.routine.domain.ActionType;
 import com.moru.backend.domain.routine.dao.RoutineRepository;
 import com.moru.backend.domain.routine.dao.RoutineScheduleHistoryRepository;
 import com.moru.backend.domain.routine.dao.SearchHistoryRepository;
@@ -26,7 +27,9 @@ import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
 import com.moru.backend.domain.routine.domain.schedule.RoutineScheduleHistory;
 import com.moru.backend.domain.routine.domain.search.SearchHistory;
 import com.moru.backend.domain.routine.domain.search.SearchType;
+import com.moru.backend.domain.social.dao.RoutineUserActionRepository;
 import com.moru.backend.domain.social.dao.UserFollowRepository;
+import com.moru.backend.domain.social.domain.RoutineUserAction;
 import com.moru.backend.domain.social.domain.UserFollow;
 import com.moru.backend.domain.user.dao.UserFavoriteTagRepository;
 import com.moru.backend.domain.user.dao.UserRepository;
@@ -57,6 +60,7 @@ public class DummyDataGenerator {
     private final AppRepository appRepository;
     private final RoutineRepository routineRepository;
     private final UserFollowRepository userFollowRepository;
+    private final RoutineUserActionRepository routineUserActionRepository;
     private final UserFavoriteTagRepository userFavoriteTagRepository;
     private final RoutineLogRepository routineLogRepository;
     private final RoutineSnapshotRepository routineSnapshotRepository;
@@ -271,6 +275,44 @@ public class DummyDataGenerator {
         List<UserFollow> savedFollows = userFollowRepository.saveAll(followsToSave);
         log.info("{}개의 팔로우 관계 저장 완료", savedFollows.size());
         return savedFollows;
+    }
+
+    /**
+     * 스크랩 액션 생성 및 저장
+     * @param count     생성할 액션 수
+     * @param users     사용자 리스트
+     * @param routines  루틴 리스트
+     */
+    @Transactional
+    public List<RoutineUserAction> createScrapActions(int count, List<User> users, List<Routine> routines) {
+        if (count <= 0 || users.isEmpty() || routines.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Set<String> existingScraps = new HashSet<>();
+        List<RoutineUserAction> actionsToSave = new ArrayList<>();
+
+        for (int i = 0; i < count; i++) {
+            User user = users.get(random.nextInt(users.size()));
+            Routine routine = routines.get(random.nextInt(routines.size()));
+
+            // 1. 자기 자신의 루틴은 스크랩 불가
+            if (user.getId().equals(routine.getUser().getId())) {
+                continue;
+            }
+
+            // 2. 중복 스크랩 방지
+            String scrapKey = user.getId() + ":" + routine.getId();
+            if (existingScraps.contains(scrapKey)) {
+                continue;
+            }
+
+            actionsToSave.add(RoutineUserAction.builder().user(user).routine(routine).actionType(ActionType.SCRAP).build());
+            existingScraps.add(scrapKey);
+        }
+        List<RoutineUserAction> savedActions = routineUserActionRepository.saveAll(actionsToSave);
+        log.info("{}개의 스크랩 액션 저장 완료", savedActions.size());
+        return savedActions;
     }
 
     /**
