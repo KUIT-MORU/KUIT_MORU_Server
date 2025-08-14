@@ -1,4 +1,4 @@
-package com.moru.backend.global.dummydata;
+package com.moru.backend.global.dummydata.seeder;
 
 import com.moru.backend.domain.routine.domain.ActionType;
 import com.moru.backend.domain.routine.domain.Routine;
