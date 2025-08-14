@@ -701,6 +701,9 @@ public class DummyDataGenerator {
             return;
         }
 
+        // [FIX] 한 사용자에게 미완료 로그가 중복 할당되는 것을 막기 위한 추적용 Set
+        Set<UUID> usersWithInProgressLog = new HashSet<>();
+
         // 개별 로그 생성
         List<RoutineLog> logsToSave = new ArrayList<>();
         for (RoutineSnapshot snapshot : savedSnapshots) {
@@ -708,18 +711,20 @@ public class DummyDataGenerator {
             // [성능 개선] DB를 반복 조회하는 대신, 미리 만들어둔 Map에서 소유자 정보를 가져옵니다.
             User owner = routineOwnerMap.getOrDefault(snapshot.getOriginalRoutineId(),
                     users.get(random.nextInt(users.size()))); // 혹시 못찾으면 랜덤 유저
-            logsToSave.add(buildRoutineLog(snapshot, owner));
+            logsToSave.add(buildRoutineLog(snapshot, owner, usersWithInProgressLog));
         }
         batchSaveLogs(logsToSave);
     }
 
     /**
      * 스냅샷과 사용자 기반으로 단일 RoutineLog 객체 생성
-     * @param snapshot  로그의 기반이 될 스냅샷
-     * @param user      로그의 소유자
-     * @return          생성된 RoutineLog 객체
+     *
+     * @param snapshot               로그의 기반이 될 스냅샷
+     * @param user                   로그의 소유자
+     * @param usersWithInProgressLog 미완료 로그가 이미 할당된 사용자 추적용 Set
+     * @return 생성된 RoutineLog 객체
      */
-    private RoutineLog buildRoutineLog(RoutineSnapshot snapshot, User user) {
+    private RoutineLog buildRoutineLog(RoutineSnapshot snapshot, User user, Set<UUID> usersWithInProgressLog) {
         LocalDateTime startedAt = LocalDateTime.now().minusDays(random.nextInt(30)).minusHours(random.nextInt(24));
         LocalDateTime endedAt = null;
         Duration totalTime = null;
@@ -755,8 +760,19 @@ public class DummyDataGenerator {
 
         finalCompletionProbability = Math.max(0.05, Math.min(finalCompletionProbability, 0.95));
 
-        // 성실도 점수를 기반으로 이 로그의 완료 여부를 확률적으로 결정
-        boolean isCompleted = random.nextDouble() < finalCompletionProbability;
+        boolean isCompleted;
+        // [FIX] 이 사용자가 이미 미완료 로그를 할당받았는지 확인
+        if (usersWithInProgressLog.contains(user.getId())) {
+            // 이미 할당받았다면, 이번 로그는 무조건 완료 처리하여 데이터 정합성을 지킴
+            isCompleted = true;
+        } else {
+            // 아니라면, 확률에 따라 완료 여부를 결정
+            isCompleted = random.nextDouble() < finalCompletionProbability;
+            if (!isCompleted) {
+                // 이번 로그가 미완료로 결정되면, 추적 Set에 사용자를 추가
+                usersWithInProgressLog.add(user.getId());
+            }
+        }
 
         // 완료된 경우에만 종료 시간과 소요 시간을 기록
         if (isCompleted) {
