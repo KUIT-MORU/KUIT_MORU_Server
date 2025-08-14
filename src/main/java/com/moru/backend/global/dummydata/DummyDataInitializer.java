@@ -5,7 +5,6 @@ import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.social.domain.UserFollow;
 import com.moru.backend.domain.user.domain.User;
-import com.moru.backend.global.dummydata.seeder.RoutineLikeSeeder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
