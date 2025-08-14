@@ -73,43 +73,102 @@ public class SocialRelationSeeder {
      * @param routines  루틴 리스트
      */
     @Transactional
-    public void createScrapActions(int count, List<User> users, List<Routine> routines) {
-        if (count <= 0 || users.isEmpty() || routines.isEmpty()) {
-            return;
+    public List<RoutineUserAction> createScrapActionsGuaranteed(int count,
+                                                                List<User> users,
+                                                                List<Routine> routines) {
+        if (count <= 0 || users == null || users.isEmpty() || routines == null || routines.isEmpty()) {
+            log.info("SCRAP 생성 스킵: count<=0 또는 입력 비어있음");
+            return Collections.emptyList();
         }
 
-        Set<String> existingScraps = new HashSet<>();
-        List<RoutineUserAction> actionsToSave = new ArrayList<>();
-        int savedCount = 0;
+        // 0) 캐시/준비
+        Map<UUID, UUID> routineOwnerId = new HashMap<>(routines.size());
+        for (Routine r : routines) {
+            routineOwnerId.put(r.getId(), r.getUser().getId());
+        }
+        List<UUID> userIds = users.stream().map(User::getId).toList();
+        List<UUID> routineIds = routines.stream().map(Routine::getId).toList();
 
-        for (int i = 0; i < count; i++) {
-            User user = users.get(random.nextInt(users.size()));
-            Routine routine = routines.get(random.nextInt(routines.size()));
-
-            // 1. 자기 자신의 루틴은 스크랩 불가
-            if (user.getId().equals(routine.getUser().getId())) {
-                continue;
-            }
-
-            // 2. 중복 스크랩 방지
-            String scrapKey = user.getId() + ":" + routine.getId();
-            if (existingScraps.contains(scrapKey)) {
-                continue;
-            }
-
-            actionsToSave.add(RoutineUserAction.builder().user(user).routine(routine).actionType(ActionType.SCRAP).build());
-            existingScraps.add(scrapKey);
-
-            if (actionsToSave.size() >= BATCH_SIZE) {
-                savedCount += routineUserActionRepository.saveAll(actionsToSave).size();
-                actionsToSave.clear();
+        // 1) 유효 후보 생성: 자기 루틴 제외 (user != routine.owner)
+        //    후보는 (userId, routineId) 쌍
+        List<AbstractMap.SimpleEntry<UUID, UUID>> candidates = new ArrayList<>();
+        for (UUID uid : userIds) {
+            for (UUID rid : routineIds) {
+                UUID ownerId = routineOwnerId.get(rid);
+                if (!uid.equals(ownerId)) {
+                    candidates.add(new AbstractMap.SimpleEntry<>(uid, rid));
+                }
             }
         }
-        if (!actionsToSave.isEmpty()) {
-            savedCount += routineUserActionRepository.saveAll(actionsToSave).size();
+        if (candidates.isEmpty()) {
+            log.warn("SCRAP 후보가 0개임(모든 루틴이 자기 소유자만 존재하는 등).");
+            return Collections.emptyList();
         }
-        log.info("{}개의 스크랩 액션 저장 완료", savedCount);
+
+        // 2) DB에 이미 존재하는 (user,routine) SCRAP 제거
+        List<Object[]> existing = routineUserActionRepository.findExistingPairs(
+                ActionType.SCRAP, userIds, routineIds);
+
+        Set<String> existingKeys = new HashSet<>(Math.max(16, existing.size() * 2));
+        for (Object[] row : existing) {
+            UUID uid = (UUID) row[0];
+            UUID rid = (UUID) row[1];
+            existingKeys.add(uid + ":" + rid);
+        }
+
+        List<AbstractMap.SimpleEntry<UUID, UUID>> filtered = new ArrayList<>(candidates.size());
+        for (var e : candidates) {
+            String key = e.getKey() + ":" + e.getValue();
+            if (!existingKeys.contains(key)) {
+                filtered.add(e);
+            }
+        }
+        if (filtered.isEmpty()) {
+            log.warn("신규로 생성 가능한 SCRAP 후보가 없음(모두 기존과 중복).");
+            return Collections.emptyList();
+        }
+
+        // 3) 셔플 후 앞에서 count개(최대 후보 수까지) 선택
+        Collections.shuffle(filtered, random);
+        int target = Math.min(count, filtered.size());
+        if (target < count) {
+            log.warn("요청 {}개 중 {}개만 생성 가능(고유 조합 부족).", count, target);
+        }
+
+        // 4) 엔티티로 변환 + 배치 저장
+        List<RoutineUserAction> buffer = new ArrayList<>(Math.min(target, BATCH_SIZE));
+        List<RoutineUserAction> savedAll = new ArrayList<>(target);
+
+        // user, routine 엔티티를 빠르게 붙이도록 조회 맵 구성
+        Map<UUID, User> userMap = new HashMap<>(users.size());
+        users.forEach(u -> userMap.put(u.getId(), u));
+        Map<UUID, Routine> routineMap = new HashMap<>(routines.size());
+        routines.forEach(r -> routineMap.put(r.getId(), r));
+
+        for (int i = 0; i < target; i++) {
+            var pair = filtered.get(i);
+            User u = userMap.get(pair.getKey());
+            Routine r = routineMap.get(pair.getValue());
+
+            buffer.add(RoutineUserAction.builder()
+                    .user(u)
+                    .routine(r)
+                    .actionType(ActionType.SCRAP)
+                    .build());
+
+            if (buffer.size() >= BATCH_SIZE) {
+                savedAll.addAll(routineUserActionRepository.saveAll(buffer));
+                buffer.clear();
+            }
+        }
+        if (!buffer.isEmpty()) {
+            savedAll.addAll(routineUserActionRepository.saveAll(buffer));
+        }
+
+        log.info("SCRAP 생성 완료: 요청={}, 실제 저장={}", count, savedAll.size());
+        return savedAll;
     }
+
 
     /**
      * 선호 태그 관계 생성 및 저장
