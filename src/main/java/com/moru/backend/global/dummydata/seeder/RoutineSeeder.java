@@ -182,7 +182,7 @@ public class RoutineSeeder {
 
         // 나머지 태그를 랜덤하게 추가하여 총 1~3개를 맞춤
         Collections.shuffle(tags);
-        int tagCount = random.nextInt(2) + 2;
+        int tagCount = random.nextInt(3) + 1;
         for (Tag tag : tags) {
             if (tagsToConnect.size() >= tagCount) {
                 break;
