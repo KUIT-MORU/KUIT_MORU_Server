@@ -198,7 +198,7 @@ public class DummyDataGenerator {
                     .content(content)
                     .isSimple(isSimpleRoutine)
                     .isUserVisible(random.nextBoolean())
-                    .likeCount(random.nextInt(500))
+                    .likeCount(0)
                     .viewCount(random.nextInt(2000))
                     // requiredTime은 아래에서 스텝 시간 합계로 계산되므로 여기서는 설정하지 않음
                     .imageUrl(random.nextInt(10) < 3 ? faker.avatar().image() : null) // 30% 확률로 이미지 URL 추가

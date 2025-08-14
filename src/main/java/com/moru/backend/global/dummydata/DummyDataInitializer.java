@@ -21,6 +21,7 @@ public class DummyDataInitializer implements CommandLineRunner {
     // 직접 호출할 서비스 클래스
     private final DummyDataGenerator dummyDataGenerator;
     private final DummyDataProperties dummyDataProperties;
+    private final RoutineLikeSeeder routineLikeSeeder;
 
     @Override
     public void run(String... args) throws Exception {
@@ -42,8 +43,10 @@ public class DummyDataInitializer implements CommandLineRunner {
         log.info("[3/8] {}명의 사용자를 생성했습니다.", allUsers.size());
 
         List<Routine> allRoutines = dummyDataGenerator.createBulkRoutines(dummyDataProperties.getRoutineCount(), allUsers, allTags, allApps);
+        routineLikeSeeder.seedLikesForRoutines(allRoutines, allUsers);
+        
         log.info("[4/8] {}개의 루틴과 관련 데이터(스텝, 태그연결, 스케줄)를 생성했습니다.", allRoutines.size());
-
+        
 //        dummyDataGenerator.createBulkRelationsAndLogs(dummyDataProperties.getRelationCount(), allUsers, allTags, allRoutines);
 //        log.info("[5/5] 팔로우, 선호 태그, 루틴 로그 데이터를 생성했습니다.");
         List<UserFollow> allFollows = dummyDataGenerator.createFollowRelations(dummyDataProperties.getFollowCount(), allUsers);
