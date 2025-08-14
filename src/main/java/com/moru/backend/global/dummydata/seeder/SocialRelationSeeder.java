@@ -27,7 +27,7 @@ public class SocialRelationSeeder {
     private final UserFavoriteTagRepository userFavoriteTagRepository;
 
     private final Random random = new Random();
-    private static final int ACTION_BATCH_SIZE = 200;
+    private static final int BATCH_SIZE = 200;
     private static final int MAX_LIKES_PER_ROUTINE = 50;
 
     /**
@@ -41,6 +41,7 @@ public class SocialRelationSeeder {
         // 팔로우 관계 생성
         Set<String> existingFollows = new HashSet<>();
         List<UserFollow> followsToSave = new ArrayList<>();
+        List<UserFollow> allSavedFollows = new ArrayList<>();
 
         for (int i = 0; i < count; i++) {
             User follower = users.get(random.nextInt(users.size()));
@@ -52,10 +53,17 @@ public class SocialRelationSeeder {
 
             followsToSave.add(UserFollow.builder().follower(follower).following(following).build());
             existingFollows.add(followKey);
+
+            if (followsToSave.size() >= BATCH_SIZE) {
+                allSavedFollows.addAll(userFollowRepository.saveAll(followsToSave));
+                followsToSave.clear();
+            }
         }
-        List<UserFollow> savedFollows = userFollowRepository.saveAll(followsToSave);
-        log.info("{}개의 팔로우 관계 저장 완료", savedFollows.size());
-        return savedFollows;
+        if (!followsToSave.isEmpty()) {
+            allSavedFollows.addAll(userFollowRepository.saveAll(followsToSave));
+        }
+        log.info("{}개의 팔로우 관계 저장 완료", allSavedFollows.size());
+        return allSavedFollows;
     }
 
     /**
@@ -65,13 +73,14 @@ public class SocialRelationSeeder {
      * @param routines  루틴 리스트
      */
     @Transactional
-    public List<RoutineUserAction> createScrapActions(int count, List<User> users, List<Routine> routines) {
+    public void createScrapActions(int count, List<User> users, List<Routine> routines) {
         if (count <= 0 || users.isEmpty() || routines.isEmpty()) {
-            return Collections.emptyList();
+            return;
         }
 
         Set<String> existingScraps = new HashSet<>();
         List<RoutineUserAction> actionsToSave = new ArrayList<>();
+        int savedCount = 0;
 
         for (int i = 0; i < count; i++) {
             User user = users.get(random.nextInt(users.size()));
@@ -90,10 +99,16 @@ public class SocialRelationSeeder {
 
             actionsToSave.add(RoutineUserAction.builder().user(user).routine(routine).actionType(ActionType.SCRAP).build());
             existingScraps.add(scrapKey);
+
+            if (actionsToSave.size() >= BATCH_SIZE) {
+                savedCount += routineUserActionRepository.saveAll(actionsToSave).size();
+                actionsToSave.clear();
+            }
         }
-        List<RoutineUserAction> savedActions = routineUserActionRepository.saveAll(actionsToSave);
-        log.info("{}개의 스크랩 액션 저장 완료", savedActions.size());
-        return savedActions;
+        if (!actionsToSave.isEmpty()) {
+            savedCount += routineUserActionRepository.saveAll(actionsToSave).size();
+        }
+        log.info("{}개의 스크랩 액션 저장 완료", savedCount);
     }
 
     /**
@@ -105,6 +120,7 @@ public class SocialRelationSeeder {
     @Transactional
     public void createFavoriteTagRelations(int count, List<User> users, List<Tag> tags) {
         if (count <= 0 ) return;
+        int savedCount = 0;
 
         // 선호 태그 관계 생성
         Set<String> existingFavoriteTags = new HashSet<>();
@@ -118,9 +134,16 @@ public class SocialRelationSeeder {
 
             favoriteTagsToSave.add(UserFavoriteTag.builder().user(user).tag(tag).build());
             existingFavoriteTags.add(favoriteKey);
+
+            if (favoriteTagsToSave.size() >= BATCH_SIZE) {
+                savedCount += userFavoriteTagRepository.saveAll(favoriteTagsToSave).size();
+                favoriteTagsToSave.clear();
+            }
         }
-        userFavoriteTagRepository.saveAll(favoriteTagsToSave);
-        log.info("{}개의 선호 태그 저장 완료", favoriteTagsToSave.size());
+        if (!favoriteTagsToSave.isEmpty()) {
+            savedCount += userFavoriteTagRepository.saveAll(favoriteTagsToSave).size();
+        }
+        log.info("{}개의 선호 태그 저장 완료", savedCount);
     }
 
     /**
@@ -136,7 +159,7 @@ public class SocialRelationSeeder {
             return;
         }
 
-        List<RoutineUserAction> actionBatch = new ArrayList<>(ACTION_BATCH_SIZE);
+        List<RoutineUserAction> actionBatch = new ArrayList<>(BATCH_SIZE);
 
         for(Routine routine : routines) {
             // 0 - Min(MAX_LIKES_PER_ROUTINE, 유저수-1) 만큼 좋아요 생성 (자신 제외)
@@ -159,12 +182,19 @@ public class SocialRelationSeeder {
                         .user(u)
                         .actionType(ActionType.LIKE)
                         .build());
+
+                if (actionBatch.size() >= BATCH_SIZE) {
+                    routineUserActionRepository.saveAll(actionBatch);
+                    actionBatch.clear();
+                }
             }
             // 루틴의 likeCount를 실제 생성량으로 동기화
             routine.setLikeCount(pickedUsers.size());
         }
 
-        routineUserActionRepository.saveAll(actionBatch);
+        if (!actionBatch.isEmpty()) {
+            routineUserActionRepository.saveAll(actionBatch);
+        }
         log.info("{}개의 루틴에 대한 좋아요 액션 저장 완료", routines.size());
     }
 }
