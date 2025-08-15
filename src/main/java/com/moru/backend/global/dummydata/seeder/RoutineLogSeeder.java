@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 public class RoutineLogSeeder {
     private final RoutineLogRepository routineLogRepository;
     private final RoutineSnapshotRepository routineSnapshotRepository;
-
     private final Random random = new Random();
     private static final int BATCH_SIZE = 200;
 
@@ -55,8 +54,22 @@ public class RoutineLogSeeder {
         Map<UUID, User> routineOwnerMap = routines.stream()
                 .collect(Collectors.toMap(Routine::getId, Routine::getUser));
 
+        // 모든 사용자 ID 수집
+        List<UUID> allUserIds = users.stream()
+                .map(User::getId)
+                .toList();
+
+        // 열린 로그가 있는 사용자 조회
+        List<RoutineLog> activeLogs = routineLogRepository.findActiveLogsForUsers(allUserIds);
+        Set<UUID> usersWithOpenLog = activeLogs.stream()
+                .map(log -> log.getUser().getId())
+                .collect(Collectors.toSet());
+
+        log.info("DB에 이미 열린 로그 보유 사용자 수: {}", usersWithOpenLog.size());
+
+
         List<RoutineSnapshot> savedSnapshots = createSnapshots(routines);
-        createLogsFromSnapshots(savedSnapshots, users, routineOwnerMap);
+        createLogsFromSnapshots(savedSnapshots, users, routineOwnerMap, usersWithOpenLog);
     }
 
     /**
@@ -145,23 +158,26 @@ public class RoutineLogSeeder {
      * @param savedSnapshots    저장된 스냅샷 리스트
      * @param users          사용자들
      */
-    private void createLogsFromSnapshots(List<RoutineSnapshot> savedSnapshots, List<User> users, Map<UUID, User> routineOwnerMap) {
+    private void createLogsFromSnapshots(
+            List<RoutineSnapshot> savedSnapshots,
+            List<User> users,
+            Map<UUID, User> routineOwnerMap,
+            Set<UUID> usersWithOpenLog // Added comma here
+    ) {
         if (savedSnapshots.isEmpty()) {
             log.info("생성된 스냅샷이 없음 -> 루틴 로그 생성 x");
             return;
         }
-
-        // [FIX] 한 사용자에게 미완료 로그가 중복 할당되는 것을 막기 위한 추적용 Set
-        Set<UUID> usersWithInProgressLog = new HashSet<>();
 
         // 개별 로그 생성
         List<RoutineLog> logsToSave = new ArrayList<>();
         for (RoutineSnapshot snapshot : savedSnapshots) {
             // 각 로그에 대해 무작위 사용자를 할당
             // [성능 개선] DB를 반복 조회하는 대신, 미리 만들어둔 Map에서 소유자 정보를 가져옵니다.
-            User owner = routineOwnerMap.getOrDefault(snapshot.getOriginalRoutineId(),
+            User owner = routineOwnerMap.getOrDefault(
+                    snapshot.getOriginalRoutineId(),
                     users.get(random.nextInt(users.size()))); // 혹시 못찾으면 랜덤 유저
-            logsToSave.add(buildRoutineLog(snapshot, owner, usersWithInProgressLog));
+            logsToSave.add(buildRoutineLog(snapshot, owner, usersWithOpenLog));
         }
         batchSaveLogs(logsToSave);
     }
@@ -171,11 +187,15 @@ public class RoutineLogSeeder {
      *
      * @param snapshot               로그의 기반이 될 스냅샷
      * @param user                   로그의 소유자
-     * @param usersWithInProgressLog 미완료 로그가 이미 할당된 사용자 추적용 Set
+     * @param usersWithOpenLog 미완료 로그가 이미 할당된 사용자 추적용 Set
      * @return 생성된 RoutineLog 객체
      */
-    private RoutineLog buildRoutineLog(RoutineSnapshot snapshot, User user, Set<UUID> usersWithInProgressLog) {
-        LocalDateTime startedAt = LocalDateTime.now().minusDays(random.nextInt(30)).minusHours(random.nextInt(24));
+    private RoutineLog buildRoutineLog(RoutineSnapshot snapshot,
+                                       User user,
+                                       Set<UUID> usersWithOpenLog) {
+        LocalDateTime startedAt = LocalDateTime.now()
+                .minusDays(random.nextInt(30))
+                .minusHours(random.nextInt(24));
         LocalDateTime endedAt = null;
         Duration totalTime = null;
 
@@ -185,6 +205,7 @@ public class RoutineLogSeeder {
         // 사용자의 라이프스타일을 가져와 완료 확률을 조정.
         UserLifestyle lifestyle = userLifestyles.getOrDefault(user.getId(), UserLifestyle.BALANCED);
         java.time.DayOfWeek dayOfWeek = startedAt.getDayOfWeek();
+
         double finalCompletionProbability = diligenceScore;
         double modifier = 0.25; // 확률 보정값 (25%p)
 
@@ -212,7 +233,7 @@ public class RoutineLogSeeder {
 
         boolean isCompleted;
         // [FIX] 이 사용자가 이미 미완료 로그를 할당받았는지 확인
-        if (usersWithInProgressLog.contains(user.getId())) {
+        if (usersWithOpenLog.contains(user.getId())) {
             // 이미 할당받았다면, 이번 로그는 무조건 완료 처리하여 데이터 정합성을 지킴
             isCompleted = true;
         } else {
@@ -220,7 +241,7 @@ public class RoutineLogSeeder {
             isCompleted = random.nextDouble() < finalCompletionProbability;
             if (!isCompleted) {
                 // 이번 로그가 미완료로 결정되면, 추적 Set에 사용자를 추가
-                usersWithInProgressLog.add(user.getId());
+                usersWithOpenLog.add(user.getId());
             }
         }
 
@@ -228,7 +249,8 @@ public class RoutineLogSeeder {
         if (isCompleted) {
             if (!snapshot.isSimple() && snapshot.getRequiredTime() != null && !snapshot.getRequiredTime().isZero()) {
                 // 집중 루틴: 예상 시간에 약간의 오차를 더해 현실적인 소요 시간 생성
-                endedAt = startedAt.plus(snapshot.getRequiredTime()).plusMinutes(random.nextInt(10) - 5);
+                endedAt = startedAt.plus(snapshot.getRequiredTime())
+                        .plusMinutes(random.nextInt(10) - 5);
                 totalTime = Duration.between(startedAt, endedAt);
             } else {
                 // 간편 루틴: 1~5분 사이의 짧은 소요 시간 생성
