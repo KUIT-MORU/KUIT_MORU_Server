@@ -14,6 +14,7 @@ public class DummyDataProperties {
     private int routineCount;
     private int followCount;
     private int favoriteTagCount;
+    private int scrapCount;
 
     private String targetUserEmail;              // 사용자 기준 알림 타깃(없으면 test@example.com)
     private int userCentricFollowNotif = 5;      // FOLLOW_RECEIVED 개수

@@ -175,4 +175,16 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
     @Query("SELECT r.isUserVisible FROM Routine r WHERE r.id = :routineId")
     boolean getIsUserVisibleById(@Param("routineId") UUID routineId);
 
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("update Routine r set r.likeCount = r.likeCount + 1 where r.id = :id")
+    int incrementLikeCount(@Param("id") UUID id);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+           update Routine r
+              set r.likeCount = case when r.likeCount > 0 then r.likeCount - 1 else 0 end
+            where r.id = :id
+           """)
+    int decrementLikeCount(@Param("id") UUID id);
+
 }
