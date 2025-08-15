@@ -45,13 +45,16 @@ public interface RoutineUserActionRepository extends JpaRepository<RoutineUserAc
     );
 
     @Query("""
-        select rua.user.id as userId, rua.routine.id as routineId
-        from RoutineUserAction rua
-        where rua.actionType = :type
-          and rua.user.id in :userIds
-          and rua.routine.id in :routineIds
-    """)
-    List<Object[]> findExistingPairs(@Param("type") ActionType type,
-                                     @Param("userIds") Collection<UUID> userIds,
-                                     @Param("routineIds") Collection<UUID> routineIds);
+    select distinct rua.user.id, rua.routine.id
+    from RoutineUserAction rua
+    where rua.actionType = :actionType
+      and rua.user.id in :userIds
+      and rua.routine.id in :routineIds
+""")
+    List<Object[]> findExistingPairs(
+            @Param("actionType") ActionType actionType,
+            @Param("userIds") List<UUID> userIds,
+            @Param("routineIds") List<UUID> routineIds
+    );
+
 }
