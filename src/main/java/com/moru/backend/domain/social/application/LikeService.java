@@ -46,6 +46,7 @@ public class LikeService {
                 .build();
 
         routineUserActionRepository.save(routineUserAction);
+        routineRepository.incrementLikeCount(routineId);
     }
 
     @Transactional
@@ -57,6 +58,7 @@ public class LikeService {
                 .orElseThrow(() -> new CustomException(ErrorCode.LIKE_NOT_FOUND));
 
         routineUserActionRepository.delete(action);
+        routineRepository.decrementLikeCount(routineId);
     }
 
     public boolean isLiked(UUID userId, UUID routineId) {
