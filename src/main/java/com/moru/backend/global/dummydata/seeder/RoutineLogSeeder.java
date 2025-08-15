@@ -65,11 +65,18 @@ public class RoutineLogSeeder {
                 .map(log -> log.getUser().getId())
                 .collect(Collectors.toSet());
 
-        log.info("DB에 이미 열린 로그 보유 사용자 수: {}", usersWithOpenLog.size());
+        // 열린 로그의 startedAt도 함께 맵으로 보관
+        Map<UUID, LocalDateTime> openLogStartByUser = activeLogs.stream()
+                .collect(Collectors.toMap(
+                        rl -> rl.getUser().getId(),
+                        RoutineLog::getStartedAt,
+                        // 혹시 중복이면 가장 최근 걸 유지
+                        (a, b) -> a.isAfter(b) ? a : b
+                ));
 
 
         List<RoutineSnapshot> savedSnapshots = createSnapshots(routines);
-        createLogsFromSnapshots(savedSnapshots, users, routineOwnerMap, usersWithOpenLog);
+        createLogsFromSnapshots(savedSnapshots, users, routineOwnerMap, usersWithOpenLog, openLogStartByUser);
     }
 
     /**
@@ -162,7 +169,8 @@ public class RoutineLogSeeder {
             List<RoutineSnapshot> savedSnapshots,
             List<User> users,
             Map<UUID, User> routineOwnerMap,
-            Set<UUID> usersWithOpenLog // Added comma here
+            Set<UUID> usersWithOpenLog,
+            Map<UUID, LocalDateTime> openLogStartByUser
     ) {
         if (savedSnapshots.isEmpty()) {
             log.info("생성된 스냅샷이 없음 -> 루틴 로그 생성 x");
@@ -177,7 +185,7 @@ public class RoutineLogSeeder {
             User owner = routineOwnerMap.getOrDefault(
                     snapshot.getOriginalRoutineId(),
                     users.get(random.nextInt(users.size()))); // 혹시 못찾으면 랜덤 유저
-            logsToSave.add(buildRoutineLog(snapshot, owner, usersWithOpenLog));
+            logsToSave.add(buildRoutineLog(snapshot, owner, usersWithOpenLog, openLogStartByUser));
         }
         batchSaveLogs(logsToSave);
     }
@@ -192,73 +200,70 @@ public class RoutineLogSeeder {
      */
     private RoutineLog buildRoutineLog(RoutineSnapshot snapshot,
                                        User user,
-                                       Set<UUID> usersWithOpenLog) {
-        LocalDateTime startedAt = LocalDateTime.now()
-                .minusDays(random.nextInt(30))
-                .minusHours(random.nextInt(24));
-        LocalDateTime endedAt = null;
-        Duration totalTime = null;
-
-        // 사용자의 미리 할당된 '성실도 점수'를 가져오기
-        double diligenceScore = userDiligenceScores.getOrDefault(user.getId(), 0.5); // 점수가 없으면 50% 확률
-
-        // 사용자의 라이프스타일을 가져와 완료 확률을 조정.
+                                       Set<UUID> usersWithOpenLog,
+                                       Map<UUID, LocalDateTime> openLogStartByUser
+                                       ) {
+        // 1) 완료/미완료 결정 먼저
+        double diligenceScore = userDiligenceScores.getOrDefault(user.getId(), 0.5);
         UserLifestyle lifestyle = userLifestyles.getOrDefault(user.getId(), UserLifestyle.BALANCED);
-        java.time.DayOfWeek dayOfWeek = startedAt.getDayOfWeek();
 
         double finalCompletionProbability = diligenceScore;
-        double modifier = 0.25; // 확률 보정값 (25%p)
-
+        double modifier = 0.25;
+        var todayDow = LocalDateTime.now().getDayOfWeek();
         switch (lifestyle) {
-            case WEEKDAY_WARRIOR:
-                if (dayOfWeek != java.time.DayOfWeek.SATURDAY && dayOfWeek != java.time.DayOfWeek.SUNDAY) {
-                    finalCompletionProbability += modifier; // 평일 보너스
-                } else {
-                    finalCompletionProbability -= modifier; // 주말 페널티
-                }
-                break;
-            case WEEKEND_RELAXER:
-                if (dayOfWeek == java.time.DayOfWeek.SATURDAY || dayOfWeek == java.time.DayOfWeek.SUNDAY) {
-                    finalCompletionProbability += modifier; // 주말 보너스
-                } else {
-                    finalCompletionProbability -= modifier; // 평일 페널티
-                }
-                break;
-            case BALANCED:
-                // 확률 변경 없음
-                break;
+            case WEEKDAY_WARRIOR -> finalCompletionProbability +=
+                    (todayDow != java.time.DayOfWeek.SATURDAY && todayDow != java.time.DayOfWeek.SUNDAY) ? modifier : -modifier;
+            case WEEKEND_RELAXER -> finalCompletionProbability +=
+                    (todayDow == java.time.DayOfWeek.SATURDAY || todayDow == java.time.DayOfWeek.SUNDAY) ? modifier : -modifier;
+            case BALANCED -> { /* no-op */ }
         }
-
         finalCompletionProbability = Math.max(0.05, Math.min(finalCompletionProbability, 0.95));
 
         boolean isCompleted;
-        // [FIX] 이 사용자가 이미 미완료 로그를 할당받았는지 확인
         if (usersWithOpenLog.contains(user.getId())) {
-            // 이미 할당받았다면, 이번 로그는 무조건 완료 처리하여 데이터 정합성을 지킴
-            isCompleted = true;
+            isCompleted = true; // 이미 열린 로그 있으면 무조건 완료
         } else {
-            // 아니라면, 확률에 따라 완료 여부를 결정
             isCompleted = random.nextDouble() < finalCompletionProbability;
             if (!isCompleted) {
-                // 이번 로그가 미완료로 결정되면, 추적 Set에 사용자를 추가
-                usersWithOpenLog.add(user.getId());
+                usersWithOpenLog.add(user.getId()); // 이제 이 유저는 열린 로그 1개 보유
             }
         }
 
-        // 완료된 경우에만 종료 시간과 소요 시간을 기록
+        // 2) isCompleted 결과에 따라 startedAt 생성 (규칙 적용)
+        LocalDateTime startedAt;
+        if (isCompleted) {
+            // 완료 로그의 startedAt은 항상 해당 유저의 열린 로그 startedAt보다 과거여야 함
+            LocalDateTime openStart = openLogStartByUser.get(user.getId());
+            if (openStart != null) {
+                // 열린 로그 이전의 과거 임의 시각 (최대 30일, 경계면 보호)
+                long hoursBack = 1 + random.nextInt(24 * 30 - 1); // 1시간 ~ 720시간
+                startedAt = openStart.minusHours(hoursBack);
+            } else {
+                // 이 유저에 열린 로그가 아직 없다면, 일반 과거 범위
+                startedAt = LocalDateTime.now()
+                        .minusDays(random.nextInt(30))
+                        .minusHours(random.nextInt(24));
+            }
+        } else {
+            // 미완료 로그 = 열린 로그 → 항상 "최근 시각"으로 만들어 최신이 되게 함
+            startedAt = LocalDateTime.now().minusMinutes(1 + random.nextInt(120)); // 1~120분 전
+            openLogStartByUser.put(user.getId(), startedAt); // 이후 완료 로그가 이 시각보다 과거가 되도록 참조 갱신
+        }
+
+        // 3) endedAt/totalTime
+        LocalDateTime endedAt = null;
+        Duration totalTime = null;
         if (isCompleted) {
             if (!snapshot.isSimple() && snapshot.getRequiredTime() != null && !snapshot.getRequiredTime().isZero()) {
-                // 집중 루틴: 예상 시간에 약간의 오차를 더해 현실적인 소요 시간 생성
                 endedAt = startedAt.plus(snapshot.getRequiredTime())
                         .plusMinutes(random.nextInt(10) - 5);
                 totalTime = Duration.between(startedAt, endedAt);
             } else {
-                // 간편 루틴: 1~5분 사이의 짧은 소요 시간 생성
                 totalTime = Duration.ofMinutes(random.nextInt(5) + 1);
                 endedAt = startedAt.plus(totalTime);
             }
         }
-        // 완료되지 않은 경우, endedAt과 totalTime은 null로 유지
+
         return RoutineLog.builder()
                 .user(user)
                 .routineSnapshot(snapshot)
