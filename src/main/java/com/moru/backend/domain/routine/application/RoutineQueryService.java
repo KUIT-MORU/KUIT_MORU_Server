@@ -1,7 +1,7 @@
 package com.moru.backend.domain.routine.application;
 
 import com.moru.backend.domain.log.dao.RoutineLogRepository;
-import com.moru.backend.domain.routine.dao.RoutineRepository;
+import com.moru.backend.domain.routine.dao.routine.RoutineRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 import com.moru.backend.domain.routine.domain.search.SortType;
@@ -97,26 +97,28 @@ public class RoutineQueryService {
     }
 
     public Page<RoutineListResponse> getRoutineList(User user, SortType sortType, DayOfWeek dayOfWeek, Pageable pageable) {
-        Page<UUID> routineIdPage;
-        if (sortType == SortType.TIME && dayOfWeek != null) {
-            routineIdPage = routineRepository.findIdsByUserIdAndDayOfWeekOrderByScheduleTimeAsc(user.getId(), dayOfWeek, pageable);
-        } else if (sortType == SortType.POPULAR) {
-            routineIdPage = routineRepository.findIdsByUserOrderByLikeCountDescCreatedAtDesc(user, pageable);
-        } else { // LATEST
-            routineIdPage = routineRepository.findIdsByUserOrderByCreatedAtDesc(user, pageable);
-        }
-        List<UUID> routineIds = routineIdPage.getContent();
-        if (routineIds.isEmpty()) {
-            return Page.empty(pageable);
+        Page<Routine> routinePage;
+
+        switch (sortType) {
+            case POPULAR:
+                routinePage = routineRepository.findDistinctByUserAndStatusIsTrueOrderByLikeCountDescCreatedAtDesc(user, pageable);
+                break;
+            case TIME:
+                if (dayOfWeek != null) {
+                    // 시나리오 1: 특정 요일이 지정된 경우
+                    routinePage = routineRepository.findRoutinesByUserIdAndDayOfWeekOrderByScheduleTimeAsc(user.getId(), dayOfWeek, pageable);
+                } else {
+                    // 시나리오 2: 요일이 지정되지 않은 경우 (네이티브 쿼리 사용)
+                    routinePage = routineRepository.findRoutinesOrderByUpcoming(user.getId(), pageable);
+                }
+                break;
+            case LATEST:
+            default:
+                routinePage = routineRepository.findDistinctByUserAndStatusIsTrueOrderByCreatedAtDesc(user, pageable);
+                break;
         }
 
-        List<Routine> sortedRoutines = findAndSortRoutinesWithDetails(routineIds);
-        // DTO로 변환 후 최종 Page 객체 생성
-        List<RoutineListResponse> dtoList = sortedRoutines.stream()
-                .map(this::toRoutineListResponse)
-                .toList();
-
-        return new PageImpl<>(dtoList, pageable, routineIdPage.getTotalElements());
+        return routinePage.map(this::toRoutineListResponse);
     }
 
 

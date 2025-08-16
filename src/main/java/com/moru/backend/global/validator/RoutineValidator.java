@@ -1,6 +1,6 @@
 package com.moru.backend.global.validator;
 
-import com.moru.backend.domain.routine.dao.RoutineRepository;
+import com.moru.backend.domain.routine.dao.routine.RoutineRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.dto.request.RoutineCreateRequest;
 import com.moru.backend.domain.user.domain.User;
