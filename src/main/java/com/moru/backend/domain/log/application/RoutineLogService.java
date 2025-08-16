@@ -131,8 +131,18 @@ public class RoutineLogService {
 
     public RoutineLogDetailResponse getRoutineLogDetail(User user, UUID routineLogId) {
         // 루틴 로그 조회
-        RoutineLog routineLog = routineLogRepository.findByRoutineLogIdWithSnapshotAndSteps(routineLogId)
+        RoutineLog routineLog = routineLogRepository.findByRoutineLogIdWithSnapshot(routineLogId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROUTINE_LOG_NOT_FOUND));
+
+        UUID snapshotId = routineLog.getRoutineSnapshot().getId();
+
+        // 스냅샷 하위 컬렉션을 각각 초기화 (한 쿼리당 bag 1개)
+        routineSnapshotRepository.fetchStepSnapshots(snapshotId);
+        routineSnapshotRepository.fetchAppSnapshots(snapshotId);
+        routineSnapshotRepository.fetchTagSnapshots(snapshotId);
+
+        // 로그 하위 컬렉션 초기화 (bag 1개)
+        routineLogRepository.fetchStepLogs(routineLogId);
 
         // 접근 권한 확인
         if(!routineLog.getUser().getId().equals(user.getId())) {
