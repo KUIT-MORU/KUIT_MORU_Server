@@ -1,6 +1,7 @@
 package com.moru.backend.domain.social.application;
 
 import com.moru.backend.domain.routine.dao.*;
+import com.moru.backend.domain.routine.dao.routine.RoutineRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.RoutineStep;
 import com.moru.backend.domain.routine.domain.meta.RoutineApp;

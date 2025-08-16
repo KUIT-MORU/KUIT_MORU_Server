@@ -1,4 +1,4 @@
-package com.moru.backend.domain.routine.dao;
+package com.moru.backend.domain.routine.dao.routine;
 
 import com.moru.backend.domain.routine.domain.Routine;
 import org.springframework.data.domain.Page;

@@ -1,4 +1,4 @@
-package com.moru.backend.domain.routine.dao;
+package com.moru.backend.domain.routine.dao.routine;
 
 import java.time.LocalDateTime;
 import java.util.List;

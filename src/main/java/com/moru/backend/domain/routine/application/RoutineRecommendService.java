@@ -4,7 +4,7 @@ import com.moru.backend.domain.log.dao.RoutineLogRepository;
 import com.moru.backend.domain.log.domain.RoutineLog;
 import com.moru.backend.domain.meta.dao.TagRepository;
 import com.moru.backend.domain.meta.domain.Tag;
-import com.moru.backend.domain.routine.dao.RoutineRepository;
+import com.moru.backend.domain.routine.dao.routine.RoutineRepository;
 import com.moru.backend.domain.routine.dao.RoutineTagRepository;
 import com.moru.backend.domain.routine.dao.TagPairCount;
 import com.moru.backend.domain.routine.domain.Routine;
