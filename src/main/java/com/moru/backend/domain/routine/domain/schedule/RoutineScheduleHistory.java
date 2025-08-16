@@ -7,13 +7,13 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-
-import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
@@ -35,11 +35,13 @@ public class RoutineScheduleHistory {
     // 어떤 루틴의 스케줄 히스토리인지
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "routine_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Routine routine;
 
     // 유효 요일
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "routine_schedule_history_days", joinColumns = @JoinColumn(name = "history_id"))
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @Enumerated(EnumType.STRING)
     @Column(name = "day_of_week")
     private List<DayOfWeek> scheduledDays;
