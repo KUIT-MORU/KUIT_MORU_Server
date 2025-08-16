@@ -15,16 +15,23 @@ public interface RoutineLogRepository extends JpaRepository<RoutineLog, UUID> {
     @Query("""
         SELECT rl FROM RoutineLog rl
         JOIN FETCH rl.routineSnapshot snap
+        LEFT JOIN FETCH snap.tagSnapshots
+        LEFT JOIN FETCH snap.appSnapshots
+        LEFT JOIN FETCH snap.stepSnapshots
+        LEFT JOIN FETCH rl.routineStepLogs stepLog
+        LEFT JOIN FETCH stepLog.routineStep
         WHERE rl.id = :logId
     """)
-    Optional<RoutineLog> findByRoutineLogIdWithSnapshot(UUID logId);
+    Optional<RoutineLog> findByRoutineLogIdWithSnapshotAndSteps(UUID logId);
 
     @Query("""
-        SELECT DISTINCT rl FROM RoutineLog rl
-        LEFT JOIN FETCH rl.routineStepLogs steplog
-        WHERE rl.id = :logId
+        SELECT rl FROM RoutineLog rl
+        JOIN FETCH rl.routineSnapshot snap
+        LEFT JOIN FETCH snap.tagSnapshots
+        WHERE rl.user.id = :userId
+        ORDER BY rl.startedAt DESC
     """)
-    Optional<RoutineLog> fetchStepLogs(UUID logId);
+    List<RoutineLog> findAllByUserIdWithSnapshot(UUID userId);
 
     List<RoutineLog> findByUserIdAndStartedAtBetween(UUID userId, LocalDateTime start, LocalDateTime end);
 

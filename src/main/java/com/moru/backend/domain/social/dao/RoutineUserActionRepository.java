@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -43,18 +42,4 @@ public interface RoutineUserActionRepository extends JpaRepository<RoutineUserAc
             @Param("lastScrapId") UUID lastScrapId,
             Pageable pageable
     );
-
-    @Query("""
-    select distinct rua.user.id, rua.routine.id
-    from RoutineUserAction rua
-    where rua.actionType = :actionType
-      and rua.user.id in :userIds
-      and rua.routine.id in :routineIds
-""")
-    List<Object[]> findExistingPairs(
-            @Param("actionType") ActionType actionType,
-            @Param("userIds") List<UUID> userIds,
-            @Param("routineIds") List<UUID> routineIds
-    );
-
 }
