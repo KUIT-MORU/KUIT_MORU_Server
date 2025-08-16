@@ -1,7 +1,6 @@
 package com.moru.backend.global.dummydata.seeder;
 
 import com.moru.backend.domain.meta.domain.Tag;
-import com.moru.backend.domain.routine.dao.RoutineRepository;
 import com.moru.backend.domain.routine.domain.ActionType;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.social.dao.RoutineUserActionRepository;
@@ -26,7 +25,6 @@ public class SocialRelationSeeder {
     private final UserFollowRepository userFollowRepository;
     private final RoutineUserActionRepository routineUserActionRepository;
     private final UserFavoriteTagRepository userFavoriteTagRepository;
-    private final RoutineRepository routineRepository;
 
     private final Random random = new Random();
     private static final int BATCH_SIZE = 200;
@@ -259,10 +257,6 @@ public class SocialRelationSeeder {
             // 루틴의 likeCount를 실제 생성량으로 동기화
             routine.setLikeCount(pickedUsers.size());
         }
-
-        // 위에서 setLikeCount 한 값들을 DB에 반영
-        routineRepository.saveAll(routines);
-        routineRepository.flush(); // 선택이지만 확실히 반영하고 싶으면
 
         if (!actionBatch.isEmpty()) {
             routineUserActionRepository.saveAll(actionBatch);
