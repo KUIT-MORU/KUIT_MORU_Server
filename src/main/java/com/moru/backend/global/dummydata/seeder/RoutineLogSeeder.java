@@ -204,6 +204,7 @@ public class RoutineLogSeeder {
             List<RoutineSnapshot> savedSnapshots,
             List<User> users,
             Map<UUID, User> routineOwnerMap,
+            Map<UUID, Set<DayOfWeek>> scheduleByRoutine,
             Set<UUID> usersWithOpenLog,
             Map<UUID, LocalDateTime> openLogStartByUser
     ) {
@@ -220,7 +221,9 @@ public class RoutineLogSeeder {
             User owner = routineOwnerMap.getOrDefault(
                     snapshot.getOriginalRoutineId(),
                     users.get(random.nextInt(users.size()))); // 혹시 못찾으면 랜덤 유저
-            logsToSave.add(buildRoutineLog(snapshot, owner, usersWithOpenLog, openLogStartByUser));
+
+            Set<DayOfWeek> scheduleDays = scheduleByRoutine.getOrDefault(snapshot.getOriginalRoutineId(), Set.of());
+            logsToSave.add(buildRoutineLog(snapshot, owner, scheduleDays, usersWithOpenLog, openLogStartByUser));
         }
         batchSaveLogs(logsToSave);
     }
