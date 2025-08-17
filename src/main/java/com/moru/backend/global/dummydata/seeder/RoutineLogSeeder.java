@@ -8,14 +8,14 @@ import com.moru.backend.domain.log.domain.snapshot.RoutineSnapshot;
 import com.moru.backend.domain.log.domain.snapshot.RoutineStepSnapshot;
 import com.moru.backend.domain.log.domain.snapshot.RoutineTagSnapshot;
 import com.moru.backend.domain.routine.domain.Routine;
+import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
 import com.moru.backend.domain.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
