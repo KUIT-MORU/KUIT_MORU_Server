@@ -8,14 +8,14 @@ import com.moru.backend.domain.log.domain.snapshot.RoutineSnapshot;
 import com.moru.backend.domain.log.domain.snapshot.RoutineStepSnapshot;
 import com.moru.backend.domain.log.domain.snapshot.RoutineTagSnapshot;
 import com.moru.backend.domain.routine.domain.Routine;
+import com.moru.backend.domain.routine.domain.schedule.RoutineSchedule;
 import com.moru.backend.domain.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -54,6 +54,10 @@ public class RoutineLogSeeder {
         Map<UUID, User> routineOwnerMap = routines.stream()
                 .collect(Collectors.toMap(Routine::getId, Routine::getUser));
 
+        // 루틴별 스케줄 요일 맵
+        Map<UUID, Set<DayOfWeek>> scheduleByRoutine = buildScheduleMap(routines);
+
+
         // 모든 사용자 ID 수집
         List<UUID> allUserIds = users.stream()
                 .map(User::getId)
@@ -76,7 +80,42 @@ public class RoutineLogSeeder {
 
 
         List<RoutineSnapshot> savedSnapshots = createSnapshots(routines);
-        createLogsFromSnapshots(savedSnapshots, users, routineOwnerMap, usersWithOpenLog, openLogStartByUser);
+        createLogsFromSnapshots(savedSnapshots, users, routineOwnerMap, scheduleByRoutine, usersWithOpenLog, openLogStartByUser);
+    }
+
+
+    private java.time.DayOfWeek toJavaDayOfWeek(
+            com.moru.backend.domain.routine.domain.schedule.DayOfWeek d) {
+        // 커스텀 enum 값 이름과 요일이 1:1로 대응한다고 가정
+        // (이름이 다르면 switch로 하나씩 매핑)
+        return switch (d) {
+            case MON    -> java.time.DayOfWeek.MONDAY;
+            case TUE   -> java.time.DayOfWeek.TUESDAY;
+            case WED -> java.time.DayOfWeek.WEDNESDAY;
+            case THU  -> java.time.DayOfWeek.THURSDAY;
+            case FRI    -> java.time.DayOfWeek.FRIDAY;
+            case SAT  -> java.time.DayOfWeek.SATURDAY;
+            case SUN    -> java.time.DayOfWeek.SUNDAY;
+        };
+    }
+
+    private Map<UUID, Set<java.time.DayOfWeek>> buildScheduleMap(List<Routine> routines) {
+        Map<UUID, Set<java.time.DayOfWeek>> map = new HashMap<>();
+        for (Routine r : routines) {
+            Set<java.time.DayOfWeek> days =
+                    (r.getRoutineSchedules() == null)
+                            ? EnumSet.noneOf(java.time.DayOfWeek.class) // JDK8 호환
+                            : r.getRoutineSchedules().stream()
+                            .map(RoutineSchedule::getDayOfWeek)                // 커스텀 enum
+                            .filter(Objects::nonNull)
+                            .map(this::toJavaDayOfWeek)                // ← ★ 변환
+                            .collect(Collectors.toCollection(
+                                    () -> EnumSet.noneOf(java.time.DayOfWeek.class) // ← ★ 제네릭 명시
+                            ));
+
+            map.put(r.getId(), days);
+        }
+        return map;
     }
 
     /**
@@ -169,6 +208,7 @@ public class RoutineLogSeeder {
             List<RoutineSnapshot> savedSnapshots,
             List<User> users,
             Map<UUID, User> routineOwnerMap,
+            Map<UUID, Set<DayOfWeek>> scheduleByRoutine,
             Set<UUID> usersWithOpenLog,
             Map<UUID, LocalDateTime> openLogStartByUser
     ) {
@@ -185,83 +225,129 @@ public class RoutineLogSeeder {
             User owner = routineOwnerMap.getOrDefault(
                     snapshot.getOriginalRoutineId(),
                     users.get(random.nextInt(users.size()))); // 혹시 못찾으면 랜덤 유저
-            logsToSave.add(buildRoutineLog(snapshot, owner, usersWithOpenLog, openLogStartByUser));
+
+            Set<DayOfWeek> scheduleDays = scheduleByRoutine.getOrDefault(snapshot.getOriginalRoutineId(), Set.of());
+            logsToSave.add(buildRoutineLog(snapshot, owner, scheduleDays, usersWithOpenLog, openLogStartByUser));
         }
         batchSaveLogs(logsToSave);
     }
 
-    /**
-     * 스냅샷과 사용자 기반으로 단일 RoutineLog 객체 생성
-     *
-     * @param snapshot               로그의 기반이 될 스냅샷
-     * @param user                   로그의 소유자
-     * @param usersWithOpenLog 미완료 로그가 이미 할당된 사용자 추적용 Set
-     * @return 생성된 RoutineLog 객체
-     */
+    // 스케줄 요일에 해당하는 최근 7일 중 하루를 골라 시각을 만든다.
+    // 스케줄이 없다면 과거 7일 랜덤(해당 루틴은 집계상 실천률이 낮을 수 있음)
+    private LocalDateTime pickRecentDateOnScheduledDay(Set<DayOfWeek> scheduledDays) {
+        if (scheduledDays == null || scheduledDays.isEmpty()) {
+            return LocalDateTime.now()
+                    .minusDays(random.nextInt(7))
+                    .minusHours(random.nextInt(24))
+                    .withMinute(random.nextInt(60))
+                    .withSecond(random.nextInt(60));
+        }
+        List<LocalDate> candidates = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+        for (int i = 0; i < 7; i++) {
+            LocalDate d = today.minusDays(i);
+            if (scheduledDays.contains(d.getDayOfWeek())) {
+                candidates.add(d);
+            }
+        }
+        if (candidates.isEmpty()) {
+            return LocalDateTime.now().minusDays(random.nextInt(7)).withHour(8 + random.nextInt(12));
+        }
+        LocalDate picked = candidates.get(random.nextInt(candidates.size()));
+        int hour = 6 + random.nextInt(16); // 06~21시
+        int minute = random.nextInt(60);
+        int second = random.nextInt(60);
+        return LocalDateTime.of(picked, LocalTime.of(hour, minute, second));
+    }
+
+    //'before'보다 과거이면서 스케줄 요일에 맞는 시각을 찾는다(최대 maxDaysBack일 뒤져봄)
+    private LocalDateTime pickScheduledDateBefore(Set<DayOfWeek> scheduledDays, LocalDateTime before, int maxDaysBack) {
+        if (scheduledDays == null || scheduledDays.isEmpty()) {
+            // 스케줄 없으면 대략 이전으로만 이동(폴백)
+            return before.minusHours(1 + random.nextInt(24));
+        }
+        LocalDate pivot = before.toLocalDate().minusDays(1); // strictly before
+        for (int i = 0; i < maxDaysBack; i++) {
+            LocalDate d = pivot.minusDays(i);
+            if (scheduledDays.contains(d.getDayOfWeek())) {
+                int hour = 6 + random.nextInt(16);
+                int minute = random.nextInt(60);
+                int second = random.nextInt(60);
+                return LocalDateTime.of(d, LocalTime.of(hour, minute, second));
+            }
+        }
+        // 안전장치
+        return before.minusDays(1).withHour(8 + random.nextInt(12));
+    }
+
     private RoutineLog buildRoutineLog(RoutineSnapshot snapshot,
                                        User user,
+                                       Set<DayOfWeek> scheduleDays,
                                        Set<UUID> usersWithOpenLog,
                                        Map<UUID, LocalDateTime> openLogStartByUser
-                                       ) {
-        // 1) 완료/미완료 결정 먼저
-        double diligenceScore = userDiligenceScores.getOrDefault(user.getId(), 0.5);
-        UserLifestyle lifestyle = userLifestyles.getOrDefault(user.getId(), UserLifestyle.BALANCED);
+    ) {
+        UUID uid = user.getId();
+
+        // [추가] 0) 스케줄 요일 중에서 "최근" 시작시각 후보를 먼저 만든다.
+        //        (집계 규칙: 스케줄 있는 요일 + isCompleted=true 만 실천으로 인정)
+        LocalDateTime candidateStart = pickRecentDateOnScheduledDay(scheduleDays);
+
+        // [변경] 1) 완료 확률은 '오늘(now)'이 아니라, candidateStart의 요일로 보정
+        double diligenceScore = userDiligenceScores.getOrDefault(uid, 0.5);
+        UserLifestyle lifestyle = userLifestyles.getOrDefault(uid, UserLifestyle.BALANCED);
 
         double finalCompletionProbability = diligenceScore;
         double modifier = 0.25;
-        var todayDow = LocalDateTime.now().getDayOfWeek();
+        DayOfWeek dow = candidateStart.getDayOfWeek(); // ← 핵심: now()가 아니라 후보 날짜의 요일
         switch (lifestyle) {
             case WEEKDAY_WARRIOR -> finalCompletionProbability +=
-                    (todayDow != java.time.DayOfWeek.SATURDAY && todayDow != java.time.DayOfWeek.SUNDAY) ? modifier : -modifier;
+                    (dow != DayOfWeek.SATURDAY && dow != DayOfWeek.SUNDAY) ? modifier : -modifier;
             case WEEKEND_RELAXER -> finalCompletionProbability +=
-                    (todayDow == java.time.DayOfWeek.SATURDAY || todayDow == java.time.DayOfWeek.SUNDAY) ? modifier : -modifier;
+                    (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY) ? modifier : -modifier;
             case BALANCED -> { /* no-op */ }
         }
         finalCompletionProbability = Math.max(0.05, Math.min(finalCompletionProbability, 0.95));
 
+        // [변경] 2) 열린 로그 처리: 있었으면 이번에 '완료'로 닫고, 반드시 Set에서 제거
         boolean isCompleted;
-        if (usersWithOpenLog.contains(user.getId())) {
-            isCompleted = true; // 이미 열린 로그 있으면 무조건 완료
+        if (usersWithOpenLog.contains(uid)) {
+            isCompleted = true;              // 열린 로그가 있으니 이번엔 완료
+            usersWithOpenLog.remove(uid);    // ★ 중요: 열린 상태 해제 (안 하면 분포 왜곡)
         } else {
             isCompleted = random.nextDouble() < finalCompletionProbability;
             if (!isCompleted) {
-                usersWithOpenLog.add(user.getId()); // 이제 이 유저는 열린 로그 1개 보유
+                // 새로 열린 로그 등록
+                usersWithOpenLog.add(uid);
+                openLogStartByUser.put(uid, candidateStart); // 열린 로그의 시작시각 기록
             }
         }
 
-        // 2) isCompleted 결과에 따라 startedAt 생성 (규칙 적용)
+        // [변경] 3) startedAt 생성: 스케줄 요일을 유지하면서 시간 정합성 보장
         LocalDateTime startedAt;
-        if (isCompleted) {
-            // 완료 로그의 startedAt은 항상 해당 유저의 열린 로그 startedAt보다 과거여야 함
-            LocalDateTime openStart = openLogStartByUser.get(user.getId());
-            if (openStart != null) {
-                // 열린 로그 이전의 과거 임의 시각 (최대 30일, 경계면 보호)
-                long hoursBack = 1 + random.nextInt(24 * 30 - 1); // 1시간 ~ 720시간
-                startedAt = openStart.minusHours(hoursBack);
-            } else {
-                // 이 유저에 열린 로그가 아직 없다면, 일반 과거 범위
-                startedAt = LocalDateTime.now()
-                        .minusDays(random.nextInt(30))
-                        .minusHours(random.nextInt(24));
-            }
-        } else {
-            // 미완료 로그 = 열린 로그 → 항상 "최근 시각"으로 만들어 최신이 되게 함
-            startedAt = LocalDateTime.now().minusMinutes(1 + random.nextInt(120)); // 1~120분 전
-            openLogStartByUser.put(user.getId(), startedAt); // 이후 완료 로그가 이 시각보다 과거가 되도록 참조 갱신
-        }
-
-        // 3) endedAt/totalTime
         LocalDateTime endedAt = null;
         Duration totalTime = null;
+
         if (isCompleted) {
+            // 완료 로그는 열린 로그보다 과거여야 함
+            LocalDateTime openStart = openLogStartByUser.get(uid);
+            if (openStart != null && !candidateStart.isBefore(openStart)) {
+                // 후보가 열린 로그보다 미래/동일이면, 스케줄 요일 중 openStart '이전'으로 보정
+                startedAt = pickScheduledDateBefore(scheduleDays, openStart, 30); // [추가]
+            } else {
+                startedAt = candidateStart; // 이미 스케줄 요일
+            }
+
+            // 완료 로그의 총시간/종료시각
             if (!snapshot.isSimple() && snapshot.getRequiredTime() != null && !snapshot.getRequiredTime().isZero()) {
-                endedAt = startedAt.plus(snapshot.getRequiredTime())
-                        .plusMinutes(random.nextInt(10) - 5);
+                endedAt = startedAt.plus(snapshot.getRequiredTime()).plusMinutes(random.nextInt(10) - 5);
                 totalTime = Duration.between(startedAt, endedAt);
             } else {
                 totalTime = Duration.ofMinutes(random.nextInt(5) + 1);
                 endedAt = startedAt.plus(totalTime);
             }
+        } else {
+            // 미완료(열린) 로그도 스케줄 요일의 '최근' 시각으로 유지(일관성)
+            startedAt = candidateStart; // now() 랜덤이 아님
         }
 
         return RoutineLog.builder()
