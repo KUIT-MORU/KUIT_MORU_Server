@@ -232,14 +232,54 @@ public class RoutineLogSeeder {
         batchSaveLogs(logsToSave);
     }
 
-    /**
-     * 스냅샷과 사용자 기반으로 단일 RoutineLog 객체 생성
-     *
-     * @param snapshot               로그의 기반이 될 스냅샷
-     * @param user                   로그의 소유자
-     * @param usersWithOpenLog 미완료 로그가 이미 할당된 사용자 추적용 Set
-     * @return 생성된 RoutineLog 객체
-     */
+    // 스케줄 요일에 해당하는 최근 7일 중 하루를 골라 시각을 만든다.
+    // 스케줄이 없다면 과거 7일 랜덤(해당 루틴은 집계상 실천률이 낮을 수 있음)
+    private LocalDateTime pickRecentDateOnScheduledDay(Set<DayOfWeek> scheduledDays) {
+        if (scheduledDays == null || scheduledDays.isEmpty()) {
+            return LocalDateTime.now()
+                    .minusDays(random.nextInt(7))
+                    .minusHours(random.nextInt(24))
+                    .withMinute(random.nextInt(60))
+                    .withSecond(random.nextInt(60));
+        }
+        List<LocalDate> candidates = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+        for (int i = 0; i < 7; i++) {
+            LocalDate d = today.minusDays(i);
+            if (scheduledDays.contains(d.getDayOfWeek())) {
+                candidates.add(d);
+            }
+        }
+        if (candidates.isEmpty()) {
+            return LocalDateTime.now().minusDays(random.nextInt(7)).withHour(8 + random.nextInt(12));
+        }
+        LocalDate picked = candidates.get(random.nextInt(candidates.size()));
+        int hour = 6 + random.nextInt(16); // 06~21시
+        int minute = random.nextInt(60);
+        int second = random.nextInt(60);
+        return LocalDateTime.of(picked, LocalTime.of(hour, minute, second));
+    }
+
+    //'before'보다 과거이면서 스케줄 요일에 맞는 시각을 찾는다(최대 maxDaysBack일 뒤져봄)
+    private LocalDateTime pickScheduledDateBefore(Set<DayOfWeek> scheduledDays, LocalDateTime before, int maxDaysBack) {
+        if (scheduledDays == null || scheduledDays.isEmpty()) {
+            // 스케줄 없으면 대략 이전으로만 이동(폴백)
+            return before.minusHours(1 + random.nextInt(24));
+        }
+        LocalDate pivot = before.toLocalDate().minusDays(1); // strictly before
+        for (int i = 0; i < maxDaysBack; i++) {
+            LocalDate d = pivot.minusDays(i);
+            if (scheduledDays.contains(d.getDayOfWeek())) {
+                int hour = 6 + random.nextInt(16);
+                int minute = random.nextInt(60);
+                int second = random.nextInt(60);
+                return LocalDateTime.of(d, LocalTime.of(hour, minute, second));
+            }
+        }
+        // 안전장치
+        return before.minusDays(1).withHour(8 + random.nextInt(12));
+    }
+
     private RoutineLog buildRoutineLog(RoutineSnapshot snapshot,
                                        User user,
                                        Set<DayOfWeek> scheduleDays,
