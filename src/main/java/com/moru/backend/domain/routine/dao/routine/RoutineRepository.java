@@ -96,21 +96,22 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID>, Routine
      * @param pageable   결과 개수 제한
      * @return 인기 루틴 목록
      */
-    @Query(value = "SELECT r.id FROM Routine r WHERE r.createdAt >= :weekAgo " +
+    @Query(value = "SELECT r.id FROM Routine r WHERE r.createdAt >= :weekAgo AND r.user.id <> :userId " +
             "GROUP BY r.id, r.viewCount, r.likeCount, r.createdAt " + // GROUP BY에 정렬 기준 컬럼 추가
             "ORDER BY (CAST(r.viewCount AS double) * :viewWeight + CAST(r.likeCount AS double) * :likeWeight) DESC, r.createdAt DESC")
     List<UUID> findHotRoutinesIds(@Param("weekAgo") LocalDateTime weekAgo,
                                   @Param("viewWeight") double viewWeight,
                                   @Param("likeWeight") double likeWeight,
+                                  @Param("userId") UUID userId,
                                   Pageable pageable);
 
     /**
      * 주어진 태그를 포함하는 루틴의 ID를, 태그 일치 개수가 많은 순으로 정렬하여 조회.
      * JOIN FETCH를 제거하여 COUNT 및 GROUP BY와 함께 사용할 수 있도록 수정했.
      */
-    @Query(value = "SELECT r.id FROM Routine r JOIN r.routineTags rt WHERE rt.tag.name IN :tags GROUP BY r.id ORDER BY COUNT(r.id) DESC, r.createdAt DESC",
-            countQuery = "SELECT COUNT(DISTINCT r.id) FROM Routine r JOIN r.routineTags rt WHERE rt.tag.name IN :tags")
-    Page<UUID> findRoutineIdsByTagsOrderByTagCount(@Param("tags") List<String> tags, Pageable pageable);
+    @Query(value = "SELECT r.id FROM Routine r JOIN r.routineTags rt WHERE rt.tag.name IN :tags AND r.user.id <> :userId GROUP BY r.id ORDER BY COUNT(r.id) DESC, r.createdAt DESC",
+            countQuery = "SELECT COUNT(DISTINCT r.id) FROM Routine r JOIN r.routineTags rt WHERE rt.tag.name IN :tags AND r.user.id <> :userId")
+    Page<UUID> findRoutineIdsByTagsOrderByTagCount(@Param("tags") List<String> tags, @Param("userId") UUID userId, Pageable pageable);
 
     @Query("""
         SELECT r FROM Routine r
@@ -133,11 +134,11 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID>, Routine
         SELECT r.id FROM Routine r
         JOIN r.routineTags rt1
         JOIN r.routineTags rt2
-        WHERE rt1.tag.id = :tag1 AND rt2.tag.id = :tag2
+        WHERE rt1.tag.id = :tag1 AND rt2.tag.id = :tag2 AND r.user.id <> :userId
         GROUP BY r.id
         ORDER BY (CAST(r.viewCount AS double) * 0.5 + CAST(r.likeCount AS double) * 0.5) DESC, r.createdAt DESC
-    """, countQuery = "SELECT COUNT(DISTINCT r.id) FROM Routine r JOIN r.routineTags rt1 JOIN r.routineTags rt2 WHERE rt1.tag.id = :tag1 AND rt2.tag.id = :tag2")
-    Page<UUID> findRoutineIdsByTagPair(@Param("tag1") UUID tag1, @Param("tag2") UUID tag2, Pageable pageable);
+    """, countQuery = "SELECT COUNT(DISTINCT r.id) FROM Routine r JOIN r.routineTags rt1 JOIN r.routineTags rt2 WHERE rt1.tag.id = :tag1 AND rt2.tag.id = :tag2 AND r.user.id <> :userId")
+    Page<UUID> findRoutineIdsByTagPair(@Param("tag1") UUID tag1, @Param("tag2") UUID tag2, @Param("userId") UUID userId, Pageable pageable);
 
     /**
      * 특정 루틴의 조회수를 1 증가시킵니다.
