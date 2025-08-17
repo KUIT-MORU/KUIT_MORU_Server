@@ -54,6 +54,10 @@ public class RoutineLogSeeder {
         Map<UUID, User> routineOwnerMap = routines.stream()
                 .collect(Collectors.toMap(Routine::getId, Routine::getUser));
 
+        // 루틴별 스케줄 요일 맵
+        Map<UUID, Set<DayOfWeek>> scheduleByRoutine = buildScheduleMap(routines);
+
+
         // 모든 사용자 ID 수집
         List<UUID> allUserIds = users.stream()
                 .map(User::getId)
@@ -76,7 +80,7 @@ public class RoutineLogSeeder {
 
 
         List<RoutineSnapshot> savedSnapshots = createSnapshots(routines);
-        createLogsFromSnapshots(savedSnapshots, users, routineOwnerMap, usersWithOpenLog, openLogStartByUser);
+        createLogsFromSnapshots(savedSnapshots, users, routineOwnerMap, scheduleByRoutine, usersWithOpenLog, openLogStartByUser);
     }
 
 
