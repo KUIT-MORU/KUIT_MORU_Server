@@ -79,6 +79,41 @@ public class RoutineLogSeeder {
         createLogsFromSnapshots(savedSnapshots, users, routineOwnerMap, usersWithOpenLog, openLogStartByUser);
     }
 
+
+    private java.time.DayOfWeek toJavaDayOfWeek(
+            com.moru.backend.domain.routine.domain.schedule.DayOfWeek d) {
+        // 커스텀 enum 값 이름과 요일이 1:1로 대응한다고 가정
+        // (이름이 다르면 switch로 하나씩 매핑)
+        return switch (d) {
+            case MON    -> java.time.DayOfWeek.MONDAY;
+            case TUE   -> java.time.DayOfWeek.TUESDAY;
+            case WED -> java.time.DayOfWeek.WEDNESDAY;
+            case THU  -> java.time.DayOfWeek.THURSDAY;
+            case FRI    -> java.time.DayOfWeek.FRIDAY;
+            case SAT  -> java.time.DayOfWeek.SATURDAY;
+            case SUN    -> java.time.DayOfWeek.SUNDAY;
+        };
+    }
+
+    private Map<UUID, Set<java.time.DayOfWeek>> buildScheduleMap(List<Routine> routines) {
+        Map<UUID, Set<java.time.DayOfWeek>> map = new HashMap<>();
+        for (Routine r : routines) {
+            Set<java.time.DayOfWeek> days =
+                    (r.getRoutineSchedules() == null)
+                            ? EnumSet.noneOf(java.time.DayOfWeek.class) // JDK8 호환
+                            : r.getRoutineSchedules().stream()
+                            .map(RoutineSchedule::getDayOfWeek)                // 커스텀 enum
+                            .filter(Objects::nonNull)
+                            .map(this::toJavaDayOfWeek)                // ← ★ 변환
+                            .collect(Collectors.toCollection(
+                                    () -> EnumSet.noneOf(java.time.DayOfWeek.class) // ← ★ 제네릭 명시
+                            ));
+
+            map.put(r.getId(), days);
+        }
+        return map;
+    }
+
     /**
      * 루틴 스냅샷을 생성하고 저장
      * @param routines  루틴 리스트
