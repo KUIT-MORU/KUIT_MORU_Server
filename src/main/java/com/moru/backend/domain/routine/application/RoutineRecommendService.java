@@ -51,9 +51,9 @@ public class RoutineRecommendService {
 
     public RecommendFeedResponse getRecommendFeed(User user) {
         // 1. 각 섹션별로 추천될 Routine 엔티티 목록을 먼저 가져온다
-        List<Routine> hotRoutines = findHotRoutines(10);
+        List<Routine> hotRoutines = findHotRoutines(user, 10);
         List<Routine> personalRoutines = findPersonalRoutines(user, 10);
-        TagPairSectionResult tagPairResult1 = findTopTagPairSection(10);
+        TagPairSectionResult tagPairResult1 = findTopTagPairSection(user, 10);
         TagPairSectionResult tagPairResult2 = findInterestTagPairSection(user, 10);
 
         // 2. 모든 추천 루틴을 한 곳에 모으고, 루틴의 소유자 ID 목록을 추출한다
@@ -107,9 +107,9 @@ public class RoutineRecommendService {
     /**
      * 지금 가장 핫한 루틴 (엔티티 반환)
      */
-    private List<Routine> findHotRoutines(int limit) {
+    private List<Routine> findHotRoutines(User user, int limit) {
         LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
-        List<UUID> hotRoutineIds = routineRepository.findHotRoutinesIds(weekAgo, viewWeight, likeWeight, PageRequest.of(0, limit));
+        List<UUID> hotRoutineIds = routineRepository.findHotRoutinesIds(weekAgo, viewWeight, likeWeight, user.getId(), PageRequest.of(0, limit));
         if (hotRoutineIds.isEmpty()) {
             return Collections.emptyList();
         }
@@ -129,14 +129,14 @@ public class RoutineRecommendService {
         ).toList();
         List<String> secondaryTags = routineTagRepository.findTagNamesByUserScrappedRoutines(user);
 
-        fillRoutineEntitiesFromTags(primaryTags, recommendedRoutineIds, result, limit);
+        fillRoutineEntitiesFromTags(user, primaryTags, recommendedRoutineIds, result, limit);
 
         if (result.size() < limit) {
-            fillRoutineEntitiesFromTags(secondaryTags, recommendedRoutineIds, result, limit);
+            fillRoutineEntitiesFromTags(user, secondaryTags, recommendedRoutineIds, result, limit);
         }
 
         if (result.size() < limit) {
-            fillWithHotRoutineEntities(recommendedRoutineIds, result, limit);
+            fillWithHotRoutineEntities(user, recommendedRoutineIds, result, limit);
         }
 
         return result;
@@ -145,10 +145,10 @@ public class RoutineRecommendService {
     /**
      * 태그 조합 추천 (중간 결과 반환)
      */
-    private TagPairSectionResult findTopTagPairSection(int limit) {
+    private TagPairSectionResult findTopTagPairSection(User user, int limit) {
         List<TagPairCount> topPairs = routineTagRepository.findTopTagPairs();
         for (TagPairCount pair : topPairs) {
-            TagPairSectionResult section = buildTagPairSectionResult(pair, limit);
+            TagPairSectionResult section = buildTagPairSectionResult(user, pair, limit);
             if (section != null && !section.routines().isEmpty()) {
                 return section;
             }
@@ -168,7 +168,7 @@ public class RoutineRecommendService {
         List<TagPairCount> relevantPairs = routineTagRepository.findTopTagPairsForInterests(interestTagIds);
 
         for (TagPairCount pair : relevantPairs) {
-            TagPairSectionResult section = buildTagPairSectionResult(pair, limit);
+            TagPairSectionResult section = buildTagPairSectionResult(user, pair, limit);
             if (section != null && !section.routines().isEmpty()) {
                 return section;
             }
@@ -178,16 +178,25 @@ public class RoutineRecommendService {
 
 
     // ========================= 유틸/헬퍼 ========================= //
-    private void fillRoutineEntitiesFromTags(List<String> tagNames, Set<UUID> existingIds, List<Routine> result, int limit) {
+    private void fillRoutineEntitiesFromTags(User user, List<String> tagNames, Set<UUID> existingIds, List<Routine> result, int limit) {
         if (tagNames.isEmpty() || result.size() >= limit) {
             return;
         }
         List<String> sortedTags = sortTagsByFrequency(tagNames);
-        Page<UUID> routineIdPage = routineRepository.findRoutineIdsByTagsOrderByTagCount(sortedTags, PageRequest.of(0, limit));
-        List<UUID> routineIds = routineIdPage.getContent();
+
+        // 1. 본인 루틴 제외하고, 태그 기반으로 루틴 ID 조회
+        Page<UUID> routineIdPage = routineRepository.findRoutineIdsByTagsOrderByTagCount(sortedTags, user.getId(), PageRequest.of(0, limit * 2));
+
+        // 2. 이미 추천된 루틴은 제외
+        List<UUID> routineIds = routineIdPage.getContent().stream()
+                .filter(id -> !existingIds.contains(id))
+                .toList();
+
         if (routineIds.isEmpty()) {
             return;
         }
+
+        // 3. 상세 정보 조회 후 결과 리스트에 추가
         List<Routine> sortedRoutines = routineQueryService.findAndSortRoutinesWithDetails(routineIds);
         for (Routine routine : sortedRoutines) {
             if (result.size() >= limit) break;
@@ -206,11 +215,12 @@ public class RoutineRecommendService {
                 .toList();
     }
 
-    private void fillWithHotRoutineEntities(Set<UUID> existingIds, List<Routine> results, int limit) {
+    private void fillWithHotRoutineEntities(User user, Set<UUID> existingIds, List<Routine> results, int limit) {
         if (results.size() >= limit) {
             return;
         }
-        List<Routine> hotRoutines = findHotRoutines(limit * 2);
+        // findHotRoutines에 user 객체 전달
+        List<Routine> hotRoutines = findHotRoutines(user, limit * 2);
         for (Routine routine : hotRoutines) {
             if (results.size() >= limit) break;
             if (existingIds.add(routine.getId())) {
@@ -219,7 +229,7 @@ public class RoutineRecommendService {
         }
     }
 
-    private TagPairSectionResult buildTagPairSectionResult(TagPairCount pair, int limit) {
+    private TagPairSectionResult buildTagPairSectionResult(User user, TagPairCount pair, int limit) {
         if (pair == null || pair.getTag1() == null || pair.getTag2() == null) {
             return null;
         }
@@ -232,7 +242,7 @@ public class RoutineRecommendService {
             String tagName2 = tagMap.get(tagId2);
             if (tagName1 == null || tagName2 == null) return null;
 
-            Page<UUID> routineIdPage = routineRepository.findRoutineIdsByTagPair(tagId1, tagId2, PageRequest.of(0, limit));
+            Page<UUID> routineIdPage = routineRepository.findRoutineIdsByTagPair(tagId1, tagId2, user.getId(), PageRequest.of(0, limit));
             if (routineIdPage.isEmpty()) {
                 return new TagPairSectionResult(tagName1, tagName2, Collections.emptyList());
             }
@@ -254,15 +264,12 @@ public class RoutineRecommendService {
     }
 
     private RoutineListResponse toRoutineListResponse(Routine routine, boolean isRunning) {
-        List<RoutineTag> tagsToUse = routine.getRoutineTags().stream()
-                .findFirst()
-                .map(List::of)
-                .orElse(Collections.emptyList());
+        List<RoutineTag> allTags = new ArrayList<>(routine.getRoutineTags());
 
         return RoutineListResponse.fromRoutine(
                 routine,
                 s3Service.getImageUrl(routine.getImageUrl()),
-                tagsToUse,
+                allTags,
                 isRunning
         );
     }
