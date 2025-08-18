@@ -103,28 +103,33 @@ public class RoutineQueryService {
             @Nullable DayOfWeek dayOfWeek,
             Pageable pageable
     ) {
-        return switch (sortType) {
-            case POPULAR -> {
-                if (dayOfWeek != null) {
-                    yield routineRepository.findRoutinesByUserIdAndDayOfWeekOrderByPopularity(userId, dayOfWeek, pageable);
-                } else {
-                    User user = userRepository.getReferenceById(userId);
-                    yield routineRepository.findDistinctByUserAndStatusIsTrueOrderByLikeCountDescCreatedAtDesc(user, pageable);
-                }
+        final UUID userId = user.getId();
+        Page<Routine> routinePage;
+
+        if (sortType == SortType.TIME) {
+            if (dayOfWeek != null) {
+                routinePage = routineRepository
+                        .findRoutinesByUserIdAndDayOfWeekOrderByScheduleTimeAsc(userId, dayOfWeek, pageable);
+            } else {
+                routinePage = routineRepository
+                        .findRoutinesOrderByUpcoming(userId, pageable); // 네이티브 쿼리 버전
             }
-            case TIME:
-                if (dayOfWeek != null) {
-                    // 시나리오 1: 특정 요일이 지정된 경우
-                    routinePage = routineRepository.findRoutinesByUserIdAndDayOfWeekOrderByScheduleTimeAsc(user.getId(), dayOfWeek, pageable);
-                } else {
-                    // 시나리오 2: 요일이 지정되지 않은 경우 (네이티브 쿼리 사용)
-                    routinePage = routineRepository.findRoutinesOrderByUpcoming(user.getId(), pageable);
-                }
-                break;
-            case LATEST:
-            default:
-                routinePage = routineRepository.findDistinctByUserAndStatusIsTrueOrderByCreatedAtDesc(user, pageable);
-                break;
+        } else if (sortType == SortType.POPULAR) {
+            if (dayOfWeek != null) {
+                routinePage = routineRepository
+                        .findRoutinesByUserIdAndDayOfWeekOrderByPopularity(userId, dayOfWeek, pageable);
+            } else {
+                routinePage = routineRepository
+                        .findDistinctByUserIdAndStatusIsTrueOrderByLikeCountDescCreatedAtDesc(userId, pageable);
+            }
+        } else {
+            if (dayOfWeek != null) {
+                routinePage = routineRepository
+                        .findRoutinesByUserIdAndDayOfWeekOrderByCreatedAtDesc(userId, dayOfWeek, pageable);
+            } else {
+                routinePage = routineRepository
+                        .findDistinctByUserIdAndStatusIsTrueOrderByCreatedAtDesc(userId, pageable);
+            }
         }
 
         return routinePage.map(this::toRoutineListResponse);
