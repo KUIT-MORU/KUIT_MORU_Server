@@ -73,7 +73,7 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID>, Routine
      * @return 조건에 맞는 루틴의 페이징된 목록
      */
 
-    // 최신순
+    // 최신순 (요일 선택)
     @Query(value = """
     SELECT DISTINCT r
       FROM Routine r
@@ -96,8 +96,11 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID>, Routine
             @Param("dayOfWeek") DayOfWeek dayOfWeek,
             Pageable pageable
     );
+    // 최신순 (요일 미선택)
+    Page<Routine> findDistinctByUserIdAndStatusIsTrueOrderByCreatedAtDesc(
+            UUID userId, Pageable pageable);
 
-    // 인기순
+    // 인기순 (요일 선택)
     @Query(value = """
     SELECT DISTINCT r
       FROM Routine r
@@ -120,6 +123,9 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID>, Routine
             @Param("dayOfWeek") DayOfWeek dayOfWeek,
             Pageable pageable
     );
+    // 인기순 (요일 미선택)
+    Page<Routine> findDistinctByUserIdAndStatusIsTrueOrderByLikeCountDescCreatedAtDesc(
+            UUID userId, Pageable pageable);
 
     // 시간순
     @Query(value = "SELECT DISTINCT r FROM Routine r JOIN r.routineSchedules s WHERE r.user.id = :userId AND r.status = true AND s.dayOfWeek = :dayOfWeek ORDER BY s.time ASC",

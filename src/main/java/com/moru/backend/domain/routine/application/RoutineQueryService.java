@@ -16,6 +16,7 @@ import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.util.RedisKeyUtil;
 import com.moru.backend.global.util.S3Service;
+import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -96,13 +97,21 @@ public class RoutineQueryService {
         );
     }
 
-    public Page<RoutineListResponse> getRoutineList(User user, SortType sortType, DayOfWeek dayOfWeek, Pageable pageable) {
-        Page<Routine> routinePage;
-
-        switch (sortType) {
-            case POPULAR:
-                routinePage = routineRepository.findDistinctByUserAndStatusIsTrueOrderByLikeCountDescCreatedAtDesc(user, pageable);
-                break;
+    public Page<RoutineListResponse> getRoutineList(
+            User user,
+            SortType sortType,
+            @Nullable DayOfWeek dayOfWeek,
+            Pageable pageable
+    ) {
+        return switch (sortType) {
+            case POPULAR -> {
+                if (dayOfWeek != null) {
+                    yield routineRepository.findRoutinesByUserIdAndDayOfWeekOrderByPopularity(userId, dayOfWeek, pageable);
+                } else {
+                    User user = userRepository.getReferenceById(userId);
+                    yield routineRepository.findDistinctByUserAndStatusIsTrueOrderByLikeCountDescCreatedAtDesc(user, pageable);
+                }
+            }
             case TIME:
                 if (dayOfWeek != null) {
                     // 시나리오 1: 특정 요일이 지정된 경우
