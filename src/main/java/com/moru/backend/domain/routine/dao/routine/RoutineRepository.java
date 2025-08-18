@@ -74,15 +74,60 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID>, Routine
      */
 
     // 최신순
-    Page<Routine> findDistinctByUserAndStatusIsTrueOrderByCreatedAtDesc(User user, Pageable pageable);
+    @Query(value = """
+    SELECT DISTINCT r
+      FROM Routine r
+      JOIN r.routineSchedules s
+     WHERE r.user.id = :userId
+       AND r.status = true
+       AND s.dayOfWeek = :dayOfWeek
+  ORDER BY r.createdAt DESC
+""",
+            countQuery = """
+    SELECT COUNT(DISTINCT r.id)
+      FROM Routine r
+      JOIN r.routineSchedules s
+     WHERE r.user.id = :userId
+       AND r.status = true
+       AND s.dayOfWeek = :dayOfWeek
+""")
+    Page<Routine> findRoutinesByUserIdAndDayOfWeekOrderByCreatedAtDesc(
+            @Param("userId") UUID userId,
+            @Param("dayOfWeek") DayOfWeek dayOfWeek,
+            Pageable pageable
+    );
 
     // 인기순
-    Page<Routine> findDistinctByUserAndStatusIsTrueOrderByLikeCountDescCreatedAtDesc(User user, Pageable pageable);
+    @Query(value = """
+    SELECT DISTINCT r
+      FROM Routine r
+      JOIN r.routineSchedules s
+     WHERE r.user.id = :userId
+       AND r.status = true
+       AND s.dayOfWeek = :dayOfWeek
+  ORDER BY r.likeCount DESC, r.createdAt DESC
+""",
+            countQuery = """
+    SELECT COUNT(DISTINCT r.id)
+      FROM Routine r
+      JOIN r.routineSchedules s
+     WHERE r.user.id = :userId
+       AND r.status = true
+       AND s.dayOfWeek = :dayOfWeek
+""")
+    Page<Routine> findRoutinesByUserIdAndDayOfWeekOrderByPopularity(
+            @Param("userId") UUID userId,
+            @Param("dayOfWeek") DayOfWeek dayOfWeek,
+            Pageable pageable
+    );
 
-    // 시간순 (특정 요일)
+    // 시간순
     @Query(value = "SELECT DISTINCT r FROM Routine r JOIN r.routineSchedules s WHERE r.user.id = :userId AND r.status = true AND s.dayOfWeek = :dayOfWeek ORDER BY s.time ASC",
             countQuery = "SELECT COUNT(DISTINCT r.id) FROM Routine r JOIN r.routineSchedules s WHERE r.user.id = :userId AND r.status = true AND s.dayOfWeek = :dayOfWeek")
-    Page<Routine> findRoutinesByUserIdAndDayOfWeekOrderByScheduleTimeAsc(@Param("userId") UUID userId, @Param("dayOfWeek") DayOfWeek dayOfWeek, Pageable pageable);
+    Page<Routine> findRoutinesByUserIdAndDayOfWeekOrderByScheduleTimeAsc(
+            @Param("userId") UUID userId,
+            @Param("dayOfWeek") DayOfWeek dayOfWeek,
+            Pageable pageable);
 
     List<Routine> findAllByUserId(UUID userId);
 
