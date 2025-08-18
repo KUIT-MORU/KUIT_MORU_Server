@@ -16,6 +16,7 @@ import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.util.RedisKeyUtil;
 import com.moru.backend.global.util.S3Service;
+import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -96,26 +97,39 @@ public class RoutineQueryService {
         );
     }
 
-    public Page<RoutineListResponse> getRoutineList(User user, SortType sortType, DayOfWeek dayOfWeek, Pageable pageable) {
+    public Page<RoutineListResponse> getRoutineList(
+            User user,
+            SortType sortType,
+            @Nullable DayOfWeek dayOfWeek,
+            Pageable pageable
+    ) {
+        final UUID userId = user.getId();
         Page<Routine> routinePage;
 
-        switch (sortType) {
-            case POPULAR:
-                routinePage = routineRepository.findDistinctByUserAndStatusIsTrueOrderByLikeCountDescCreatedAtDesc(user, pageable);
-                break;
-            case TIME:
-                if (dayOfWeek != null) {
-                    // 시나리오 1: 특정 요일이 지정된 경우
-                    routinePage = routineRepository.findRoutinesByUserIdAndDayOfWeekOrderByScheduleTimeAsc(user.getId(), dayOfWeek, pageable);
-                } else {
-                    // 시나리오 2: 요일이 지정되지 않은 경우 (네이티브 쿼리 사용)
-                    routinePage = routineRepository.findRoutinesOrderByUpcoming(user.getId(), pageable);
-                }
-                break;
-            case LATEST:
-            default:
-                routinePage = routineRepository.findDistinctByUserAndStatusIsTrueOrderByCreatedAtDesc(user, pageable);
-                break;
+        if (sortType == SortType.TIME) {
+            if (dayOfWeek != null) {
+                routinePage = routineRepository
+                        .findRoutinesByUserIdAndDayOfWeekOrderByScheduleTimeAsc(userId, dayOfWeek, pageable);
+            } else {
+                routinePage = routineRepository
+                        .findRoutinesOrderByUpcoming(userId, pageable); // 네이티브 쿼리 버전
+            }
+        } else if (sortType == SortType.POPULAR) {
+            if (dayOfWeek != null) {
+                routinePage = routineRepository
+                        .findRoutinesByUserIdAndDayOfWeekOrderByPopularity(userId, dayOfWeek, pageable);
+            } else {
+                routinePage = routineRepository
+                        .findDistinctByUserIdAndStatusIsTrueOrderByLikeCountDescCreatedAtDesc(userId, pageable);
+            }
+        } else {
+            if (dayOfWeek != null) {
+                routinePage = routineRepository
+                        .findRoutinesByUserIdAndDayOfWeekOrderByCreatedAtDesc(userId, dayOfWeek, pageable);
+            } else {
+                routinePage = routineRepository
+                        .findDistinctByUserIdAndStatusIsTrueOrderByCreatedAtDesc(userId, pageable);
+            }
         }
 
         return routinePage.map(this::toRoutineListResponse);
