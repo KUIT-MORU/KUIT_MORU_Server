@@ -58,7 +58,9 @@ fix: 루틴 삭제 시 NullPointerException 해결
 
 ### API 명세서
 [link](https://15.164.150.204/swagger-ui/index.html#/)
+https://denim-nectarine-c3b.notion.site/API-205843d01dfb816080e2c511cca67bd4?source=copy_link
 
 ### Architecture
-< 첨부 예정 >
+<img width="771" height="1071" alt="architecture drawio" src="https://github.com/user-attachments/assets/a89463a8-febe-4b29-a419-cb7247565461" />
+
 
