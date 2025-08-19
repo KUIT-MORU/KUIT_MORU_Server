@@ -18,9 +18,7 @@ public class DummyDataPool {
     // =================================================================
 
     // [NEW] 1-1. 이미지 생성을 위한 템플릿
-    // [API 교체] DiceBear API 오류가 반복되어, 더 안정적이고 직관적인 Boring Avatars API로 교체합니다.
-    // 사용자 프로필: https://boringavatars.com/ (beam 스타일, 120px, 커스텀 색상 팔레트)
-    private static final String USER_PROFILE_IMAGE_URL_TEMPLATE = "https://source.boringavatars.com/beam/120/%s?colors=264653,2a9d8f,e9c46a,f4a261,e76f51";
+    private static final String USER_PROFILE_IMAGE_URL_TEMPLATE = "https://api.dicebear.com/9.x/avataaars/svg?seed=%s&size=120&radius=50";
     // 루틴 썸네일: https://picsum.photos/
     private static final String ROUTINE_THUMBNAIL_URL_TEMPLATE = "https://picsum.photos/seed/%s/400/300";
 
