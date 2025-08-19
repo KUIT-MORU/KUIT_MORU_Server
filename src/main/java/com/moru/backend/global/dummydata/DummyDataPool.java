@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.stereotype.Component;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @Component
@@ -17,7 +19,8 @@ public class DummyDataPool {
 
     // [NEW] 1-1. 이미지 생성을 위한 템플릿
     // 사용자 프로필: https://www.dicebear.com/styles/adventurer/
-    private static final String USER_PROFILE_IMAGE_URL_TEMPLATE = "https://api.dicebear.com/8.x/adventurer/java/seed=%s.svg";
+    // [FIX] API 형식에 맞게 URL 템플릿 수정
+    private static final String USER_PROFILE_IMAGE_URL_TEMPLATE = "https://api.dicebear.com/8.x/adventurer/%s.svg";
     // 루틴 썸네일: https://picsum.photos/
     private static final String ROUTINE_THUMBNAIL_URL_TEMPLATE = "https://picsum.photos/seed/%s/400/300";
 
@@ -163,11 +166,16 @@ public class DummyDataPool {
     // =================================================================
 
     public String getRandomUserProfileImage(String seed) {
-        return String.format(USER_PROFILE_IMAGE_URL_TEMPLATE, seed);
+        // [IMPROVE] URL에 사용될 수 없는 문자(한글, 공백 등)를 안전하게 인코딩합니다.
+        String encodedSeed = URLEncoder.encode(seed, StandardCharsets.UTF_8);
+        return String.format(USER_PROFILE_IMAGE_URL_TEMPLATE, encodedSeed);
     }
 
     public String getRandomRoutineImage(String seed) {
-        return String.format(ROUTINE_THUMBNAIL_URL_TEMPLATE, seed);
+        // [IMPROVE] URL에 사용될 수 없는 문자(한글, 공백 등)를 안전하게 인코딩합니다.
+        // 이 방식을 사용하면 어떤 루틴 제목이든 깨지지 않고 고유한 이미지를 생성할 수 있습니다.
+        String encodedSeed = URLEncoder.encode(seed, StandardCharsets.UTF_8);
+        return String.format(ROUTINE_THUMBNAIL_URL_TEMPLATE, encodedSeed);
     }
 
     public String getRandomBio() {

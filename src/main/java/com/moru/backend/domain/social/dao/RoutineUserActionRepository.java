@@ -22,6 +22,8 @@ public interface RoutineUserActionRepository extends JpaRepository<RoutineUserAc
     );
     Long countByRoutineIdAndActionType(UUID routineId, ActionType actionType);
 
+    List<RoutineUserAction> findByRoutineIdAndActionType(UUID routineId, ActionType actionType);
+
     List<RoutineUserAction> findAllByUserIdAndActionType(UUID userId, ActionType actionType);
 
     @Query("""
