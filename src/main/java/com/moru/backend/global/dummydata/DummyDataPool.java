@@ -15,6 +15,12 @@ public class DummyDataPool {
     // 1. 현실적인 데이터 생성을 위한 데이터 풀(Pool) 확장 및 구조화
     // =================================================================
 
+    // [NEW] 1-1. 이미지 생성을 위한 템플릿
+    // 사용자 프로필: https://www.dicebear.com/styles/adventurer/
+    private static final String USER_PROFILE_IMAGE_URL_TEMPLATE = "https://api.dicebear.com/8.x/adventurer/java/seed=%s.svg";
+    // 루틴 썸네일: https://picsum.photos/
+    private static final String ROUTINE_THUMBNAIL_URL_TEMPLATE = "https://picsum.photos/seed/%s/400/300";
+
     // 사용자 Bio 생성을 위한 3단 조합 데이터 풀 (대폭 확장)
     private static final Map<String, List<String>> BIO_POOL = new HashMap<>();
     static {
@@ -150,6 +156,18 @@ public class DummyDataPool {
         RECIPE_POOL.add(new RoutineRecipe("이직 준비", Arrays.asList("이직 성공 플랜", "회사 리서치"), Arrays.asList("커리어 점프업! #%s", "나의 가치를 높이는 시간 #%s"), Arrays.asList("career", "presentation", "research"), Arrays.asList("social")));
         RECIPE_POOL.add(new RoutineRecipe("네트워킹", Arrays.asList("링크드인", "커피챗"), Arrays.asList("인맥도 자산이다 #%s", "새로운 기회를 찾아서 #%s"), Arrays.asList("social", "career"), Arrays.asList("generic")));
         RECIPE_POOL.add(new RoutineRecipe("외국어 회화", Arrays.asList("영어 회화 스터디", "쉐도잉 연습"), Arrays.asList("자신감있게 말하기 #%s", "오늘의 #%s 회화"), Arrays.asList("language", "presentation"), Arrays.asList("social")));
+    }
+
+    // =================================================================
+    // 2. 데이터 생성 메서드
+    // =================================================================
+
+    public String getRandomUserProfileImage(String seed) {
+        return String.format(USER_PROFILE_IMAGE_URL_TEMPLATE, seed);
+    }
+
+    public String getRandomRoutineImage(String seed) {
+        return String.format(ROUTINE_THUMBNAIL_URL_TEMPLATE, seed);
     }
 
     public String getRandomBio() {
