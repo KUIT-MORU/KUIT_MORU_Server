@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -236,9 +237,17 @@ public class SocialRelationSeeder {
                 continue;
             }
 
+            // [개선] 1. 이 루틴에 이미 '좋아요'를 누른 사용자 ID를 DB에서 조회
+            Set<UUID> existingLikers = routineUserActionRepository.findByRoutineIdAndActionType(routine.getId(), ActionType.LIKE)
+                    .stream()
+                    .map(action -> action.getUser().getId())
+                    .collect(Collectors.toSet());
+
             // 루틴 소유자를 제외한 유저 리스트를 섞고 앞에서 likeCount명 사용
-            List<User> likableUsers = new ArrayList<>(allUsers);
-            likableUsers.removeIf(u -> u.getId().equals(routine.getUser().getId()));
+            // [개선] 2. 루틴 소유자 뿐만 아니라, 이미 좋아요를 누른 사용자도 후보에서 제외
+            List<User> likableUsers = allUsers.stream()
+                    .filter(u -> !u.getId().equals(routine.getUser().getId()) && !existingLikers.contains(u.getId()))
+                    .collect(Collectors.toCollection(ArrayList::new));
             Collections.shuffle(likableUsers, random);
 
             List<User> pickedUsers = likableUsers.subList(0, Math.min(likeCount, likableUsers.size()));

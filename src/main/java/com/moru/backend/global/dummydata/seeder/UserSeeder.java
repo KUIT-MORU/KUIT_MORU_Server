@@ -111,8 +111,8 @@ public class UserSeeder {
                     .gender(random.nextBoolean() ? Gender.MALE : Gender.FEMALE)
                     .birthday(birthday)
                     .bio(dummyDataPool.getRandomBio())
-                    // profileImageUrl은 faker로 직접 생성하여 설정
-                    .profileImageUrl(random.nextInt(10) < 7 ? faker.avatar().image() : null)
+                    // 80% 확률로 사용자 프로필 이미지(DiceBear) 추가
+                    .profileImageUrl(random.nextInt(10) < 8 ? dummyDataPool.getRandomUserProfileImage(nickname) : null)
                     .role(UserRole.USER)
                     // status, createdAt, updatedAt은 자동 처리되므로 설정 불필요
                     .build());

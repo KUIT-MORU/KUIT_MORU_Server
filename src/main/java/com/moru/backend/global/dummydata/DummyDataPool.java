@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.stereotype.Component;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @Component
@@ -14,6 +16,11 @@ public class DummyDataPool {
     // =================================================================
     // 1. 현실적인 데이터 생성을 위한 데이터 풀(Pool) 확장 및 구조화
     // =================================================================
+
+    // [NEW] 1-1. 이미지 생성을 위한 템플릿
+    private static final String USER_PROFILE_IMAGE_URL_TEMPLATE = "https://api.dicebear.com/9.x/avataaars/svg?seed=%s&size=120&radius=50";
+    // 루틴 썸네일: https://picsum.photos/
+    private static final String ROUTINE_THUMBNAIL_URL_TEMPLATE = "https://picsum.photos/seed/%s/400/300";
 
     // 사용자 Bio 생성을 위한 3단 조합 데이터 풀 (대폭 확장)
     private static final Map<String, List<String>> BIO_POOL = new HashMap<>();
@@ -150,6 +157,29 @@ public class DummyDataPool {
         RECIPE_POOL.add(new RoutineRecipe("이직 준비", Arrays.asList("이직 성공 플랜", "회사 리서치"), Arrays.asList("커리어 점프업! #%s", "나의 가치를 높이는 시간 #%s"), Arrays.asList("career", "presentation", "research"), Arrays.asList("social")));
         RECIPE_POOL.add(new RoutineRecipe("네트워킹", Arrays.asList("링크드인", "커피챗"), Arrays.asList("인맥도 자산이다 #%s", "새로운 기회를 찾아서 #%s"), Arrays.asList("social", "career"), Arrays.asList("generic")));
         RECIPE_POOL.add(new RoutineRecipe("외국어 회화", Arrays.asList("영어 회화 스터디", "쉐도잉 연습"), Arrays.asList("자신감있게 말하기 #%s", "오늘의 #%s 회화"), Arrays.asList("language", "presentation"), Arrays.asList("social")));
+    }
+
+    // =================================================================
+    // 2. 데이터 생성 메서드
+    // =================================================================
+
+    private String urlEncodeForPath(String value) {
+        // URLEncoder는 공백을 '+'로 인코딩하지만, URL 경로(path)에서는 '%20'이 표준입니다.
+        // 이 차이를 보정하여 어떤 환경에서든 일관되게 동작하도록 합니다.
+        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
+    }
+
+    public String getRandomUserProfileImage(String seed) {
+        // [IMPROVE] URL에 사용될 수 없는 문자(한글, 공백 등)를 안전하게 인코딩합니다.
+        String encodedSeed = urlEncodeForPath(seed);
+        return String.format(USER_PROFILE_IMAGE_URL_TEMPLATE, encodedSeed);
+    }
+
+    public String getRandomRoutineImage(String seed) {
+        // [IMPROVE] URL에 사용될 수 없는 문자(한글, 공백 등)를 안전하게 인코딩합니다.
+        // 이 방식을 사용하면 어떤 루틴 제목이든 깨지지 않고 고유한 이미지를 생성할 수 있습니다.
+        String encodedSeed = urlEncodeForPath(seed);
+        return String.format(ROUTINE_THUMBNAIL_URL_TEMPLATE, encodedSeed);
     }
 
     public String getRandomBio() {
