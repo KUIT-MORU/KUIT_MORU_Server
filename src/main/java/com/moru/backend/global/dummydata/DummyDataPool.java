@@ -165,16 +165,22 @@ public class DummyDataPool {
     // 2. 데이터 생성 메서드
     // =================================================================
 
+    private String urlEncodeForPath(String value) {
+        // URLEncoder는 공백을 '+'로 인코딩하지만, URL 경로(path)에서는 '%20'이 표준입니다.
+        // 이 차이를 보정하여 어떤 환경에서든 일관되게 동작하도록 합니다.
+        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
+    }
+
     public String getRandomUserProfileImage(String seed) {
         // [IMPROVE] URL에 사용될 수 없는 문자(한글, 공백 등)를 안전하게 인코딩합니다.
-        String encodedSeed = URLEncoder.encode(seed, StandardCharsets.UTF_8);
+        String encodedSeed = urlEncodeForPath(seed);
         return String.format(USER_PROFILE_IMAGE_URL_TEMPLATE, encodedSeed);
     }
 
     public String getRandomRoutineImage(String seed) {
         // [IMPROVE] URL에 사용될 수 없는 문자(한글, 공백 등)를 안전하게 인코딩합니다.
         // 이 방식을 사용하면 어떤 루틴 제목이든 깨지지 않고 고유한 이미지를 생성할 수 있습니다.
-        String encodedSeed = URLEncoder.encode(seed, StandardCharsets.UTF_8);
+        String encodedSeed = urlEncodeForPath(seed);
         return String.format(ROUTINE_THUMBNAIL_URL_TEMPLATE, encodedSeed);
     }
 
