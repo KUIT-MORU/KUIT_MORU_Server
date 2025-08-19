@@ -1,6 +1,6 @@
 package com.moru.backend.domain.routine.application;
 
-import com.moru.backend.domain.routine.dao.RoutineRepository;
+import com.moru.backend.domain.routine.dao.routine.RoutineRepository;
 import com.moru.backend.domain.routine.dao.RoutineScheduleRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;

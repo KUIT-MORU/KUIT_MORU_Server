@@ -52,3 +52,15 @@ fix: 루틴 삭제 시 NullPointerException 해결
 - `feature/*`, `fix/*`, `refactor/*`: 작업별 브랜치
 - `release/*`: 배포 전 안정화
 - `hotfix/*`: 배포 후 긴급 수정
+
+### ERD
+<img width="4068" height="4424" alt="moru_db_ERD" src="https://github.com/user-attachments/assets/6a14744d-679a-408c-81c3-30e13a6215e8" />
+
+### API 명세서
+[link](https://15.164.150.204/swagger-ui/index.html#/)
+https://denim-nectarine-c3b.notion.site/API-205843d01dfb816080e2c511cca67bd4?source=copy_link
+
+### Architecture
+<img width="771" height="1071" alt="architecture drawio" src="https://github.com/user-attachments/assets/a89463a8-febe-4b29-a419-cb7247565461" />
+
+

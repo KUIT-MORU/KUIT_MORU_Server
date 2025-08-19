@@ -2,11 +2,10 @@ package com.moru.backend.domain.routine.application;
 
 import com.moru.backend.domain.log.domain.RoutineLog;
 import com.moru.backend.domain.meta.dao.TagRepository;
-import com.moru.backend.domain.routine.dao.RoutineRepository;
+import com.moru.backend.domain.routine.dao.routine.RoutineRepository;
 import com.moru.backend.domain.routine.dao.RoutineTagRepository;
 import com.moru.backend.domain.routine.dao.SearchHistoryRepository;
 import com.moru.backend.domain.routine.domain.Routine;
-import com.moru.backend.domain.routine.domain.meta.RoutineTag;
 import com.moru.backend.domain.routine.domain.search.SearchHistory;
 import com.moru.backend.domain.routine.domain.search.SearchType;
 import com.moru.backend.domain.routine.domain.search.SortType;
@@ -28,7 +27,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service

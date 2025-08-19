@@ -1,7 +1,7 @@
 package com.moru.backend.domain.routine.application;
 
 import com.moru.backend.domain.log.dao.RoutineLogRepository;
-import com.moru.backend.domain.routine.dao.RoutineRepository;
+import com.moru.backend.domain.routine.dao.routine.RoutineRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.schedule.DayOfWeek;
 import com.moru.backend.domain.routine.domain.search.SortType;
@@ -16,6 +16,7 @@ import com.moru.backend.global.exception.CustomException;
 import com.moru.backend.global.exception.ErrorCode;
 import com.moru.backend.global.util.RedisKeyUtil;
 import com.moru.backend.global.util.S3Service;
+import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -96,27 +97,42 @@ public class RoutineQueryService {
         );
     }
 
-    public Page<RoutineListResponse> getRoutineList(User user, SortType sortType, DayOfWeek dayOfWeek, Pageable pageable) {
-        Page<UUID> routineIdPage;
-        if (sortType == SortType.TIME && dayOfWeek != null) {
-            routineIdPage = routineRepository.findIdsByUserIdAndDayOfWeekOrderByScheduleTimeAsc(user.getId(), dayOfWeek, pageable);
+    public Page<RoutineListResponse> getRoutineList(
+            User user,
+            SortType sortType,
+            @Nullable DayOfWeek dayOfWeek,
+            Pageable pageable
+    ) {
+        final UUID userId = user.getId();
+        Page<Routine> routinePage;
+
+        if (sortType == SortType.TIME) {
+            if (dayOfWeek != null) {
+                routinePage = routineRepository
+                        .findRoutinesByUserIdAndDayOfWeekOrderByScheduleTimeAsc(userId, dayOfWeek, pageable);
+            } else {
+                routinePage = routineRepository
+                        .findRoutinesOrderByUpcoming(userId, pageable); // 네이티브 쿼리 버전
+            }
         } else if (sortType == SortType.POPULAR) {
-            routineIdPage = routineRepository.findIdsByUserOrderByLikeCountDescCreatedAtDesc(user, pageable);
-        } else { // LATEST
-            routineIdPage = routineRepository.findIdsByUserOrderByCreatedAtDesc(user, pageable);
-        }
-        List<UUID> routineIds = routineIdPage.getContent();
-        if (routineIds.isEmpty()) {
-            return Page.empty(pageable);
+            if (dayOfWeek != null) {
+                routinePage = routineRepository
+                        .findRoutinesByUserIdAndDayOfWeekOrderByPopularity(userId, dayOfWeek, pageable);
+            } else {
+                routinePage = routineRepository
+                        .findDistinctByUserIdAndStatusIsTrueOrderByLikeCountDescCreatedAtDesc(userId, pageable);
+            }
+        } else {
+            if (dayOfWeek != null) {
+                routinePage = routineRepository
+                        .findRoutinesByUserIdAndDayOfWeekOrderByCreatedAtDesc(userId, dayOfWeek, pageable);
+            } else {
+                routinePage = routineRepository
+                        .findDistinctByUserIdAndStatusIsTrueOrderByCreatedAtDesc(userId, pageable);
+            }
         }
 
-        List<Routine> sortedRoutines = findAndSortRoutinesWithDetails(routineIds);
-        // DTO로 변환 후 최종 Page 객체 생성
-        List<RoutineListResponse> dtoList = sortedRoutines.stream()
-                .map(this::toRoutineListResponse)
-                .toList();
-
-        return new PageImpl<>(dtoList, pageable, routineIdPage.getTotalElements());
+        return routinePage.map(this::toRoutineListResponse);
     }
 
 

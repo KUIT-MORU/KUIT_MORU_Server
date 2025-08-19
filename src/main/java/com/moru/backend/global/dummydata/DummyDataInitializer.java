@@ -4,6 +4,7 @@ import com.moru.backend.domain.meta.domain.Tag;
 import com.moru.backend.domain.meta.domain.App;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.social.domain.UserFollow;
+import com.moru.backend.global.dummydata.seeder.*;
 import com.moru.backend.domain.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,49 +19,59 @@ import java.util.*;
 @Profile("init-db") // 개발 환경에서만 더미 데이터 생성하도록
 @RequiredArgsConstructor
 public class DummyDataInitializer implements CommandLineRunner {
-    // 직접 호출할 서비스 클래스
-    private final DummyDataGenerator dummyDataGenerator;
+    // [REFACTOR] 각 Seeder를 주입받아 사용
+    private final UserSeeder userSeeder;
+    private final RoutineSeeder routineSeeder;
+    private final SocialRelationSeeder socialRelationSeeder;
+    private final RoutineLogSeeder routineLogSeeder;
+    private final NotificationSeeder notificationSeeder;
+    private final RoutineSearchSeeder routineSearchSeeder;
     private final DummyDataProperties dummyDataProperties;
 
     @Override
     public void run(String... args) throws Exception {
-        // --- 기존 generate() 메서드의 내용을 여기로 옮겨옵니다. ---
-        if (dummyDataGenerator.isDataPresent()) {
+        if (userSeeder.isDataPresent()) {
             log.info("더미 데이터가 이미 존재하므로 생성 건너뛰기");
             return;
         }
         log.info("===DataFaker을 사용해서 대규모 더미 데이터 생성 시작===");
 
-        // 각 단계가 별도의 트랜잭션으로 실행됩니다.
-        List<Tag> allTags = dummyDataGenerator.createManualTags();
-        log.info("[1/8] {}개의 태그를 생성함", allTags.size());
+        // 1. 기본 엔티티 생성
+        List<Tag> allTags = userSeeder.createManualTags();
+        log.info("[1/10] {}개의 태그를 생성함", allTags.size());
 
-        List<App> allApps = dummyDataGenerator.createManualApps();
-        log.info("[2/8] {}개의 앱을 생성함", allApps.size());
+        List<App> allApps = userSeeder.createManualApps();
+        log.info("[2/10] {}개의 앱을 생성함", allApps.size());
 
-        List<User> allUsers = dummyDataGenerator.createBulkUsers(dummyDataProperties.getUserCount());
-        log.info("[3/8] {}명의 사용자를 생성했습니다.", allUsers.size());
+        List<User> allUsers = userSeeder.createBulkUsers(dummyDataProperties.getUserCount());
+        log.info("[3/10] {}명의 사용자를 생성했습니다.", allUsers.size());
 
-        List<Routine> allRoutines = dummyDataGenerator.createBulkRoutines(dummyDataProperties.getRoutineCount(), allUsers, allTags, allApps);
-        log.info("[4/8] {}개의 루틴과 관련 데이터(스텝, 태그연결, 스케줄)를 생성했습니다.", allRoutines.size());
+        List<Routine> allRoutines = routineSeeder.createBulkRoutines(dummyDataProperties.getRoutineCount(), allUsers, allTags, allApps);
+        log.info("[4/10] {}개의 루틴과 관련 데이터(스텝, 태그연결, 스케줄)를 생성했습니다.", allRoutines.size());
 
-//        dummyDataGenerator.createBulkRelationsAndLogs(dummyDataProperties.getRelationCount(), allUsers, allTags, allRoutines);
-//        log.info("[5/5] 팔로우, 선호 태그, 루틴 로그 데이터를 생성했습니다.");
-        List<UserFollow> allFollows = dummyDataGenerator.createFollowRelations(dummyDataProperties.getFollowCount(), allUsers);
-        log.info("[5/8] 팔로우 관계를 생성했습니다.");
+        // 2. 관계 및 액션 데이터 생성
+        List<UserFollow> allFollows = socialRelationSeeder.createFollowRelations(dummyDataProperties.getFollowCount(), allUsers);
+        log.info("[5/10] 팔로우 관계를 생성했습니다.");
 
-        dummyDataGenerator.createFavoriteTagRelations(dummyDataProperties.getFavoriteTagCount(), allUsers, allTags);
-        log.info("[6/8] 선호 태그 관계를 생성했습니다.");
+        socialRelationSeeder.createFavoriteTagRelations(dummyDataProperties.getFavoriteTagCount(), allUsers, allTags);
+        log.info("[6/10] 선호 태그 관계를 생성했습니다.");
 
-        dummyDataGenerator.createLogs(allRoutines, allUsers);
-        log.info("[7/8] 루틴 로그를 생성했습니다.");
+        socialRelationSeeder.createScrapActionsGuaranteed(dummyDataProperties.getScrapCount(), allUsers, allRoutines);
+        log.info("[7/10] 스크랩 관계를 생성했습니다.");
 
-        dummyDataGenerator.createBulkNotifications(allFollows, allRoutines);
-        log.info("[8/8] 알림 데이터를 생성했습니다.");
+        socialRelationSeeder.seedLikesAndUpdateCount(allRoutines, allUsers);
+        log.info("[8/10] 좋아요 관계를 생성하고 루틴의 likeCount를 업데이트했습니다.");
+
+        // 3. 활동 기록 데이터 생성
+        routineLogSeeder.createLogs(allRoutines, allUsers);
+        log.info("[9/10] 루틴 로그를 생성했습니다.");
+
+        notificationSeeder.createBulkNotifications(allFollows, allRoutines);
+        log.info("[10/10] 알림 데이터를 생성했습니다.");
 
         log.info("===더미 데이터 생성 완료===");
 
-        // 1) targetUserEmail로 기준 사용자 선택
+        // 4. 특정 사용자를 위한 추가 데이터 생성
         User target = allUsers.stream()
                 .filter(u -> Optional.ofNullable(dummyDataProperties.getTargetUserEmail())
                         .map(e -> e.equalsIgnoreCase(u.getEmail()))
@@ -68,18 +79,15 @@ public class DummyDataInitializer implements CommandLineRunner {
                 .findFirst()
                 .orElse(allUsers.get(0));
 
-        // 2) 기준 사용자 수신함 알림 보장
-        dummyDataGenerator.createUserCentricNotifications(
+        notificationSeeder.createUserCentricNotifications(
                 target,
                 allFollows,
                 allRoutines,
                 Math.max(0, dummyDataProperties.getUserCentricFollowNotif()),
                 Math.max(0, dummyDataProperties.getUserCentricRoutineCreatedNotif())
         );
-        log.info("[추가] 사용자 기준 알림 생성 완료 (target: {})", target.getEmail());
 
-        // 3) 검색기록 더미 (원하면 전체 유저, 아니면 target만)
-        dummyDataGenerator.createSearchHistoriesPerUser(
+        routineSearchSeeder.createSearchHistoriesPerUser(
                 List.of(target), // 또는 allUsers
                 Math.max(0, dummyDataProperties.getSearchHistoryPerUser())
         );

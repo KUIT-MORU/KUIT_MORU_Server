@@ -27,7 +27,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	compileOnly 'org.projectlombok:lombok:1.18.30'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
@@ -48,7 +48,7 @@ dependencies {
 	// dummy data 용
 	implementation 'net.datafaker:datafaker:2.4.4'
 
-	//.env 인식
+	//..env 인식
 	implementation 'io.github.cdimascio:java-dotenv:5.2.2'
 
 	// FCM

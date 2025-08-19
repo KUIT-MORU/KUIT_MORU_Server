@@ -2,10 +2,7 @@ package com.moru.backend.domain.user.application;
 
 
 import com.moru.backend.domain.log.dao.RoutineLogRepository;
-import com.moru.backend.domain.log.domain.RoutineLog;
-import com.moru.backend.domain.log.domain.snapshot.RoutineSnapshot;
-import com.moru.backend.domain.log.domain.snapshot.RoutineTagSnapshot;
-import com.moru.backend.domain.routine.dao.RoutineRepository;
+import com.moru.backend.domain.routine.dao.routine.RoutineRepository;
 import com.moru.backend.domain.routine.dao.RoutineTagRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.meta.RoutineTag;
@@ -29,7 +26,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service

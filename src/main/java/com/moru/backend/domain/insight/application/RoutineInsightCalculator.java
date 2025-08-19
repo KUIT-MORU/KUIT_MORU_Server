@@ -3,7 +3,7 @@ package com.moru.backend.domain.insight.application;
 import com.moru.backend.domain.insight.domain.TimeSlot;
 import com.moru.backend.domain.log.dao.RoutineLogRepository;
 import com.moru.backend.domain.log.domain.RoutineLog;
-import com.moru.backend.domain.routine.dao.RoutineRepository;
+import com.moru.backend.domain.routine.dao.routine.RoutineRepository;
 import com.moru.backend.domain.routine.dao.RoutineScheduleHistoryRepository;
 import com.moru.backend.domain.routine.domain.Routine;
 import com.moru.backend.domain.routine.domain.schedule.RoutineScheduleHistory;
