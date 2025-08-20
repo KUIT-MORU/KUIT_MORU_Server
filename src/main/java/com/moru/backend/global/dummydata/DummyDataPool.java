@@ -18,7 +18,7 @@ public class DummyDataPool {
     // =================================================================
 
     // [NEW] 1-1. 이미지 생성을 위한 템플릿
-    private static final String USER_PROFILE_IMAGE_URL_TEMPLATE = "https://api.dicebear.com/9.x/avataaars/svg?seed=%s&size=120&radius=50";
+    private static final String USER_PROFILE_IMAGE_URL_TEMPLATE = "https://api.dicebear.com/9.x/avataaars/jpg?seed=%s&size=120&radius=50";
     // 루틴 썸네일: https://picsum.photos/
     private static final String ROUTINE_THUMBNAIL_URL_TEMPLATE = "https://picsum.photos/seed/%s/400/300";
 
