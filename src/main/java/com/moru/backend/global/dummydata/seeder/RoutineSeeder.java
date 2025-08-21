@@ -211,12 +211,12 @@ public class RoutineSeeder {
             scheduledDays.add(DayOfWeek.values()[random.nextInt(7)]);
         }
         for (DayOfWeek day : scheduledDays) {
-            // Generate a random time for the schedule
-            java.sql.Time randomTime = new java.sql.Time(faker.date().future(1, java.util.concurrent.TimeUnit.HOURS).getTime());
+            // 00:00:00 ~ 23:59:59 사이의 무작위 시간 생성
+            java.time.LocalTime randomTime = java.time.LocalTime.ofSecondOfDay(random.nextInt(24 * 60 * 60));
 
             RoutineSchedule schedule = RoutineSchedule.builder()
                     .dayOfWeek(day)
-                    .time(randomTime.toLocalTime()) // Set the non-null time value
+                    .time(randomTime)
                     .alarmEnabled(random.nextBoolean()) // Also set a value for alarm_enabled
                     .build();
             // 편의 메서드를 사용하여 관계를 설정합니다.

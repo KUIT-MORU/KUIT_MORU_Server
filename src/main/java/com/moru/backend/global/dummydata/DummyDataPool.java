@@ -18,7 +18,7 @@ public class DummyDataPool {
     // =================================================================
 
     // [NEW] 1-1. 이미지 생성을 위한 템플릿
-    private static final String USER_PROFILE_IMAGE_URL_TEMPLATE = "https://api.dicebear.com/9.x/avataaars/svg?seed=%s&size=120&radius=50";
+    private static final String USER_PROFILE_IMAGE_URL_TEMPLATE = "https://api.dicebear.com/9.x/avataaars/jpg?seed=%s&size=120&radius=50";
     // 루틴 썸네일: https://picsum.photos/
     private static final String ROUTINE_THUMBNAIL_URL_TEMPLATE = "https://picsum.photos/seed/%s/400/300";
 
@@ -33,7 +33,7 @@ public class DummyDataPool {
                 "블로그를 운영하는", "브이로그를 만드는", "악기 연주가 취미인", "드라이브를 즐기는"
         ));
         BIO_POOL.put("introductions", Arrays.asList(
-                "대학생입니다.", "직장인입니다.", "개발자입니다.", "디자이너입니다.", "기획자입니다.",
+                 "대학생입니다.", "직장인입니다.", "개발자입니다.", "디자이너입니다.", "기획자입니다.",
                 "취준생입니다.", "프리랜서입니다.", "N년차 마케터입니다.", "예비 창업가입니다.",
                 "석사 과정 중입니다.", "데이터 분석가입니다.", "프로덕트 매니저(PM)입니다.", "콘텐츠 크리에이터입니다.",
                 "연구원입니다.", "선생님입니다.", "공무원입니다.", "자영업자입니다."
